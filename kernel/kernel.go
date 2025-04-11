@@ -4,29 +4,29 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	
+
+	"github.com/sisoputnfrba/tp-golang/kernel/utils"
 )
-
-func init() {
-
-}
 
 func main() {
 	log.Println("Comenzó ejecucion del Kernel")
 
+	mux := http.NewServeMux()
+
+	//FUNCIONES SERVER DE LOS OTROS MODULOS: Escuchar sus mensajes
+	mux.HandleFunc("/kernel/mensaje", utils.RecibirMensaje)
+
+	fmt.Println("Servidor escuchando en http://localhost:8081/kernel/mensaje")
+
+	//panic("no implementado!")
+	err := http.ListenAndServe(":8081", mux)
+	if err != nil {
+		panic(err)
+	}
+
 	//FUNCIONES DE CLIENTE. CONEXION CON OTROS MODULOS:
 	//enviar mensaje
 	//generar y enviar paquete
-	
-
-	fmt.Println("Hello, World!")
 
 	//TODO ver guía de golang en la sección de "Protocolo HTTP".
-
-	
-
-	//FUNCIONES SERVER DE LOS OTROS MODULOS:
-	//mux.HandleFunc("/paquetes", utils.RecibirPaquetes)
-	//mux.HandleFunc("/mensaje", utils.RecibirMensaje)
-
 }
