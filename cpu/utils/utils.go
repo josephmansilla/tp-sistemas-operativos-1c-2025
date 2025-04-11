@@ -14,22 +14,28 @@ import (
 //Cree este utils.go para enviarMensaje()
 
 // Body JSON a enviarse
-type Mensaje struct {
+type MensajeAKernel struct {
 	Ip     string `json:"ip"`
 	Puerto int    `json:"puerto"`
 }
 
-func Config(filepath string) *globals.Config{
+// Body JSON a enviarse
+type MensajeDeKernel struct {
+	PID int `json:"pid"`
+	PC  int `json:"pc"`
+}
+
+func Config(filepath string) *globals.Config {
 	//Recibe un string filepath (ruta al archivo de configuración).
-	var config * globals.Config
+	var config *globals.Config
 
 	//Abrir archivo en la ruta filepath
 	configFile, err := os.Open(filepath)
 
-	if err != nil{
+	if err != nil {
 		log.Fatal(err.Error())
 	}
-	//defer se usa para asegurarse de cerrar recursos (archivos, conexiones, etc.) 
+	//defer se usa para asegurarse de cerrar recursos (archivos, conexiones, etc.)
 	//incluso si hay errores más adelante.
 	defer configFile.Close()
 
@@ -45,7 +51,7 @@ func Config(filepath string) *globals.Config{
 
 func EnviarMensaje(ipDestino string, puertoDestino int, ipPropia string, puertoPropio int) {
 	//Instanciar struct mensaje
-	mensaje := Mensaje{Ip: ipPropia, Puerto: puertoPropio}
+	mensaje := MensajeAKernel{Ip: ipPropia, Puerto: puertoPropio}
 
 	//Convertir a JSON (serializar)
 	body, err := json.Marshal(mensaje)
@@ -66,4 +72,31 @@ func EnviarMensaje(ipDestino string, puertoDestino int, ipPropia string, puertoP
 	}
 
 	log.Printf("Respuesta del servidor: %s", resp.Status)
+}
+
+func RecibirMensaje(w http.ResponseWriter, r *http.Request) {
+	//decodificador JSON que lee directamente desde el body de la petición HTTP
+	decoder := json.NewDecoder(r.Body)
+
+	//Interpretar como si fuera un objeto de tipo Mensaje. Se guarda en variable mensaje.
+	var mensaje MensajeDeKernel
+	err := decoder.Decode(&mensaje)
+
+	if err != nil {
+		log.Printf("Error al decodificar el mensaje: %s", err.Error())
+
+		//Devolver un HTTP 400 (Bad Request) al cliente.
+		w.WriteHeader(http.StatusBadRequest)
+
+		//Escribir un mensaje de error en el body de la respuesta.
+		w.Write([]byte("Error al decodificar mensaje"))
+		return
+	}
+
+	log.Println("Me llego mensaje del CPU:")
+	//Imprimir el contenido del struct mensaje
+	log.Printf("%+v\n", mensaje)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
 }
