@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 )
 
 //Cree este utils.go para enviarMensaje()
@@ -14,6 +17,30 @@ import (
 type Mensaje struct {
 	Ip     string `json:"ip"`
 	Puerto int    `json:"puerto"`
+}
+
+func Config(filepath string) *globals.Config{
+	//Recibe un string filepath (ruta al archivo de configuración).
+	var config * globals.Config
+
+	//Abrir archivo en la ruta filepath
+	configFile, err := os.Open(filepath)
+
+	if err != nil{
+		log.Fatal(err.Error())
+	}
+	//defer se usa para asegurarse de cerrar recursos (archivos, conexiones, etc.) 
+	//incluso si hay errores más adelante.
+	defer configFile.Close()
+
+	//Crear decoder JSON que lee desde el archivo abierto (configFile).
+	jsonParser := json.NewDecoder(configFile)
+
+	//Deserializa el contenido del archivo JSON en una estructura Go.
+	//llena el struct config con los valores que están en el archivo.
+	jsonParser.Decode(&config)
+
+	return config
 }
 
 func EnviarMensaje(ipDestino string, puertoDestino int, ipPropia string, puertoPropio int) {
