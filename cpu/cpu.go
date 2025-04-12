@@ -21,12 +21,12 @@ func main() {
 
 	//Las CPUs deberán conectarse al Kernel (destino)
 	//enviandole su IP y su PUERTO. (self)
-	utils.EnviarMensaje(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf)
+	utils.EnviarIpPuertoAKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf)
 
 	//Al momento de recibir un PID y un PC de parte del Kernel,
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/cpu/mensaje", utils.RecibirMensaje)
+	mux.HandleFunc("/cpu/mensaje", utils.RecibirContextoProcesoDeKernel)
 
 	log.Printf("CPU escuchando en http://%s:%d/cpu/mensaje\n", globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", globals.ClientConfig.PortSelf), mux)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -13,13 +14,13 @@ import (
 
 //Cree este utils.go para enviarMensaje()
 
-// Body JSON a enviarse
+// Body JSON que envia a Kernel
 type MensajeAKernel struct {
 	Ip     string `json:"ip"`
 	Puerto int    `json:"puerto"`
 }
 
-// Body JSON a enviarse
+// Body JSON que recibe de Kernel
 type MensajeDeKernel struct {
 	PID int `json:"pid"`
 	PC  int `json:"pc"`
@@ -49,54 +50,95 @@ func Config(filepath string) *globals.Config {
 	return config
 }
 
-func EnviarMensaje(ipDestino string, puertoDestino int, ipPropia string, puertoPropio int) {
-	//Instanciar struct mensaje
-	mensaje := MensajeAKernel{Ip: ipPropia, Puerto: puertoPropio}
-
-	//Convertir a JSON (serializar)
-	body, err := json.Marshal(mensaje)
-
-	//Si ocurrio un error al convertir el mensaje a JSON, mostrar en el log.
-	if err != nil {
-		log.Printf("Error codificando mensaje: %s", err.Error())
+// Enviar IP y Puerto al Kernel
+func EnviarIpPuertoAKernel(ipDestino string, puertoDestino int, ipPropia string, puertoPropio int) {
+	//Creo una instancia del struct MensajeAKernel
+	mensaje := MensajeAKernel{
+		Ip:     ipPropia,
+		Puerto: puertoPropio,
 	}
-
-	//Construir URL
+	//Construye la URL del endpoint(url + path) en el Kernel a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/kernel/mensaje", ipDestino, puertoDestino)
-
-	//Peticion HTTP POST, donde el body es un JSON.
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
-
+	//Hace el POST a kernel
+	err := enviarDatos(url, mensaje)
+	//Verifico si hubo error y logue si lo hubo
 	if err != nil {
-		log.Printf("Error enviando mensaje a ip:%s puerto:%d", ipDestino, puertoDestino)
+		log.Printf("Error enviando IP y Puerto al Kernel: %s", err.Error())
+		return
 	}
-
-	log.Printf("Respuesta del servidor: %s", resp.Status)
+	//Si no hubo error, logueo que todo salio bien
+	log.Println("IP y Puerto enviados exitosamente al Kernel")
 }
 
-func RecibirMensaje(w http.ResponseWriter, r *http.Request) {
-	//decodificador JSON que lee directamente desde el body de la petición HTTP
+// Recibir PID y PC del Kernel
+func RecibirContextoProcesoDeKernel(w http.ResponseWriter, r *http.Request) {
+	//Creo un decoder para leer el JSON
 	decoder := json.NewDecoder(r.Body)
 
-	//Interpretar como si fuera un objeto de tipo Mensaje. Se guarda en variable mensaje.
+	//Declaro una variable para poder guardar la info
 	var mensaje MensajeDeKernel
+	//Interpreto la info como MensajeDeKernel
 	err := decoder.Decode(&mensaje)
 
+	//Verifico si hubo un error y lo logueo
 	if err != nil {
-		log.Printf("Error al decodificar el mensaje: %s", err.Error())
-
-		//Devolver un HTTP 400 (Bad Request) al cliente.
+		log.Printf("Error al decodificar el mensaje del Kernel: %s", err.Error())
 		w.WriteHeader(http.StatusBadRequest)
-
-		//Escribir un mensaje de error en el body de la respuesta.
 		w.Write([]byte("Error al decodificar mensaje"))
 		return
 	}
 
-	log.Println("Me llego mensaje del CPU:")
-	//Imprimir el contenido del struct mensaje
-	log.Printf("%+v\n", mensaje)
+	//Si salio bien loguea
+	log.Println("Me llegó contexto de proceso desde Kernel:")
+	log.Printf("PID: %d, PC: %d\n", mensaje.PID, mensaje.PC)
 
+	//Le digo a kernel que llego bien
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
+}
+
+// Helper para enviar datos a un endpoint (POST) --> Mando un struct como JSON
+func enviarDatos(url string, data any) error {
+	//Convierte el struct(data) a un JSON
+	jsonData, err := json.Marshal(data)
+
+	//Si no pudo serializar, devuelvo error
+	if err != nil {
+		return err
+	}
+
+	//POST a la url con el JSON
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	//Verifico error
+	if err != nil {
+		return err
+	}
+	//Cierro la rta, salio bien
+	defer resp.Body.Close()
+
+	return nil
+}
+
+// Helper para recibir datos desde un endpoint (GET) --> Pasa de JSON a struct
+func recibirDatos(url string, data any) error {
+	//Llamo al endpoint y verifico error
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	//Leo el contenido
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	//Deserializacion del JSON y lo paso a data
+	err = json.Unmarshal(body, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
