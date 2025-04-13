@@ -7,8 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/sisoputnfrba/tp-golang/io/ioGlobals"
+	"github.com/sisoputnfrba/tp-golang/io/globals"
 )
 
 func main() {
