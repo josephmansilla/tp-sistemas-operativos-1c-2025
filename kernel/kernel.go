@@ -14,7 +14,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	//FUNCIONES SERVER DE LOS OTROS MODULOS: Escuchar sus mensajes
-	mux.HandleFunc("/kernel/mensaje", utils.RecibirMensaje)
+	mux.HandleFunc("/kernel/mensaje", utils.RecibirMensajeDeCpu)
 
 	fmt.Println("Servidor escuchando en http://localhost:8081/kernel/mensaje")
 
