@@ -18,7 +18,6 @@ func main() {
 
 	fmt.Println("Servidor escuchando en http://localhost:8081/kernel/mensaje")
 
-	//panic("no implementado!")
 	err := http.ListenAndServe(":8081", mux)
 	if err != nil {
 		panic(err)

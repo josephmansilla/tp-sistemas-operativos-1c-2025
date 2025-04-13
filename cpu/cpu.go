@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	log.Println("Comenzó ejecucion del Kernel")
+	log.Println("Comenzó ejecucion del CPU")
 
 	//CPU CLIENTE
 	globals.ClientConfig = utils.Config("config.json")
@@ -29,6 +29,7 @@ func main() {
 	mux.HandleFunc("/cpu/mensaje", utils.RecibirContextoProcesoDeKernel)
 
 	log.Printf("CPU escuchando en http://%s:%d/cpu/mensaje\n", globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf)
+
 	err := http.ListenAndServe(fmt.Sprintf(":%d", globals.ClientConfig.PortSelf), mux)
 	if err != nil {
 		log.Fatal(err)
