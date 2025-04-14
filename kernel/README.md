@@ -1,5 +1,12 @@
 ## KERNEL 
 
+## FUNCIONALIDAD
+
+1. LEER ARCHIVO DE CONFIGURACION -> utils.Config(filepath)
+2. CARGAR SUS DATOS EN GLOBALS -> en el struct Config 
+3. LISTEN en los puertos HTTP
+4. RECIBIR Y GUARDAR EN GLOBALS info. de algun modulo
+
 ## 🔌 1. Endpoint expuesto
 
 El Kernel escucha conexiones entrantes desde otros módulos en:
@@ -57,4 +64,14 @@ type DatosCPU struct {
 
 ## 3. Estructura
 
-kernel/ ├── main.go # Punto de entrada de la app, arranca el servidor ├── utils/ # Funciones auxiliares (leer JSON, manejar requests) │ └── utils.go ├── config.json # Archivo de configuración ├── go.mod # Módulo Go ├── kernel.go # Lógica del módulo Kernel └── README.md # Documentación del proyecto
+kernel/ 
+├── utils/ # Funciones auxiliares (leer JSON, manejar requests) 
+	│ 
+	└── utils.go 
+├── globals/ 
+	│ 
+	└── globals.go 
+├── config.json # Archivo de configuración 
+├── go.mod # Módulo Go 
+├── kernel.go # Lógica del módulo Kernel 
+└── README.md # Documentación del proyecto
