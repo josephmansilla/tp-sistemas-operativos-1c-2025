@@ -26,6 +26,11 @@ type MensajeDeKernel struct {
 	PC  int `json:"pc"`
 }
 
+type MensajeInstruccion struct {
+	PID int `json:"pid"`
+	PC  int `json:"pc"`
+}
+
 func Config(filepath string) *globals.Config {
 	//Recibe un string filepath (ruta al archivo de configuración).
 	var config *globals.Config
@@ -66,8 +71,28 @@ func EnviarIpPuertoAKernel(ipDestino string, puertoDestino int, ipPropia string,
 		log.Printf("Error enviando IP y Puerto al Kernel: %s", err.Error())
 		return
 	}
-	//Si no hubo error, logueo que todo salio bien
+	//Si no hubo error, logueo que salio bien
 	log.Println("IP y Puerto enviados exitosamente al Kernel")
+}
+
+// Enviar PID y PC a Memoria
+func SolicitarInstruccion(ipDestino string, puertoDestino int, pidPropio int, pcPropio int) {
+	//Creo una instancia del struct MensajeInstruccion
+	mensaje := MensajeInstruccion{
+		PID: pidPropio,
+		PC:  pcPropio,
+	}
+	//Construyo la URL del endpoint(url + path) en Memoria a donde se va a enviar el mensaje
+	url := fmt.Sprintf("http://%s:%d/memoria/mensaje", ipDestino, puertoDestino)
+	//Hago el post a memoria
+	err := enviarDatos(url, mensaje)
+	//Verifico si hubo error y logueo si lo hubo
+	if err != nil {
+		log.Printf("Error enviando PID y PC a Memoria: %s", err.Error())
+		return
+	}
+	//Si no hubo error, logueo que salio bien
+	log.Println("PID y PC enviados exitosamente a Memoria")
 }
 
 // Recibir PID y PC del Kernel
@@ -87,6 +112,13 @@ func RecibirContextoProcesoDeKernel(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Error al decodificar mensaje"))
 		return
 	}
+
+	/*for {
+		SolicitarInstruccion(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensaje.PID, mensaje.PC)
+		RecibirInstruccion(instruccion)
+		EjecutarInstruccion(instruccion)
+		mensaje.PC++
+	*/}
 
 	//Si salio bien loguea
 	log.Println("Me llegó contexto de proceso desde Kernel:")

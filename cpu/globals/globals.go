@@ -1,6 +1,6 @@
 package globals
 
-//No se si es correcto crear una carpeta globals
+// No se si es correcto crear una carpeta globals
 type Config struct {
 	IpSelf     string `json:"ip_self"`
 	PortSelf   int    `json:"port_self"`
@@ -12,3 +12,7 @@ type Config struct {
 }
 
 var ClientConfig *Config
+
+// Variables para guardar el PID y PC recibido de Kernel
+var PIDActual int
+var PCActual int
