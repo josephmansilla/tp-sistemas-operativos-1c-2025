@@ -1,6 +1,6 @@
 package globals
 
-//No se si es correcto crear una carpeta globals
+// No se si es correcto crear una carpeta utils
 type Config struct {
 	IpSelf     string `json:"ip_self"`
 	PortSelf   int    `json:"port_self"`
