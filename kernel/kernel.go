@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
 	"github.com/sisoputnfrba/tp-golang/kernel/utils"
 )
 
@@ -14,7 +13,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	//FUNCIONES SERVER DE LOS OTROS MODULOS: Escuchar sus mensajes
-	mux.HandleFunc("/kernel/mensaje", utils.RecibirMensajeDeCpu)
+	mux.HandleFunc("/kernel/mensaje", utils.RecibirMensaje)
 
 	fmt.Println("Servidor escuchando en http://localhost:8081/kernel/mensaje")
 
@@ -23,9 +22,7 @@ func main() {
 		panic(err)
 	}
 
-	//FUNCIONES DE CLIENTE. CONEXION CON OTROS MODULOS:
+	//TODO FUNCIONES DE CLIENTE. CONEXION CON OTROS MODULOS:
 	//enviar mensaje
 	//generar y enviar paquete
-
-	//TODO ver guía de golang en la sección de "Protocolo HTTP".
 }

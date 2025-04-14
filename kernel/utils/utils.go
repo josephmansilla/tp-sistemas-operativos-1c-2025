@@ -7,20 +7,20 @@ import (
 )
 
 // Body JSON a recibir
-type MensajeDeCpu struct {
+type Mensaje struct {
+	//Nombre string `json:"nombre"`
 	Ip     string `json:"ip"`
 	Puerto int    `json:"puerto"`
 }
 
-//w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
-//r *http.Request es la peticion que se recibio
-
-func RecibirMensajeDeCpu(w http.ResponseWriter, r *http.Request) {
+// w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
+// r *http.Request es la peticion que se recibio
+func RecibirMensaje(w http.ResponseWriter, r *http.Request) {
 	//decodificador JSON que lee directamente desde el body de la petición HTTP
 	decoder := json.NewDecoder(r.Body)
 
 	//Interpretar como si fuera un objeto de tipo Mensaje. Se guarda en variable mensaje.
-	var mensaje MensajeDeCpu
+	var mensaje Mensaje
 	err := decoder.Decode(&mensaje)
 
 	if err != nil {
@@ -34,10 +34,11 @@ func RecibirMensajeDeCpu(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("Me llego mensaje del CPU:")
+	log.Println("Me llego un mensaje:")
 	//Imprimir el contenido del struct mensaje
 	log.Printf("%+v\n", mensaje)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
 }
+

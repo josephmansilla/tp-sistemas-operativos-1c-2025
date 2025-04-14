@@ -10,20 +10,38 @@ import (
 	"github.com/sisoputnfrba/tp-golang/io/globals"
 )
 
+type MensajeAKernel struct {
+	//Nombre string  `json:"nombre"`
+	Ip     string `json:"ip"`
+	Puerto int    `json:"puerto"`
+}
+
 func main() {
 	//El IO siempre es cliente del KERNEL
 	log.Println("Comenzó ejecucion del IO")
 
 	globals.ClientConfig = Config("config.json")
 
+	log.Println("## PID: <PID> - Inicio de IO - Tiempo: <TIEMPO_IO>")
+
 	if globals.ClientConfig == nil {
 		log.Fatal("No se pudo cargar el archivo de configuración")
 	}
 
-	//Envia mensajes al Kernel
-	mensaje := "Hola, soy el IO"
+	//Una vez leído el nombre, 
+	//se conectará al Kernel y en el handshake inicial le enviará su 
+	//nombre, ip y puerto
+	//y quedará esperando las peticiones del mismo.
+	
+	//Creo una instancia del struct MensajeAKernel
+	mensaje := MensajeAKernel{
+		Ip:     "127.0.0.1",
+		Puerto: globals.ClientConfig.PortIo,
+	}
+
 	EnviarMensaje(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, mensaje)
 
+	log.Println("## PID: <PID> - Fin de IO")
 }
 
 func Config(filepath string) *globals.Config {
@@ -50,7 +68,7 @@ func Config(filepath string) *globals.Config {
 	return config
 }
 
-// Enviar mensaje al Kernel
+//Enviar IP y Puerto al Kernel
 func EnviarMensaje(ipDestino string, puertoDestino int, mensaje any) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/kernel/mensaje", ipDestino, puertoDestino)
