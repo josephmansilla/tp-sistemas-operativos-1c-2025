@@ -7,20 +7,20 @@ import (
 )
 
 // Body JSON a recibir
-type Mensaje struct {
-	//Nombre string `json:"nombre"`
+type MensajeDeIO struct {
+	Nombre string `json:"nombre"`
 	Ip     string `json:"ip"`
 	Puerto int    `json:"puerto"`
 }
 
 // w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
 // r *http.Request es la peticion que se recibio
-func RecibirMensaje(w http.ResponseWriter, r *http.Request) {
+func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 	//decodificador JSON que lee directamente desde el body de la petición HTTP
 	decoder := json.NewDecoder(r.Body)
 
 	//Interpretar como si fuera un objeto de tipo Mensaje. Se guarda en variable mensaje.
-	var mensaje Mensaje
+	var mensaje MensajeDeIO
 	err := decoder.Decode(&mensaje)
 
 	if err != nil {
@@ -41,4 +41,3 @@ func RecibirMensaje(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
 }
-

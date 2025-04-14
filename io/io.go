@@ -11,9 +11,9 @@ import (
 )
 
 type MensajeAKernel struct {
-	//Nombre string  `json:"nombre"`
 	Ip     string `json:"ip"`
 	Puerto int    `json:"puerto"`
+	Nombre string `json:"nombre"`
 }
 
 func main() {
@@ -23,6 +23,7 @@ func main() {
 	}
 
 	nombre := os.Args[1]
+
 	fmt.Println("Nombre de la Interfaz de IO: %s\n", nombre)
 
 	//El IO siempre es cliente del KERNEL
@@ -43,11 +44,12 @@ func main() {
 
 	//Creo una instancia del struct MensajeAKernel
 	mensaje := MensajeAKernel{
-		Ip:     "127.0.0.1",
+		Ip:     globals.ClientConfig.IpIo,
 		Puerto: globals.ClientConfig.PortIo,
+		Nombre: nombre,
 	}
 
-	EnviarMensaje(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, mensaje)
+	EnviarIpPuertoNombreAKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, mensaje)
 
 	log.Println("## PID: <PID> - Fin de IO")
 }
@@ -77,7 +79,7 @@ func Config(filepath string) *globals.Config {
 }
 
 // Enviar IP y Puerto al Kernel
-func EnviarMensaje(ipDestino string, puertoDestino int, mensaje any) {
+func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje any) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/kernel/mensaje", ipDestino, puertoDestino)
 

@@ -35,7 +35,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//la CPU deberá solicitarle a la Memoria la siguiente instrucción.
+	//la CPU deberá solicitarle a la Memoria la siguiente instrucción --> Esto va de una en RecibirContextoProcesoDeKernel
 
 	//LeerValor
 
