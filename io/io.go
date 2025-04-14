@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/sisoputnfrba/tp-golang/io/globals"
 	"log"
 	"net/http"
 	"os"
-	"github.com/sisoputnfrba/tp-golang/io/globals"
 )
 
 type MensajeAKernel struct {
@@ -17,6 +17,14 @@ type MensajeAKernel struct {
 }
 
 func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Falta el parametro: nombre de la interfaz de io")
+		os.Exit(1)
+	}
+
+	nombre := os.Args[1]
+	fmt.Println("Nombre de la Interfaz de IO: %s\n", nombre)
+
 	//El IO siempre es cliente del KERNEL
 	log.Println("Comenzó ejecucion del IO")
 
@@ -28,11 +36,11 @@ func main() {
 		log.Fatal("No se pudo cargar el archivo de configuración")
 	}
 
-	//Una vez leído el nombre, 
-	//se conectará al Kernel y en el handshake inicial le enviará su 
+	//Una vez leído el nombre,
+	//se conectará al Kernel y en el handshake inicial le enviará su
 	//nombre, ip y puerto
 	//y quedará esperando las peticiones del mismo.
-	
+
 	//Creo una instancia del struct MensajeAKernel
 	mensaje := MensajeAKernel{
 		Ip:     "127.0.0.1",
@@ -68,11 +76,11 @@ func Config(filepath string) *globals.Config {
 	return config
 }
 
-//Enviar IP y Puerto al Kernel
+// Enviar IP y Puerto al Kernel
 func EnviarMensaje(ipDestino string, puertoDestino int, mensaje any) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/kernel/mensaje", ipDestino, puertoDestino)
-	
+
 	//Hace el POST
 	err := enviarDatos(url, mensaje)
 	//Verifico si hubo error y logueo si lo hubo

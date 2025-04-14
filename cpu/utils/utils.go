@@ -118,7 +118,7 @@ func RecibirContextoProcesoDeKernel(w http.ResponseWriter, r *http.Request) {
 		RecibirInstruccion(instruccion)
 		EjecutarInstruccion(instruccion)
 		mensaje.PC++
-	*/}
+	}*/
 
 	//Si salio bien loguea
 	log.Println("Me llegó contexto de proceso desde Kernel:")

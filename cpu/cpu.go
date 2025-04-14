@@ -37,4 +37,6 @@ func main() {
 
 	//la CPU deberá solicitarle a la Memoria la siguiente instrucción.
 
+	//LeerValor
+
 }
