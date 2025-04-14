@@ -1,0 +1,12 @@
+{
+  "port_memory": 0,
+  "memory_size": 0,
+  "pag_size": 0,
+  "entries_per_page": 0,
+  "number_of_levels": 0,
+  "memory_delay": 0,
+  "swapfile_path": "/memoria/swap/swapfile.bin",
+  "swap_delay": 0,
+  "log_level": "DEBUG",
+  "dump_path": "/memoria/dump/"
+}
