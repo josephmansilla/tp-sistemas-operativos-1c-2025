@@ -92,7 +92,7 @@ func SolicitarInstruccion(ipDestino string, puertoDestino int, pidPropio int, pc
 		return
 	}
 	//Si no hubo error, logueo que salio bien
-	log.Println("PID y PC enviados exitosamente a Memoria")
+	log.Println("PID y PC enviados éxitosamente a Memoria")
 }
 
 // Recibir PID y PC del Kernel

@@ -52,14 +52,76 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 	log.Printf("PC Pedido: %d\n", mensaje.PC)
 }
 
-// FUNCION PARA RECIBIR LOS MENSAJES PROVENIENTES DEL KERNEL
+// probando cositas
+func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosDeCPU {
+	var mensaje globals.DatosDeCPU
+	LeerJson(w, r, &mensaje)
+
+	globals.CPU = globals.DatosDeCPU{
+		PID: mensaje.PID,
+		PC:  mensaje.PC,
+	}
+
+	return globals.CPU
+}
+
 func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.DatosDeKernel
 	LeerJson(w, r, &mensaje)
 
 	globals.Kernel = globals.DatosDeKernel{
+		PID:            mensaje.PID,
 		TamanioMemoria: mensaje.TamanioMemoria,
 	}
 
-	log.Printf("Tamaño de Memoria Pedido: %d\n", mensaje.TamanioMemoria)
+	log.Printf("PID Pedido: %d\n", mensaje.PID)
+	log.Printf("Tamanio de Memoria Pedido: %d\n", mensaje.TamanioMemoria)
+}
+
+// FORMA PARTE DE LA MODIFICACION DE PROCESOS
+func CreacionProceso(w http.ResponseWriter, r *http.Request) {
+	tamanioDeseado := 1
+	var datos globals.DatosDeCPU = RetornarMensajeDeCPU(w, r)
+
+	log.Printf("## PID: <%d>  - Proceso Creado - Tamaño: <%d>", datos.PID, tamanioDeseado)
+}
+func DestruccionProceso(w http.ResponseWriter, r *http.Request) {
+	//toDO
+	log.Printf("## PID: <PID>  - Proceso Destruido - Métricas - Acc.T.Pag: <ATP>; Inst.Sol.: <Inst.Sol>; SWAP: <SWAP>; Mem. Prin.: <Mem.Prin.>; Lec.Mem.: <Lec.Mem.>; Esc.Mem.: <Esc.Mem.>")
+}
+func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
+	// toDO
+}
+
+// FORMA PARTE DEL ACCESO A ESPACIO DE USUARIO
+func EscrituraEspacio(w http.ResponseWriter, r *http.Request) {
+	//toDO
+	log.Printf("## PID: <PID>  - <Escritura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")
+}
+
+func LecturaEspacio(w http.ResponseWriter, r *http.Request) {
+	//toDO
+	log.Printf("## PID: <PID>  - <Lectura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")
+}
+
+func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
+	// toDO
+	log.Printf("## PID: <PID>  - Obtener instrucción: <PC> - Instrucción: <INSTRUCCIÓN> <...ARGS>")
+}
+
+func MemoryDump(w http.ResponseWriter, r *http.Request) {
+	// toDO
+	// Llamado: "<PID>-<TIMESTAMP>.dmp" dentro del path definido por el archivo de configuración
+	log.Printf("## PID: <PID>  - Memory Dump solicitado")
+}
+
+// FORMA PARTE DEL ACCESO A LAS TABLAS DE PÁGINAS
+func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) {
+	//toDO
+}
+func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
+	//toDO
+}
+func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
+	//toDO
 }

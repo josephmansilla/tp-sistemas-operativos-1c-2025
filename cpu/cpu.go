@@ -22,6 +22,7 @@ func main() {
 	//Las CPUs deberán conectarse al Kernel (destino)
 	//enviandole su IP y su PUERTO. (self)
 	utils.EnviarIpPuertoAKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf)
+	utils.SolicitarInstruccion(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, 0, 8000)
 
 	//Al momento de recibir un PID y un PC de parte del Kernel,
 	mux := http.NewServeMux()

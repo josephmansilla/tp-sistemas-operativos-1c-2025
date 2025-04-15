@@ -17,8 +17,9 @@ var MemoryConfig *Config
 // Tipo de datos recibidos de1 Kernel
 
 type DatosDeKernel struct {
+	PID            int `json:"pid"`
 	TamanioMemoria int `json:"tamanio_memoria"` // Placeholder
-	// TODO
+	// toDO....
 }
 
 // Tipo de datos recibidos de la CPU
