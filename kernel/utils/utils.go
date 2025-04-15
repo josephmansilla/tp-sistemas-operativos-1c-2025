@@ -90,24 +90,28 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 		Puerto: mensaje.Puerto,
 	}
 
-	log.Printf("Se ha guardado: %s\n", globals.IO.Nombre)
+	log.Printf("Se ha recibido IO:\nNombre: %s\nIp: %s\nPuerto: %d",
+		globals.IO.Nombre, globals.IO.Ip, globals.IO.Puerto)
 }
 
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 	var mensajeRecibido MensajeDeCPU
-	LeerJson(w, r, mensajeRecibido)
+	LeerJson(w, r, &mensajeRecibido)
 
 	//Cargar en
 	globals.CPU = globals.DatosCPU{
 		Ip:     mensajeRecibido.Ip,
 		Puerto: mensajeRecibido.Puerto,
 	}
-	log.Printf("CPU disponible en Puerto: %d\n", globals.CPU.Puerto)
 
+	log.Printf("Se ha recibido CPU:\nIp: %s\nPuerto: %d", globals.CPU.Ip, globals.CPU.Puerto)
+
+	//Cuando recibe info. del CPU le envia el PID y PC
 	mensajeParaCPU := PedirInformacion()
 	EnviarMensajeCPU(globals.CPU.Ip, globals.CPU.Puerto, mensajeParaCPU)
 }
 
+// Pedir PC Y PID a la memoria
 func PedirInformacion() MensajeToCPU {
 	mensaje := MensajeToCPU{
 		Pid: 1,
@@ -117,9 +121,9 @@ func PedirInformacion() MensajeToCPU {
 }
 
 // Enviar PID y PC al CPU
-func EnviarMensajeCPU(ipDestino string, puertoDestino int, mensaje any) {
+func EnviarMensajeCPU(ipDestino string, puertoDestino int, mensaje MensajeToCPU) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
-	url := fmt.Sprintf("http://%s:%d/cpu/mensaje", ipDestino, puertoDestino)
+	url := fmt.Sprintf("http://%s:%d/cpu/kernel", ipDestino, puertoDestino)
 	//Hace el POST a CPU
 	err := enviarDatos(url, mensaje)
 	//Verifico si hubo error y logue si lo hubo
@@ -128,7 +132,7 @@ func EnviarMensajeCPU(ipDestino string, puertoDestino int, mensaje any) {
 		return
 	}
 	//Si no hubo error, logueo que salio bien
-	log.Println("PID y PC enviados exitosamente a CPU")
+	log.Printf("PID: %d y PC: %d enviados exitosamente a CPU", mensaje.Pid, mensaje.Pc)
 }
 
 // Helper para enviar datos a un endpoint (POST) --> Mando un struct como JSON

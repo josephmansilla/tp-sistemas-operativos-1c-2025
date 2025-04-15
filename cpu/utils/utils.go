@@ -63,7 +63,7 @@ func EnviarIpPuertoAKernel(ipDestino string, puertoDestino int, ipPropia string,
 		Puerto: puertoPropio,
 	}
 	//Construye la URL del endpoint(url + path) en el Kernel a donde se va a enviar el mensaje.
-	url := fmt.Sprintf("http://%s:%d/kernel/mensaje", ipDestino, puertoDestino)
+	url := fmt.Sprintf("http://%s:%d/kernel/cpu", ipDestino, puertoDestino)
 	//Hace el POST a kernel
 	err := enviarDatos(url, mensaje)
 	//Verifico si hubo error y logue si lo hubo
