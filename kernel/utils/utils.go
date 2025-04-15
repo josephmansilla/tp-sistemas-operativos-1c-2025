@@ -73,9 +73,6 @@ func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) {
 	log.Println("Me llego un mensaje:")
 	//Imprimir el contenido del struct mensaje
 	log.Printf("%+v\n", mensaje)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("STATUS OK"))
 }
 
 // w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
@@ -92,6 +89,9 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Se ha recibido IO:\nNombre: %s\nIp: %s\nPuerto: %d",
 		globals.IO.Nombre, globals.IO.Ip, globals.IO.Puerto)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("STATUS OK"))
 }
 
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
@@ -108,11 +108,10 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 
 	//Cuando recibe info. del CPU le envia el PID y PC
 	mensajeParaCPU := PedirInformacion()
-	//EnviarMensajeCPU(globals.CPU.Ip, globals.CPU.Puerto, mensajeParaCPU)
-
 	log.Printf("Enviando a CPU:\nPID: %d\nPC: %d", mensajeParaCPU.Pid, mensajeParaCPU.Pc)
+	EnviarMensajeCPU(globals.CPU.Ip, globals.CPU.Puerto, mensajeParaCPU)
 
-	// Respondemos directamente con el JSON al CPU
+	/* Respondemos directamente con el JSON al CPU
 	jsonResp, err := json.Marshal(mensajeParaCPU)
 	if err != nil {
 		http.Error(w, "Error al generar respuesta para CPU!", http.StatusInternalServerError)
@@ -121,7 +120,7 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResp)
+	w.Write(jsonResp)*/
 }
 
 // Pedir PC Y PID a la memoria
