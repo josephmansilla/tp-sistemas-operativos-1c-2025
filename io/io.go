@@ -24,7 +24,7 @@ func main() {
 
 	nombre := os.Args[1]
 
-	fmt.Println("Nombre de la Interfaz de IO: %s\n", nombre)
+	fmt.Printf("Nombre de la Interfaz de IO: %s\n", nombre)
 
 	//El IO siempre es cliente del KERNEL
 	log.Println("Comenzó ejecucion del IO")
@@ -81,7 +81,7 @@ func Config(filepath string) *globals.Config {
 // Enviar IP y Puerto al Kernel
 func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje any) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
-	url := fmt.Sprintf("http://%s:%d/kernel/mensaje", ipDestino, puertoDestino)
+	url := fmt.Sprintf("http://%s:%d/kernel/io", ipDestino, puertoDestino)
 
 	//Hace el POST
 	err := enviarDatos(url, mensaje)

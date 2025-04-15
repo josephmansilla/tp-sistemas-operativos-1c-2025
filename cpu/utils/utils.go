@@ -83,7 +83,7 @@ func SolicitarInstruccion(ipDestino string, puertoDestino int, pidPropio int, pc
 		PC:  pcPropio,
 	}
 	//Construyo la URL del endpoint(url + path) en Memoria a donde se va a enviar el mensaje
-	url := fmt.Sprintf("http://%s:%d/memoria/mensaje", ipDestino, puertoDestino)
+	url := fmt.Sprintf("http://%s:%d/memoria/cpu", ipDestino, puertoDestino)
 	//Hago el post a memoria
 	err := enviarDatos(url, mensaje)
 	//Verifico si hubo error y logueo si lo hubo
