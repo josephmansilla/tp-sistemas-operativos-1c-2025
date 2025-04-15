@@ -57,7 +57,7 @@ func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) {
 	decoder := json.NewDecoder(r.Body)
 
 	//Interpretar como si fuera un objeto de tipo Mensaje. Se guarda en variable mensaje.
-	err := decoder.Decode(&mensaje)
+	err := decoder.Decode(mensaje)
 
 	if err != nil {
 		log.Printf("Error al decodificar el mensaje: %s", err.Error())
@@ -82,7 +82,7 @@ func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) {
 // r *http.Request es la peticion que se recibio
 func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 	var mensaje MensajeDeIO
-	LeerJson(w, r, &mensaje)
+	LeerJson(w, r, mensaje)
 
 	globals.IO = globals.DatosIO{
 		Nombre: mensaje.Nombre,
@@ -95,7 +95,7 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 	var mensajeRecibido MensajeDeCPU
-	LeerJson(w, r, &mensajeRecibido)
+	LeerJson(w, r, mensajeRecibido)
 
 	//Cargar en
 	globals.CPU = globals.DatosCPU{
