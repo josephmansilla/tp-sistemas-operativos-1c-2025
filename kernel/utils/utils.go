@@ -82,7 +82,7 @@ func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) {
 // r *http.Request es la peticion que se recibio
 func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 	var mensaje MensajeDeIO
-	LeerJson(w, r, mensaje)
+	LeerJson(w, r, &mensaje)
 
 	globals.IO = globals.DatosIO{
 		Nombre: mensaje.Nombre,
@@ -108,7 +108,18 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 
 	//Cuando recibe info. del CPU le envia el PID y PC
 	mensajeParaCPU := PedirInformacion()
-	EnviarMensajeCPU(globals.CPU.Ip, globals.CPU.Puerto, mensajeParaCPU)
+	//EnviarMensajeCPU(globals.CPU.Ip, globals.CPU.Puerto, mensajeParaCPU)
+
+	// Respondemos directamente con el JSON al CPU
+	jsonResp, err := json.Marshal(mensajeParaCPU)
+	if err != nil {
+		http.Error(w, "Error al generar respuesta", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonResp)
 }
 
 // Pedir PC Y PID a la memoria
