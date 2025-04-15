@@ -110,10 +110,12 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 	mensajeParaCPU := PedirInformacion()
 	//EnviarMensajeCPU(globals.CPU.Ip, globals.CPU.Puerto, mensajeParaCPU)
 
+	log.Printf("Enviando a CPU:\nPID: %d\nPC: %d", mensajeParaCPU.Pid, mensajeParaCPU.Pc)
+
 	// Respondemos directamente con el JSON al CPU
 	jsonResp, err := json.Marshal(mensajeParaCPU)
 	if err != nil {
-		http.Error(w, "Error al generar respuesta", http.StatusInternalServerError)
+		http.Error(w, "Error al generar respuesta para CPU!", http.StatusInternalServerError)
 		return
 	}
 
