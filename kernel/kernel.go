@@ -38,5 +38,4 @@ func main() {
 
 	//TODO FUNCIONES DE CLIENTE. CONEXION CON OTROS MODULOS:
 	//enviar mensaje
-	//generar y enviar paquete
 }

@@ -1,11 +1,12 @@
 ## KERNEL 
 
-## FUNCIONALIDAD
+## FUNCIONALIDAD (SERVER)
 
 1. LEER ARCHIVO DE CONFIGURACION -> utils.Config(filepath)
-2. CARGAR SUS DATOS EN GLOBALS -> en el struct Config 
-3. LISTEN en los puertos HTTP
-4. RECIBIR Y GUARDAR EN GLOBALS info. de algun modulo
+2. CARGAR LOS DATOS del Config EN GLOBALS -> en el struct Config 
+3. LISTEN en los puertos HTTP para recibir PUERTOS e IP del IO o CPU
+4. ESCRIBIR EN GLOBALS la IP y PUERTO recibidos por los modulos
+5. LISTEN en los puertos HTTP para peticiones de IO o CPU
 
 ## 🔌 1. Endpoint expuesto
 

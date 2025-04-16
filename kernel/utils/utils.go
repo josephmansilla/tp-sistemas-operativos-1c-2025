@@ -28,6 +28,7 @@ type MensajeToCPU struct {
 	Pc  int `json:"pc"`
 }
 
+// 1. CARGAR ARCHIVO CONFIG
 func Config(filepath string) *globals.Config {
 	//Recibe un string filepath (ruta al archivo de configuración).
 	var config *globals.Config
@@ -52,15 +53,6 @@ func Config(filepath string) *globals.Config {
 	return config
 }
 
-func EnviarContextoACPU(w http.ResponseWriter, r *http.Request) {
-	mensaje := PedirInformacion() // ya tenés esto
-	log.Printf("Enviando contexto a CPU por GET: PID %d, PC %d", mensaje.Pid, mensaje.Pc)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(mensaje)
-}
-
 func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) {
 	//decodificador JSON que lee directamente desde el body de la petición HTTP
 	decoder := json.NewDecoder(r.Body)
@@ -79,9 +71,9 @@ func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) {
 		return
 	}
 
-	log.Println("Me llego un mensaje:")
 	//Imprimir el contenido del struct mensaje
-	log.Printf("%+v\n", mensaje)
+	log.Printf("Me llego un mensaje: %+v", mensaje)
+
 }
 
 // w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
@@ -96,7 +88,7 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 		Puerto: mensaje.Puerto,
 	}
 
-	log.Printf("Se ha recibido IO:\nNombre: %s\nIp: %s\nPuerto: %d",
+	log.Printf("Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
 		globals.IO.Nombre, globals.IO.Ip, globals.IO.Puerto)
 
 	w.WriteHeader(http.StatusOK)
@@ -113,10 +105,20 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 		Puerto: mensajeRecibido.Puerto,
 	}
 
-	log.Printf("Se ha recibido CPU:\nIp: %s\nPuerto: %d", globals.CPU.Ip, globals.CPU.Puerto)
+	log.Printf("Se ha recibido CPU: Ip: %s Puerto: %d", globals.CPU.Ip, globals.CPU.Puerto)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
+}
+
+// Enviar PC Y PID a CPU
+func EnviarContextoACPU(w http.ResponseWriter, r *http.Request) {
+	mensaje := PedirInformacion() //pedir a la memoria
+	log.Printf("Enviando contexto a CPU por GET: PID %d, PC %d", mensaje.Pid, mensaje.Pc)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(mensaje)
 }
 
 // Pedir PC Y PID a la memoria
@@ -128,7 +130,7 @@ func PedirInformacion() MensajeToCPU {
 	return mensaje
 }
 
-// Enviar PID y PC al CPU
+// Enviar PID y PC al CPU (alternativo)
 func EnviarMensajeCPU(ipDestino string, puertoDestino int, mensaje MensajeToCPU) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/cpu/kernel", ipDestino, puertoDestino)

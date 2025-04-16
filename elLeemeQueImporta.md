@@ -1,3 +1,10 @@
+# ORDEN AL LEVANTAR MODULOS
+
+1. MEMORIA
+2. KERNEL
+3. CPU
+4. IO
+
 # 🤔 ¿Cuáles serán los valores que usaremos para las conexiones entre módulos? 🤔
 
 ## 🧠 CPU
