@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/sisoputnfrba/tp-golang/io/globals"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/sisoputnfrba/tp-golang/io/globals"
 )
 
 type MensajeAKernel struct {
@@ -81,7 +82,7 @@ func Config(filepath string) *globals.Config {
 // Enviar IP y Puerto al Kernel
 func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje any) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
-	url := fmt.Sprintf("http://%s:%d/kernel/mensaje", ipDestino, puertoDestino)
+	url := fmt.Sprintf("http://%s:%d/kernel/io", ipDestino, puertoDestino)
 
 	//Hace el POST
 	err := enviarDatos(url, mensaje)
@@ -91,7 +92,7 @@ func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje an
 		return
 	}
 	//Si no hubo error, logueo que todo salio bien
-	log.Println("Mensaje enviado exitosamente")
+	log.Printf("Mensaje enviado a Kernel")
 }
 
 // Helper para enviar datos a un endpoint (POST) --> Mando un struct como JSON
