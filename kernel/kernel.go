@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"net/http"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/utils"
+	"log"
+	"net/http"
 )
 
 func main() {
@@ -26,6 +26,7 @@ func main() {
 	//SERVER DE LOS OTROS MODULOS: Escuchar sus mensajes
 	mux.HandleFunc("/kernel/io", utils.RecibirMensajeDeIO)
 	mux.HandleFunc("/kernel/cpu", utils.RecibirMensajeDeCPU)
+	mux.HandleFunc("/kernel/contexto", utils.EnviarContextoACPU)
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/kernel\n", portKernel)
 

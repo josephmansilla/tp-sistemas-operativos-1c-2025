@@ -12,8 +12,6 @@ import (
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 )
 
-//Cree este utils.go para enviarMensaje()
-
 // Body JSON que envia a Kernel
 type MensajeAKernel struct {
 	Ip     string `json:"ip"`
@@ -95,40 +93,21 @@ func SolicitarInstruccion(ipDestino string, puertoDestino int, pidPropio int, pc
 	log.Println("PID y PC enviados éxitosamente a Memoria")
 }
 
-// Recibir PID y PC del Kernel
-func RecibirContextoProcesoDeKernel(w http.ResponseWriter, r *http.Request) {
-	//Creo un decoder para leer el JSON
-	decoder := json.NewDecoder(r.Body)
+// Solicitar el PID y PC al Kernel sin que CPU sea servidor
+func SolicitarContextoDeKernel(ipDestino string, puertoDestino int) {
+	url := fmt.Sprintf("http://%s:%d/kernel/contexto", ipDestino, puertoDestino) // Este endpoint debe existir en Kernel
 
-	//Declaro una variable para poder guardar la info
 	var mensaje MensajeDeKernel
-	//Interpreto la info como MensajeDeKernel
-	err := decoder.Decode(&mensaje)
-
-	//Verifico si hubo un error y lo logueo
+	err := recibirDatos(url, &mensaje)
 	if err != nil {
-		log.Printf("Error al decodificar el mensaje del Kernel: %s", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Error al decodificar mensaje"))
+		log.Printf("Error al recibir contexto del Kernel: %s", err.Error())
 		return
 	}
 
 	globals.PIDActual = mensaje.PID
 	globals.PCActual = mensaje.PC
-	/*for {
-		SolicitarInstruccion(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensaje.PID, mensaje.PC)
-		RecibirInstruccion(instruccion)
-		EjecutarInstruccion(instruccion)
-		mensaje.PC++
-	}*/
 
-	//Si salio bien loguea
-	log.Println("Me llegó contexto de proceso desde Kernel:")
-	log.Printf("PID: %d, PC: %d\n", mensaje.PID, mensaje.PC)
-
-	//Le digo a kernel que llego bien
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	log.Printf("Recibido de Kernel: PID: %d, PC: %d", mensaje.PID, mensaje.PC)
 }
 
 // Helper para enviar datos a un endpoint (POST) --> Mando un struct como JSON
