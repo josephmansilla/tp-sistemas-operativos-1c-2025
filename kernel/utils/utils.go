@@ -52,6 +52,15 @@ func Config(filepath string) *globals.Config {
 	return config
 }
 
+func EnviarContextoACPU(w http.ResponseWriter, r *http.Request) {
+	mensaje := PedirInformacion() // ya tenés esto
+	log.Printf("Enviando contexto a CPU por GET: PID %d, PC %d", mensaje.Pid, mensaje.Pc)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(mensaje)
+}
+
 func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) {
 	//decodificador JSON que lee directamente desde el body de la petición HTTP
 	decoder := json.NewDecoder(r.Body)
@@ -106,21 +115,8 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Se ha recibido CPU:\nIp: %s\nPuerto: %d", globals.CPU.Ip, globals.CPU.Puerto)
 
-	//Cuando recibe info. del CPU le envia el PID y PC
-	mensajeParaCPU := PedirInformacion()
-	log.Printf("Enviando a CPU:\nPID: %d\nPC: %d", mensajeParaCPU.Pid, mensajeParaCPU.Pc)
-	EnviarMensajeCPU(globals.CPU.Ip, globals.CPU.Puerto, mensajeParaCPU)
-
-	/* Respondemos directamente con el JSON al CPU
-	jsonResp, err := json.Marshal(mensajeParaCPU)
-	if err != nil {
-		http.Error(w, "Error al generar respuesta para CPU!", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonResp)*/
+	w.Write([]byte("STATUS OK"))
 }
 
 // Pedir PC Y PID a la memoria

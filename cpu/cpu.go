@@ -1,12 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/cpu/utils"
+	"log"
 )
 
 func main() {
@@ -22,9 +19,10 @@ func main() {
 	//Las CPUs deberán conectarse al Kernel (destino)
 	//enviandole su IP y su PUERTO. (self)
 	utils.EnviarIpPuertoAKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf)
+	utils.SolicitarContextoDeKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
 
 	//Al momento de recibir un PID y un PC de parte del Kernel,
-	mux := http.NewServeMux()
+	/*mux := http.NewServeMux()
 
 	mux.HandleFunc("/cpu/mensaje", utils.RecibirContextoProcesoDeKernel)
 
@@ -33,9 +31,9 @@ func main() {
 	err := http.ListenAndServe(fmt.Sprintf(":%d", globals.ClientConfig.PortSelf), mux)
 	if err != nil {
 		log.Fatal(err)
-	}
+	}*/
 
-	utils.SolicitarInstruccion(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, globals.PIDActual, globals.PCActual)
+	//utils.SolicitarInstruccion(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, globals.PIDActual, globals.PCActual)
 
 	//la CPU deberá solicitarle a la Memoria la siguiente instrucción --> Esto va de una en RecibirContextoProcesoDeKernel
 
