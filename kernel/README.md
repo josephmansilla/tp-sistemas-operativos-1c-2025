@@ -1,11 +1,41 @@
 ## KERNEL 
 
-## FUNCIONALIDAD
+## FUNCIONALIDAD (SERVER)
 
-1. LEER ARCHIVO DE CONFIGURACION -> utils.Config(filepath)
-2. CARGAR SUS DATOS EN GLOBALS -> en el struct Config 
-3. LISTEN en los puertos HTTP
-4. RECIBIR Y GUARDAR EN GLOBALS info. de algun modulo
+0.  Comando de ejecución inicial:
+
+`➜ ~ ./bin/kernel [archivo_pseudocodigo] [tamanio_proceso] [...args]`
+
+1. Leer y cargar en Globals los datos del Archivo de Configuracion
+
+```go
+globals.KernelConfig = utils.Config(filepath)
+```
+
+2. LISTEN en los puertos HTTP para recibir PUERTOS e IP del IO o CPU
+
+```go
+mux.HandleFunc("/kernel/io", utils.RecibirMensajeDeIO)
+mux.HandleFunc("/kernel/cpu", utils.RecibirMensajeDeCPU)
+```
+
+3. ESCRIBIR EN GLOBALS la IP y PUERTO recibidos por los modulos
+
+```go
+	globals.IO = globals.DatosIO{
+		Nombre: mensaje.Nombre,
+		Ip:     mensaje.Ip,
+		Puerto: mensaje.Puerto,
+	}
+
+	globals.CPU = globals.DatosCPU{
+		Ip:     mensajeRecibido.Ip,
+		Puerto: mensajeRecibido.Puerto,
+		ID:     mensajeRecibido.ID,
+	}
+```
+
+4. LISTEN en los puertos HTTP para peticiones de IO o CPU
 
 ## 🔌 1. Endpoint expuesto
 
@@ -18,14 +48,16 @@ El Kernel escucha conexiones entrantes desde otros módulos en:
 
 El cuerpo del mensaje (`body`) debe ser un JSON con una estructura dependiendo de cada Modulo:
 
+CPU:
 ```json
-//CPU
 {
+  "id":"1",
   "ip": "127.0.0.1",
   "puerto": 8000
 }
-
-//IO
+```
+IO:
+```json
 {
   "nombre":"impresora",
   "ip": "127.0.0.1",
@@ -34,7 +66,6 @@ El cuerpo del mensaje (`body`) debe ser un JSON con una estructura dependiendo d
 ```
 
 Estos mensajes se decodifican en un struct de Go como los siguientes:
-
 ```go
 package globals
 
@@ -59,6 +90,7 @@ type DatosIO struct {
 type DatosCPU struct {
 	Ip     string
 	Puerto int
+	ID     string
 }
 ```
 

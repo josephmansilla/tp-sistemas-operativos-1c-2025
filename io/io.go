@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/sisoputnfrba/tp-golang/io/globals"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/sisoputnfrba/tp-golang/io/globals"
 )
 
 type MensajeAKernel struct {
@@ -24,7 +25,7 @@ func main() {
 
 	nombre := os.Args[1]
 
-	fmt.Printf("Nombre de la Interfaz de IO: %s\n", nombre)
+	log.Printf("Nombre de la Interfaz de IO: %s\n", nombre)
 
 	//El IO siempre es cliente del KERNEL
 	log.Println("Comenzó ejecucion del IO")
@@ -91,7 +92,7 @@ func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje an
 		return
 	}
 	//Si no hubo error, logueo que todo salio bien
-	log.Println("Mensaje enviado exitosamente")
+	log.Printf("Mensaje enviado a Kernel")
 }
 
 // Helper para enviar datos a un endpoint (POST) --> Mando un struct como JSON

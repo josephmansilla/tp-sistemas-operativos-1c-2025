@@ -12,12 +12,11 @@ import (
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 )
 
-//Cree este utils.go para enviarMensaje()
-
 // Body JSON que envia a Kernel
 type MensajeAKernel struct {
 	Ip     string `json:"ip"`
 	Puerto int    `json:"puerto"`
+	ID     string `json:"id"`
 }
 
 // Body JSON que recibe de Kernel
@@ -29,6 +28,10 @@ type MensajeDeKernel struct {
 type MensajeInstruccion struct {
 	PID int `json:"pid"`
 	PC  int `json:"pc"`
+}
+
+type RespuestaInstruccion struct {
+	Instruccion string `json:"instruccion"`
 }
 
 func Config(filepath string) *globals.Config {
@@ -56,11 +59,12 @@ func Config(filepath string) *globals.Config {
 }
 
 // Enviar IP y Puerto al Kernel
-func EnviarIpPuertoAKernel(ipDestino string, puertoDestino int, ipPropia string, puertoPropio int) {
+func EnviarIpPuertoIDAKernel(ipDestino string, puertoDestino int, ipPropia string, puertoPropio int, id string) {
 	//Creo una instancia del struct MensajeAKernel
 	mensaje := MensajeAKernel{
 		Ip:     ipPropia,
 		Puerto: puertoPropio,
+		ID:     id,
 	}
 	//Construye la URL del endpoint(url + path) en el Kernel a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/kernel/cpu", ipDestino, puertoDestino)
@@ -68,67 +72,65 @@ func EnviarIpPuertoAKernel(ipDestino string, puertoDestino int, ipPropia string,
 	err := enviarDatos(url, mensaje)
 	//Verifico si hubo error y logue si lo hubo
 	if err != nil {
-		log.Printf("Error enviando IP y Puerto al Kernel: %s", err.Error())
+		log.Printf("Error enviando IP, Puerto e ID al Kernel: %s", err.Error())
 		return
 	}
 	//Si no hubo error, logueo que salio bien
-	log.Println("IP y Puerto enviados exitosamente al Kernel")
+	log.Println("IP, Puerto e ID enviados exitosamente al Kernel")
 }
 
-// Enviar PID y PC a Memoria
-func SolicitarInstruccion(ipDestino string, puertoDestino int, pidPropio int, pcPropio int) {
-	//Creo una instancia del struct MensajeInstruccion
+// Solicitar el PID y PC al Kernel sin que CPU sea servidor
+func SolicitarContextoDeKernel(ipDestino string, puertoDestino int) {
+	url := fmt.Sprintf("http://%s:%d/kernel/contexto", ipDestino, puertoDestino) // Este endpoint debe existir en Kernel
+
+	var mensaje MensajeDeKernel
+	err := recibirDatos(url, &mensaje)
+	if err != nil {
+		log.Printf("Error al recibir contexto del Kernel: %s", err.Error())
+		return
+	}
+
+	log.Printf("Recibido de Kernel: PID: %d, PC: %d", mensaje.PID, mensaje.PC)
+
+	SolicitarInstruccion(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensaje.PID, mensaje.PC)
+}
+
+func SolicitarInstruccion(ipDestino string, puertoDestino int, pidPropio int, pcPropio int) (string, error) {
+	// Creo el mensaje
 	mensaje := MensajeInstruccion{
 		PID: pidPropio,
 		PC:  pcPropio,
 	}
-	//Construyo la URL del endpoint(url + path) en Memoria a donde se va a enviar el mensaje
+
+	// Codifico a JSON
+	jsonData, err := json.Marshal(mensaje)
+	if err != nil {
+		log.Printf("Error codificando mensaje a JSON: %s", err)
+		return "", err
+	}
+
+	// Armo la URL
 	url := fmt.Sprintf("http://%s:%d/memoria/cpu", ipDestino, puertoDestino)
-	//Hago el post a memoria
-	err := enviarDatos(url, mensaje)
-	//Verifico si hubo error y logueo si lo hubo
+
+	// Envío el POST y espero respuesta
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Printf("Error enviando PID y PC a Memoria: %s", err.Error())
-		return
+		log.Printf("Error haciendo POST a Memoria: %s", err)
+		return "", err
 	}
-	//Si no hubo error, logueo que salio bien
-	log.Println("PID y PC enviados éxitosamente a Memoria")
-}
+	defer resp.Body.Close()
 
-// Recibir PID y PC del Kernel
-func RecibirContextoProcesoDeKernel(w http.ResponseWriter, r *http.Request) {
-	//Creo un decoder para leer el JSON
-	decoder := json.NewDecoder(r.Body)
-
-	//Declaro una variable para poder guardar la info
-	var mensaje MensajeDeKernel
-	//Interpreto la info como MensajeDeKernel
-	err := decoder.Decode(&mensaje)
-
-	//Verifico si hubo un error y lo logueo
+	// Decodifico la respuesta
+	var respuesta RespuestaInstruccion
+	err = json.NewDecoder(resp.Body).Decode(&respuesta)
 	if err != nil {
-		log.Printf("Error al decodificar el mensaje del Kernel: %s", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Error al decodificar mensaje"))
-		return
+		log.Printf("Error decodificando respuesta de Memoria: %s", err)
+		return "", err
 	}
 
-	globals.PIDActual = mensaje.PID
-	globals.PCActual = mensaje.PC
-	/*for {
-		SolicitarInstruccion(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensaje.PID, mensaje.PC)
-		RecibirInstruccion(instruccion)
-		EjecutarInstruccion(instruccion)
-		mensaje.PC++
-	}*/
+	log.Printf("Instrucción recibida desde Memoria: %s", respuesta.Instruccion)
 
-	//Si salio bien loguea
-	log.Println("Me llegó contexto de proceso desde Kernel:")
-	log.Printf("PID: %d, PC: %d\n", mensaje.PID, mensaje.PC)
-
-	//Le digo a kernel que llego bien
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	return respuesta.Instruccion, nil
 }
 
 // Helper para enviar datos a un endpoint (POST) --> Mando un struct como JSON

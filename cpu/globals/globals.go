@@ -12,7 +12,3 @@ type Config struct {
 }
 
 var ClientConfig *Config
-
-// Variables para guardar el PID y PC recibido de Kernel
-var PIDActual int
-var PCActual int

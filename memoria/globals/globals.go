@@ -2,6 +2,7 @@ package globals
 
 type Config struct {
 	PortMemory     int    `json:"port_memory"`
+	IpMemory       string `json:"ip_memory"`
 	MemorySize     int    `json:"memory_size"`
 	PagSize        int    `json:"pag_size"`
 	EntriesPerPage int    `json:"entries_per_page"`
