@@ -12,14 +12,14 @@
 globals.KernelConfig = utils.Config(filepath)
 ```
 
-3. LISTEN en los puertos HTTP para recibir PUERTOS e IP del IO o CPU
+2. LISTEN en los puertos HTTP para recibir PUERTOS e IP del IO o CPU
 
 ```go
 mux.HandleFunc("/kernel/io", utils.RecibirMensajeDeIO)
 mux.HandleFunc("/kernel/cpu", utils.RecibirMensajeDeCPU)
 ```
 
-4. ESCRIBIR EN GLOBALS la IP y PUERTO recibidos por los modulos
+3. ESCRIBIR EN GLOBALS la IP y PUERTO recibidos por los modulos
 
 ```go
 	globals.IO = globals.DatosIO{
@@ -35,7 +35,7 @@ mux.HandleFunc("/kernel/cpu", utils.RecibirMensajeDeCPU)
 	}
 ```
 
-5. LISTEN en los puertos HTTP para peticiones de IO o CPU
+4. LISTEN en los puertos HTTP para peticiones de IO o CPU
 
 ## 🔌 1. Endpoint expuesto
 
@@ -51,6 +51,7 @@ El cuerpo del mensaje (`body`) debe ser un JSON con una estructura dependiendo d
 CPU:
 ```json
 {
+  "id":"1",
   "ip": "127.0.0.1",
   "puerto": 8000
 }
@@ -89,6 +90,7 @@ type DatosIO struct {
 type DatosCPU struct {
 	Ip     string
 	Puerto int
+	ID     string
 }
 ```
 
