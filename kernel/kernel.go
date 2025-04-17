@@ -20,7 +20,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	nombreArchivo := os.Args[1]
+	archivoPseudocodigo := os.Args[1]
 	tamanioStr := os.Args[2] //Convertir a Double
 
 	tamanioProceso, err := strconv.Atoi(tamanioStr)
@@ -29,7 +29,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Printf("Nombre del archivo de pseudocodigo: %s\n", nombreArchivo)
+	log.Printf("Nombre del archivo de pseudocodigo: %s\n", archivoPseudocodigo)
 	log.Printf("Tamaño del proceso: %d\n", tamanioProceso)
 
 	//Cargar configuracion inicial
@@ -44,6 +44,7 @@ func main() {
 	//var portMemory = globals.KernelConfig.PortMemory
 
 	log.Println("Comenzó ejecucion del Kernel")
+	//TODO Al iniciar el módulo, se creará un proceso inicial para que este lo planifique...
 
 	mux := http.NewServeMux()
 	//SERVER DE LOS OTROS MODULOS: Escuchar sus mensajes
