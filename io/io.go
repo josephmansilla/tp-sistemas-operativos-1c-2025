@@ -25,7 +25,7 @@ func main() {
 
 	nombre := os.Args[1]
 
-	fmt.Printf("Nombre de la Interfaz de IO: %s\n", nombre)
+	log.Printf("Nombre de la Interfaz de IO: %s\n", nombre)
 
 	//El IO siempre es cliente del KERNEL
 	log.Println("Comenzó ejecucion del IO")

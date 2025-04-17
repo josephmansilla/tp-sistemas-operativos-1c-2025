@@ -23,6 +23,7 @@ type DatosIO struct {
 type DatosCPU struct {
 	Ip     string
 	Puerto int
+	ID     string
 }
 
 var CPU DatosCPU
