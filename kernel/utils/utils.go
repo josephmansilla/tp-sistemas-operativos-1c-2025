@@ -21,6 +21,7 @@ type MensajeDeIO struct {
 type MensajeDeCPU struct {
 	Ip     string `json:"ip"`
 	Puerto int    `json:"puerto"`
+	ID     string `json:"id"`
 }
 
 type MensajeToCPU struct {
@@ -103,9 +104,10 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 	globals.CPU = globals.DatosCPU{
 		Ip:     mensajeRecibido.Ip,
 		Puerto: mensajeRecibido.Puerto,
+		ID:     mensajeRecibido.ID,
 	}
 
-	log.Printf("Se ha recibido CPU: Ip: %s Puerto: %d", globals.CPU.Ip, globals.CPU.Puerto)
+	log.Printf("Se ha recibido CPU: Ip: %s Puerto: %d ID: %s", globals.CPU.Ip, globals.CPU.Puerto, globals.CPU.ID)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
