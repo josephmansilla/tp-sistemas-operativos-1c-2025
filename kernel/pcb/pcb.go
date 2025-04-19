@@ -1,6 +1,6 @@
 package pcb
 
-//posibles estados de un proceso
+// posibles estados de un proceso
 const (
 	EstadoNew         = "new"
 	EstadoReady       = "ready"

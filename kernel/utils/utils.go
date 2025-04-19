@@ -81,7 +81,10 @@ func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) {
 // r *http.Request es la peticion que se recibio
 func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 	var mensaje MensajeDeIO
+
 	LeerJson(w, r, &mensaje)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("STATUS OK"))
 
 	globals.IO = globals.DatosIO{
 		Nombre: mensaje.Nombre,
@@ -91,9 +94,6 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
 		globals.IO.Nombre, globals.IO.Ip, globals.IO.Puerto)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("STATUS OK"))
 }
 
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
