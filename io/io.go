@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/sisoputnfrba/tp-golang/io/globals"
 )
@@ -17,6 +19,11 @@ type MensajeAKernel struct {
 	Nombre string `json:"nombre"`
 }
 
+type MensajeDeKernel struct {
+	PID      int `json:"pid"`
+	Duracion int `json:"duracion"` // en segundos
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Falta el parametro: nombre de la interfaz de io")
@@ -25,6 +32,14 @@ func main() {
 
 	nombre := os.Args[1]
 
+	logFileName := fmt.Sprintf("io_%s.log", nombre)
+	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Printf("Error al crear archivo de log para io %s: %v\n", nombre, err)
+		os.Exit(1)
+	}
+	log.SetOutput(logFile)
+
 	log.Printf("Nombre de la Interfaz de IO: %s\n", nombre)
 
 	//El IO siempre es cliente del KERNEL
@@ -32,27 +47,25 @@ func main() {
 
 	globals.ClientConfig = Config("config.json")
 
-	log.Println("## PID: <PID> - Inicio de IO - Tiempo: <TIEMPO_IO>")
-
 	if globals.ClientConfig == nil {
 		log.Fatal("No se pudo cargar el archivo de configuración")
 	}
 
-	//Una vez leído el nombre,
-	//se conectará al Kernel y en el handshake inicial le enviará su
-	//nombre, ip y puerto
-	//y quedará esperando las peticiones del mismo.
-
-	//Creo una instancia del struct MensajeAKernel
+	//Instancio el mensaje a mandar a Kender
 	mensaje := MensajeAKernel{
 		Ip:     globals.ClientConfig.IpIo,
 		Puerto: globals.ClientConfig.PortIo,
 		Nombre: nombre,
 	}
 
+	//Lo mando
 	EnviarIpPuertoNombreAKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, mensaje)
 
-	log.Println("## PID: <PID> - Fin de IO")
+	//Solicito Operaciones
+	for {
+		SolicitarOperacionIO(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
+	}
+
 }
 
 func Config(filepath string) *globals.Config {
@@ -95,6 +108,47 @@ func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje an
 	log.Printf("Mensaje enviado a Kernel")
 }
 
+// Recibir PID y Tiempo de duracion de la operacion de IO
+func SolicitarOperacionIO(ipDestino string, puertoDestino int) {
+	//Creo la URL
+	url := fmt.Sprintf("http://%s:%d/kernel/operacion", ipDestino, puertoDestino)
+
+	var mensaje MensajeDeKernel
+	err := recibirDatos(url, &mensaje)
+	if err != nil {
+		log.Printf("Error al recibir PID y duracion del Kernel: %s", err.Error())
+		return
+	}
+	//Realizo la operacion
+	log.Printf("## PID:%d - Inicio de IO - Tiempo:%d", mensaje.PID, mensaje.Duracion)
+	time.Sleep(time.Duration(mensaje.Duracion) * time.Second)
+
+	//IO finalizada
+	if err := InformarFinalizacionIO(ipDestino, puertoDestino, mensaje.PID); err != nil {
+		log.Printf("Error al notificar al Kernel: %s", err.Error())
+	}
+	log.Printf("## PID:%d - Fin de IO", mensaje.PID)
+
+}
+
+func InformarFinalizacionIO(ipDestino string, puertoDestino int, pid int) error {
+	url := fmt.Sprintf("http://%s:%d/kernel/io/finalizado", ipDestino, puertoDestino)
+
+	mensaje := struct {
+		PID int `json:"pid"`
+	}{
+		PID: pid,
+	}
+
+	err := enviarDatos(url, mensaje)
+	if err != nil {
+		log.Printf("Error notificando finalización de IO al Kernel: %s", err.Error())
+		return err
+	} else {
+		return nil
+	}
+}
+
 // Helper para enviar datos a un endpoint (POST) --> Mando un struct como JSON
 func enviarDatos(url string, data any) error {
 	//Convierte el struct(data) a un JSON
@@ -113,6 +167,30 @@ func enviarDatos(url string, data any) error {
 	}
 	//Cierro la rta, salio bien
 	defer resp.Body.Close()
+
+	return nil
+}
+
+// Helper para recibir datos desde un endpoint (GET) --> Pasa de JSON a struct
+func recibirDatos(url string, data any) error {
+	//Llamo al endpoint y verifico error
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	//Leo el contenido
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	//Deserializacion del JSON y lo paso a data
+	err = json.Unmarshal(body, data)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
