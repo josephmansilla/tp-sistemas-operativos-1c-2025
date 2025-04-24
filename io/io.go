@@ -109,7 +109,7 @@ func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje Me
 	}()
 
 	// Asegurarse de que el servidor IO esté completamente iniciado antes de hacer el POST
-	time.Sleep(1 * time.Second) // Retraso opcional para asegurar que el servidor esté escuchando
+	//time.Sleep(1 * time.Second) // Retraso opcional para asegurar que el servidor esté escuchando
 
 	// Hace el POST al Kernel
 	err := data.EnviarDatos(url, mensaje)
