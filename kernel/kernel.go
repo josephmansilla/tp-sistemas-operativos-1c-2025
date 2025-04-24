@@ -29,6 +29,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	logFileName := "kernel.log"
+	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Printf("Error al crear archivo de log para Kenrel: %v\n", err)
+		os.Exit(1)
+	}
+	log.SetOutput(logFile)
+
 	log.Printf("Nombre del archivo de pseudocodigo: %s\n", archivoPseudocodigo)
 	log.Printf("Tamaño del proceso: %d\n", tamanioProceso)
 

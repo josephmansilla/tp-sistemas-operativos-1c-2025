@@ -1,13 +1,12 @@
 package utils
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-
+	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 )
 
@@ -52,29 +51,6 @@ func Config(filepath string) *globals.Config {
 	jsonParser.Decode(&config)
 
 	return config
-}
-
-func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) {
-	//decodificador JSON que lee directamente desde el body de la petición HTTP
-	decoder := json.NewDecoder(r.Body)
-
-	//Interpretar como si fuera un objeto de tipo Mensaje. Se guarda en variable mensaje.
-	err := decoder.Decode(mensaje)
-
-	if err != nil {
-		log.Printf("Error al decodificar el mensaje: %s", err.Error())
-
-		//Devolver un HTTP 400 (Bad Request) al cliente.
-		w.WriteHeader(http.StatusBadRequest)
-
-		//Escribir un mensaje de error en el body de la respuesta.
-		w.Write([]byte("Error al decodificar mensaje"))
-		return
-	}
-
-	//Imprimir el contenido del struct mensaje
-	log.Printf("Me llego un mensaje: %+v", mensaje)
-
 }
 
 // w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
@@ -137,7 +113,7 @@ func EnviarMensajeCPU(ipDestino string, puertoDestino int, mensaje MensajeToCPU)
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/cpu/kernel", ipDestino, puertoDestino)
 	//Hace el POST a CPU
-	err := enviarDatos(url, mensaje)
+	err := data.EnviarDatos(url, mensaje)
 	//Verifico si hubo error y logue si lo hubo
 	if err != nil {
 		log.Printf("Error enviando PID y PC a CPU: %s", err.Error())
@@ -147,24 +123,25 @@ func EnviarMensajeCPU(ipDestino string, puertoDestino int, mensaje MensajeToCPU)
 	log.Printf("PID: %d y PC: %d enviados exitosamente a CPU", mensaje.Pid, mensaje.Pc)
 }
 
-// Helper para enviar datos a un endpoint (POST) --> Mando un struct como JSON
-func enviarDatos(url string, data any) error {
-	//Convierte el struct(data) a un JSON
-	jsonData, err := json.Marshal(data)
+func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) {
+	//decodificador JSON que lee directamente desde el body de la petición HTTP
+	decoder := json.NewDecoder(r.Body)
 
-	//Si no pudo serializar, devuelvo error
+	//Interpretar como si fuera un objeto de tipo Mensaje. Se guarda en variable mensaje.
+	err := decoder.Decode(mensaje)
+
 	if err != nil {
-		return err
+		log.Printf("Error al decodificar el mensaje: %s", err.Error())
+
+		//Devolver un HTTP 400 (Bad Request) al cliente.
+		w.WriteHeader(http.StatusBadRequest)
+
+		//Escribir un mensaje de error en el body de la respuesta.
+		w.Write([]byte("Error al decodificar mensaje"))
+		return
 	}
 
-	//POST a la url con el JSON
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	//Verifico error
-	if err != nil {
-		return err
-	}
-	//Cierro la rta, salio bien
-	defer resp.Body.Close()
+	//Imprimir el contenido del struct mensaje
+	log.Printf("Me llego un mensaje: %+v", mensaje)
 
-	return nil
 }

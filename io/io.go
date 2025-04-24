@@ -1,15 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"time"
-
+	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/io/globals"
 )
 
@@ -93,12 +90,12 @@ func Config(filepath string) *globals.Config {
 }
 
 // Enviar IP y Puerto al Kernel
-func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje any) {
+func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje MensajeAKernel) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/kernel/io", ipDestino, puertoDestino)
 
 	//Hace el POST
-	err := enviarDatos(url, mensaje)
+	err := data.EnviarDatos(url,mensaje)
 	//Verifico si hubo error y logueo si lo hubo
 	if err != nil {
 		log.Printf("Error enviando mensaje: %s", err.Error())
@@ -114,7 +111,7 @@ func SolicitarOperacionIO(ipDestino string, puertoDestino int) {
 	url := fmt.Sprintf("http://%s:%d/kernel/operacion", ipDestino, puertoDestino)
 
 	var mensaje MensajeDeKernel
-	err := recibirDatos(url, &mensaje)
+	err := data.RecibirDatos(url, &mensaje)
 	if err != nil {
 		log.Printf("Error al recibir PID y duracion del Kernel: %s", err.Error())
 		return
@@ -140,57 +137,11 @@ func InformarFinalizacionIO(ipDestino string, puertoDestino int, pid int) error 
 		PID: pid,
 	}
 
-	err := enviarDatos(url, mensaje)
+	err := data.EnviarDatos(url, mensaje)
 	if err != nil {
 		log.Printf("Error notificando finalización de IO al Kernel: %s", err.Error())
 		return err
 	} else {
 		return nil
 	}
-}
-
-// Helper para enviar datos a un endpoint (POST) --> Mando un struct como JSON
-func enviarDatos(url string, data any) error {
-	//Convierte el struct(data) a un JSON
-	jsonData, err := json.Marshal(data)
-
-	//Si no pudo serializar, devuelvo error
-	if err != nil {
-		return err
-	}
-
-	//POST a la url con el JSON
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	//Verifico error
-	if err != nil {
-		return err
-	}
-	//Cierro la rta, salio bien
-	defer resp.Body.Close()
-
-	return nil
-}
-
-// Helper para recibir datos desde un endpoint (GET) --> Pasa de JSON a struct
-func recibirDatos(url string, data any) error {
-	//Llamo al endpoint y verifico error
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	//Leo el contenido
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	//Deserializacion del JSON y lo paso a data
-	err = json.Unmarshal(body, data)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
