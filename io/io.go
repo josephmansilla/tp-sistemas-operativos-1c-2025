@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
-	"github.com/sisoputnfrba/tp-golang/utils/data"
+
 	"github.com/sisoputnfrba/tp-golang/io/globals"
+	"github.com/sisoputnfrba/tp-golang/utils/data"
 )
 
 type MensajeAKernel struct {
@@ -39,7 +41,6 @@ func main() {
 
 	log.Printf("Nombre de la Interfaz de IO: %s\n", nombre)
 
-	//El IO siempre es cliente del KERNEL
 	log.Println("Comenzó ejecucion del IO")
 
 	globals.ClientConfig = Config("config.json")
@@ -48,7 +49,7 @@ func main() {
 		log.Fatal("No se pudo cargar el archivo de configuración")
 	}
 
-	//Instancio el mensaje a mandar a Kender
+	//Instancio el mensaje a mandar a Kernel
 	mensaje := MensajeAKernel{
 		Ip:     globals.ClientConfig.IpIo,
 		Puerto: globals.ClientConfig.PortIo,
@@ -58,11 +59,10 @@ func main() {
 	//Lo mando
 	EnviarIpPuertoNombreAKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, mensaje)
 
-	//Solicito Operaciones
-	for {
-		SolicitarOperacionIO(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
-	}
-
+	/*
+		for {
+			SolicitarOperacionIO(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
+		}*/
 }
 
 func Config(filepath string) *globals.Config {
@@ -91,21 +91,78 @@ func Config(filepath string) *globals.Config {
 
 // Enviar IP y Puerto al Kernel
 func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje MensajeAKernel) {
-	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
+	// Construye la URL del endpoint (url + path) a donde se va a enviar el mensaje
 	url := fmt.Sprintf("http://%s:%d/kernel/io", ipDestino, puertoDestino)
 
-	//Hace el POST
-	err := data.EnviarDatos(url,mensaje)
-	//Verifico si hubo error y logueo si lo hubo
+	// Solicito Operaciones: Iniciar servidor IO primero
+	mux := http.NewServeMux()
+	mux.HandleFunc("/io/kernel", RecibirMensajeDeKernel)
+
+	// Inicia el servidor HTTP para escuchar las peticiones del Kernel
+	direccion := fmt.Sprintf("%s:%d", globals.ClientConfig.IpIo, globals.ClientConfig.PortIo)
+	log.Printf("Escuchando en %s...", direccion)
+
+	go func() {
+		if err := http.ListenAndServe(direccion, mux); err != nil {
+			log.Fatalf("Error al iniciar el servidor IO: %v", err)
+		}
+	}()
+
+	// Asegurarse de que el servidor IO esté completamente iniciado antes de hacer el POST
+	time.Sleep(1 * time.Second) // Retraso opcional para asegurar que el servidor esté escuchando
+
+	// Hace el POST al Kernel
+	err := data.EnviarDatos(url, mensaje)
+	// Verifico si hubo error y logueo si lo hubo
 	if err != nil {
 		log.Printf("Error enviando mensaje: %s", err.Error())
 		return
 	}
-	//Si no hubo error, logueo que todo salio bien
+	// Si no hubo error, logueo que todo salió bien
 	log.Printf("Mensaje enviado a Kernel")
 }
 
-// Recibir PID y Tiempo de duracion de la operacion de IO
+// Recibir PID Y Tiempo de Kernel
+func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
+	var mensajeRecibido MensajeDeKernel
+	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
+		return //hubo error
+	}
+
+	//Realizo la operacion
+	log.Printf("## PID:%d - Inicio de IO - Tiempo:%d", mensajeRecibido.PID, mensajeRecibido.Duracion)
+	time.Sleep(time.Duration(mensajeRecibido.Duracion) * time.Second)
+
+	//IO finalizada
+	if err := InformarFinalizacionIO(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, mensajeRecibido.PID); err != nil {
+		log.Printf("Error al notificar al Kernel: %s", err.Error())
+	}
+	log.Printf("## PID:%d - Fin de IO", mensajeRecibido.PID)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("STATUS OK"))
+}
+
+// FIN de IO
+func InformarFinalizacionIO(ipDestino string, puertoDestino int, pid int) error {
+	url := fmt.Sprintf("http://%s:%d/kernel/io/finalizado", ipDestino, puertoDestino)
+
+	mensaje := struct {
+		PID int `json:"pid"`
+	}{
+		PID: pid,
+	}
+
+	err := data.EnviarDatos(url, mensaje)
+	if err != nil {
+		log.Printf("Error notificando finalización de IO al Kernel: %s", err.Error())
+		return err
+	} else {
+		return nil
+	}
+}
+
+// Recibir PID y Tiempo de duracion de la operacion de IO (alternativa)
 func SolicitarOperacionIO(ipDestino string, puertoDestino int) {
 	//Creo la URL
 	url := fmt.Sprintf("http://%s:%d/kernel/operacion", ipDestino, puertoDestino)
@@ -126,22 +183,4 @@ func SolicitarOperacionIO(ipDestino string, puertoDestino int) {
 	}
 	log.Printf("## PID:%d - Fin de IO", mensaje.PID)
 
-}
-
-func InformarFinalizacionIO(ipDestino string, puertoDestino int, pid int) error {
-	url := fmt.Sprintf("http://%s:%d/kernel/io/finalizado", ipDestino, puertoDestino)
-
-	mensaje := struct {
-		PID int `json:"pid"`
-	}{
-		PID: pid,
-	}
-
-	err := data.EnviarDatos(url, mensaje)
-	if err != nil {
-		log.Printf("Error notificando finalización de IO al Kernel: %s", err.Error())
-		return err
-	} else {
-		return nil
-	}
 }

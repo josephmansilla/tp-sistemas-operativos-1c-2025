@@ -58,7 +58,8 @@ func main() {
 	//SERVER DE LOS OTROS MODULOS: Escuchar sus mensajes
 	mux.HandleFunc("/kernel/io", utils.RecibirMensajeDeIO)
 	mux.HandleFunc("/kernel/cpu", utils.RecibirMensajeDeCPU)
-	mux.HandleFunc("/kernel/contexto", utils.EnviarContextoACPU)
+	
+	//mux.HandleFunc("/kernel/contexto", utils.EnviarContextoACPU)
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/kernel\n", portKernel)
 

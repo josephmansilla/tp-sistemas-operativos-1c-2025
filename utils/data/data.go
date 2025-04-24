@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -50,5 +51,18 @@ func RecibirDatos(url string, data any) error {
 		return err
 	}
 
+	return nil
+}
+
+//Leer Body JSON recibidos por POST o PUT 
+//Deserializa JSON en un struct de Go.
+func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) error {
+	err := json.NewDecoder(r.Body).Decode(mensaje)
+	if err != nil {
+		log.Printf("Error al decodificar el mensaje: %s", err.Error())
+		http.Error(w, "Error al decodificar mensaje", http.StatusBadRequest)
+		return err
+	}
+	log.Printf("Me llegó un mensaje: %+v", mensaje)
 	return nil
 }
