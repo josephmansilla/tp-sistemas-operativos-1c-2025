@@ -30,7 +30,7 @@ func main() {
 	}
 
 	logFileName := "kernel.log"
-	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		fmt.Printf("Error al crear archivo de log para Kenrel: %v\n", err)
 		os.Exit(1)
@@ -58,7 +58,7 @@ func main() {
 	//SERVER DE LOS OTROS MODULOS: Escuchar sus mensajes
 	mux.HandleFunc("/kernel/io", utils.RecibirMensajeDeIO)
 	mux.HandleFunc("/kernel/cpu", utils.RecibirMensajeDeCPU)
-	
+
 	//mux.HandleFunc("/kernel/contexto", utils.EnviarContextoACPU)
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/kernel\n", portKernel)

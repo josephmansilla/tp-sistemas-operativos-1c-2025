@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/sisoputnfrba/tp-golang/cpu/globals"
+	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"log"
 	"net/http"
 	"os"
-	"github.com/sisoputnfrba/tp-golang/utils/data"
-	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 )
 
 // Body JSON que envia a Kernel
@@ -78,23 +78,23 @@ func EnviarIpPuertoIDAKernel(ipDestino string, puertoDestino int, ipPropia strin
 	log.Println("IP, Puerto e ID enviados exitosamente al Kernel")
 }
 
-// Solicitar el PID y PC al Kernel sin que CPU sea servidor
-func SolicitarContextoDeKernel(ipDestino string, puertoDestino int) {
-	url := fmt.Sprintf("http://%s:%d/kernel/contexto", ipDestino, puertoDestino) // Este endpoint debe existir en Kernel
-
-	var mensaje MensajeDeKernel
-	err := data.RecibirDatos(url, &mensaje)
-	if err != nil {
-		log.Printf("Error al recibir contexto del Kernel: %s", err.Error())
+// Recibo PID y PC de Kernel
+func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
+	var mensajeRecibido MensajeDeKernel
+	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
 		return
 	}
 
-	log.Printf("Recibido de Kernel: PID: %d, PC: %d", mensaje.PID, mensaje.PC)
+	log.Printf("Me llego el PID:%d y el PC:%d", mensajeRecibido.PID, mensajeRecibido.PC)
+	//Con el PID y PC le pido a Memoria las instrucciones
+	SolicitarInstrucciones(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensajeRecibido.PID, mensajeRecibido.PC)
 
-	SolicitarInstruccion(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensaje.PID, mensaje.PC)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("STATUS OK"))
+
 }
 
-func SolicitarInstruccion(ipDestino string, puertoDestino int, pidPropio int, pcPropio int) (string, error) {
+func SolicitarInstrucciones(ipDestino string, puertoDestino int, pidPropio int, pcPropio int) (string, error) {
 	// Creo el mensaje
 	mensaje := MensajeInstruccion{
 		PID: pidPropio,
@@ -113,6 +113,7 @@ func SolicitarInstruccion(ipDestino string, puertoDestino int, pidPropio int, pc
 
 	// Envío el POST y espero respuesta
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	log.Printf("PID:%d y PC:%d enviados correctamente a memoria", pidPropio, pcPropio)
 	if err != nil {
 		log.Printf("Error haciendo POST a Memoria: %s", err)
 		return "", err

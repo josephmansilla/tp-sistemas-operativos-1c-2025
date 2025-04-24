@@ -32,7 +32,8 @@ func main() {
 	nombre := os.Args[1]
 
 	logFileName := fmt.Sprintf("io_%s.log", nombre)
-	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+
 	if err != nil {
 		fmt.Printf("Error al crear archivo de log para io %s: %v\n", nombre, err)
 		os.Exit(1)
