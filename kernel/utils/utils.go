@@ -28,6 +28,11 @@ type MensajeToCPU struct {
 	Pc  int `json:"pc"`
 }
 
+type MensajeToIO struct {
+	Pid      int `json:"pid"`
+	Duracion int `json:"duracion"` //en segundos
+}
+
 // 1. CARGAR ARCHIVO CONFIG
 func Config(filepath string) *globals.Config {
 	//Recibe un string filepath (ruta al archivo de configuración).
@@ -56,25 +61,33 @@ func Config(filepath string) *globals.Config {
 // w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
 // r *http.Request es la peticion que se recibio
 func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
-	var mensaje MensajeDeIO
+	var mensajeRecibido MensajeDeIO
+	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
+		return //hubo error
+	}
 
-	LeerJson(w, r, &mensaje)
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("STATUS OK"))
-
+	//Cargar en
 	globals.IO = globals.DatosIO{
-		Nombre: mensaje.Nombre,
-		Ip:     mensaje.Ip,
-		Puerto: mensaje.Puerto,
+		Nombre: mensajeRecibido.Nombre,
+		Ip:     mensajeRecibido.Ip,
+		Puerto: mensajeRecibido.Puerto,
 	}
 
 	log.Printf("Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
 		globals.IO.Nombre, globals.IO.Ip, globals.IO.Puerto)
+
+	//Asignar PID y Duracion
+	EnviarContextoIO(globals.IO.Ip,globals.IO.Puerto)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("STATUS OK"))
 }
 
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 	var mensajeRecibido MensajeDeCPU
-	LeerJson(w, r, &mensajeRecibido)
+	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
+		return //hubo error
+	}
 
 	//Cargar en
 	globals.CPU = globals.DatosCPU{
@@ -83,13 +96,17 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 		ID:     mensajeRecibido.ID,
 	}
 
-	log.Printf("Se ha recibido CPU: Ip: %s Puerto: %d ID: %s", globals.CPU.Ip, globals.CPU.Puerto, globals.CPU.ID)
+	log.Printf("Se ha recibido CPU: Ip: %s Puerto: %d ID: %s", 
+		globals.CPU.Ip, globals.CPU.Puerto, globals.CPU.ID)
 
+	//Asignar PID al CPU
+	EnviarContextoCPU(globals.CPU.Ip,globals.CPU.Puerto)
+		
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
 }
 
-// Enviar PC Y PID a CPU
+/*// Enviar PC Y PID a CPU
 func EnviarContextoACPU(w http.ResponseWriter, r *http.Request) {
 	mensaje := PedirInformacion() //pedir a la memoria
 	log.Printf("Enviando contexto a CPU por GET: PID %d, PC %d", mensaje.Pid, mensaje.Pc)
@@ -97,21 +114,15 @@ func EnviarContextoACPU(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(mensaje)
-}
+}*/
 
-// Pedir PC Y PID a la memoria
-func PedirInformacion() MensajeToCPU {
-	mensaje := MensajeToCPU{
-		Pid: 1,
-		Pc:  8000,
-	}
-	return mensaje
-}
-
-// Enviar PID y PC al CPU (alternativo)
-func EnviarMensajeCPU(ipDestino string, puertoDestino int, mensaje MensajeToCPU) {
+//Enviar PID y PC al CPU
+func EnviarContextoCPU(ipDestino string, puertoDestino int) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/cpu/kernel", ipDestino, puertoDestino)
+
+	mensaje := PedirInformacion() //pedir a la memoria
+	
 	//Hace el POST a CPU
 	err := data.EnviarDatos(url, mensaje)
 	//Verifico si hubo error y logue si lo hubo
@@ -123,25 +134,38 @@ func EnviarMensajeCPU(ipDestino string, puertoDestino int, mensaje MensajeToCPU)
 	log.Printf("PID: %d y PC: %d enviados exitosamente a CPU", mensaje.Pid, mensaje.Pc)
 }
 
-func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) {
-	//decodificador JSON que lee directamente desde el body de la petición HTTP
-	decoder := json.NewDecoder(r.Body)
+//Enviar PID y Duracion a IO
+func EnviarContextoIO(ipDestino string, puertoDestino int) {
+	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
+	url := fmt.Sprintf("http://%s:%d/io/kernel", ipDestino, puertoDestino)
 
-	//Interpretar como si fuera un objeto de tipo Mensaje. Se guarda en variable mensaje.
-	err := decoder.Decode(mensaje)
-
+	mensaje := PedirInformacionIO() //pedir a la memoria
+	
+	//Hace el POST a CPU
+	err := data.EnviarDatos(url, mensaje)
+	//Verifico si hubo error y logue si lo hubo
 	if err != nil {
-		log.Printf("Error al decodificar el mensaje: %s", err.Error())
-
-		//Devolver un HTTP 400 (Bad Request) al cliente.
-		w.WriteHeader(http.StatusBadRequest)
-
-		//Escribir un mensaje de error en el body de la respuesta.
-		w.Write([]byte("Error al decodificar mensaje"))
+		log.Printf("Error enviando PID y Duracion a IO: %s", err.Error())
 		return
 	}
+	//Si no hubo error, logueo que salio bien
+	log.Printf("PID: %d y Duracion: %d segs enviados exitosamente a IO", mensaje.Pid, mensaje.Duracion)
+}
 
-	//Imprimir el contenido del struct mensaje
-	log.Printf("Me llego un mensaje: %+v", mensaje)
+// Pedir PC Y PID a la memoria
+func PedirInformacion() MensajeToCPU {
+	mensaje := MensajeToCPU{
+		Pid: 1,
+		Pc:  8000,
+	}
+	return mensaje
+}
 
+// Pedir PC Y Duracion a la memoria
+func PedirInformacionIO() MensajeToIO {
+	mensaje := MensajeToIO{
+		Pid: 1,
+		Duracion:  20,
+	}
+	return mensaje
 }
