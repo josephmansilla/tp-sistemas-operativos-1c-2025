@@ -36,6 +36,7 @@ type MensajeToIO struct {
 
 type MensajeToMemoria struct {
 	Filename string `json:"filename"` //filename
+	Tamanio  int    `json:"tamanio"`
 }
 
 // 1. CARGAR ARCHIVO CONFIG
@@ -175,12 +176,13 @@ func PedirInformacionIO() MensajeToIO {
 	return mensaje
 }
 
-func EnviarFileMemoria(ipDestino string, puertoDestino int, filename string) {
+func EnviarFileMemoria(ipDestino string, puertoDestino int, filename string, tamanioProceso int) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/memoria/kernel", ipDestino, puertoDestino)
 
 	mensaje := MensajeToMemoria{
 		Filename: filename,
+		Tamanio:  tamanioProceso,
 	}
 
 	//Hace el POST a Memoria

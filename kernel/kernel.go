@@ -64,7 +64,7 @@ func main() {
 	var ipMemory = globals.KernelConfig.IpMemory
 	var portMemory = globals.KernelConfig.PortMemory
 
-	utils.EnviarFileMemoria(ipMemory,portMemory,archivoPseudocodigo)
+	utils.EnviarFileMemoria(ipMemory,portMemory,archivoPseudocodigo,tamanioProceso)
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU E IO --------------
