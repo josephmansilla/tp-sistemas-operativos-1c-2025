@@ -66,15 +66,15 @@ func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosD
 	return globals.CPU
 }
 
-func ObtenerInstruccion(PID int, PC int) {
-	// configFile, err := os.Open(filepath)
-	//	if err != nil {
-	//		log.Fatal(err.Error())
-	//	}open(pruebas/nombreArchivo)
+func ObtenerInstruccion(PID int, PC int) string {
+	// PruebaFile, err := os.Open(pruebas/nombreArchivo)
+	//	if err != nil { log.Fatal(err.Error()) }
+
 	// string debería ser desde donde se abre el archivo hasta que se
 	// deteca una nueva linea -> ahí deja de tomar chars y retorna ese string
-	// return string
-	log.Printf("## PID: <PID>  - Obtener instrucción: <PC> - Instrucción: <INSTRUCCIÓN>")
+	string := ""
+	log.Printf("## PID: <%d>  - Obtener instrucción: <%d> - Instrucción: <%s>", PID, PC, string)
+	return string
 }
 
 // FUNCION PARA RECIBIR LOS MENSAJES PROVENIENTES DEL KERNEL
