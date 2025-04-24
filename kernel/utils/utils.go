@@ -34,6 +34,10 @@ type MensajeToIO struct {
 	Duracion int `json:"duracion"` //en segundos
 }
 
+type MensajeToMemoria struct {
+	Filename string `json:"filename"` //filename
+}
+
 // 1. CARGAR ARCHIVO CONFIG
 func Config(filepath string) *globals.Config {
 	//Recibe un string filepath (ruta al archivo de configuración).
@@ -169,4 +173,23 @@ func PedirInformacionIO() MensajeToIO {
 		Duracion: 10,
 	}
 	return mensaje
+}
+
+func EnviarFileMemoria(ipDestino string, puertoDestino int, filename string) {
+	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
+	url := fmt.Sprintf("http://%s:%d/memoria/kernel", ipDestino, puertoDestino)
+
+	mensaje := MensajeToMemoria{
+		Filename: filename,
+	}
+
+	//Hace el POST a Memoria
+	err := data.EnviarDatos(url, mensaje)
+	//Verifico si hubo error y logue si lo hubo
+	if err != nil {
+		log.Printf("Error enviando Pseudocodigo a Memoria: %s", err.Error())
+		return
+	}
+	//Si no hubo error, logueo que salio bien
+	log.Printf("Pseudocodigo: %s enviado exitosamente a Memoria", mensaje.Filename)
 }
