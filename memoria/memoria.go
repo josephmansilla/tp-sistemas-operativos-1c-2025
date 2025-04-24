@@ -6,17 +6,36 @@ import (
 	"github.com/sisoputnfrba/tp-golang/memoria/utils"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
 
+	// ----------------------------------------------------
+	// ---------- PRIMERA PARTE CARGA DEL CONFIG ----------
+	// ----------------------------------------------------
 	globals.MemoryConfig = utils.Config("config.json")
-
 	if globals.MemoryConfig == nil {
 		log.Fatal("No se pudo cargar el archivo de configuración")
 	}
 	var portMemory = globals.MemoryConfig.PortMemory
 	log.Println("Comenzó ejecucion de la memoria")
+
+	// ----------------------------------------------------
+	// ----------- CARGO LOGS DE MEMORIA EN TXT -----------
+	// ----------------------------------------------------
+
+	logFileName := "memoria.log"
+	logFile, errLogFile := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	if errLogFile != nil {
+		fmt.Printf("Error al crear archivo de log para la Memoria: %v\n", errLogFile)
+		os.Exit(1)
+	}
+	log.SetOutput(logFile)
+
+	// ------------------------------------------------------
+	// ---------- ESCUCHO REQUESTS DE CPU Y KERNEL ----------
+	// ------------------------------------------------------
 
 	mux := http.NewServeMux()
 	// ESTÁ ESPERANDO LOS MENSAJES DE LOS OTROS MODULOS
@@ -27,9 +46,9 @@ func main() {
 	fmt.Printf("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
 
 	direccion := fmt.Sprintf(":%d", portMemory)
-	err := http.ListenAndServe(direccion, mux)
-	if err != nil {
-		panic(err)
+	errListenAndServe := http.ListenAndServe(direccion, mux)
+	if errListenAndServe != nil {
+		panic(errListenAndServe)
 	}
 
 }

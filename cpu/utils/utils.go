@@ -87,48 +87,65 @@ func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Me llego el PID:%d y el PC:%d", mensajeRecibido.PID, mensajeRecibido.PC)
 	//Con el PID y PC le pido a Memoria las instrucciones
-	SolicitarInstrucciones(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensajeRecibido.PID, mensajeRecibido.PC)
+	Fetch(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensajeRecibido.PID, mensajeRecibido.PC)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
 
 }
 
-func SolicitarInstrucciones(ipDestino string, puertoDestino int, pidPropio int, pcPropio int) (string, error) {
-	// Creo el mensaje
-	mensaje := MensajeInstruccion{
-		PID: pidPropio,
-		PC:  pcPropio,
+func Fetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int) {
+	pc := pcInicial
+
+	for {
+		mensaje := MensajeInstruccion{
+			PID: pidPropio,
+			PC:  pc,
+		}
+
+		jsonData, err := json.Marshal(mensaje)
+		if err != nil {
+			log.Printf("Error codificando mensaje a JSON: %s", err)
+			break
+		}
+
+		url := fmt.Sprintf("http://%s:%d/memoria/cpu", ipDestino, puertoDestino)
+
+		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+		if err != nil {
+			log.Printf("Error haciendo POST a Memoria: %s", err)
+			break
+		}
+		defer resp.Body.Close()
+
+		var respuesta RespuestaInstruccion
+		err = json.NewDecoder(resp.Body).Decode(&respuesta)
+		if err != nil {
+			log.Printf("Error decodificando respuesta de Memoria: %s", err)
+			break
+		}
+
+		if respuesta.Instruccion == "" {
+			log.Printf("No hay más instrucciones para PID %d (PC %d)", pidPropio, pc)
+			break
+		}
+
+		log.Printf("Instrucción recibida (PC %d): %s", pc, respuesta.Instruccion)
+
+		// Ejecuta la instrucción como goroutine
+		go Decode(respuesta.Instruccion) // usar semaforos para variables compartidas
+
+		pc++
 	}
-
-	// Codifico a JSON
-	jsonData, err := json.Marshal(mensaje)
-	if err != nil {
-		log.Printf("Error codificando mensaje a JSON: %s", err)
-		return "", err
-	}
-
-	// Armo la URL
-	url := fmt.Sprintf("http://%s:%d/memoria/cpu", ipDestino, puertoDestino)
-
-	// Envío el POST y espero respuesta
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	log.Printf("PID:%d y PC:%d enviados correctamente a memoria", pidPropio, pcPropio)
-	if err != nil {
-		log.Printf("Error haciendo POST a Memoria: %s", err)
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	// Decodifico la respuesta
-	var respuesta RespuestaInstruccion
-	err = json.NewDecoder(resp.Body).Decode(&respuesta)
-	if err != nil {
-		log.Printf("Error decodificando respuesta de Memoria: %s", err)
-		return "", err
-	}
-
-	log.Printf("Instrucción recibida desde Memoria: %s", respuesta.Instruccion)
-
-	return respuesta.Instruccion, nil
 }
+
+func Decode(instruccion string) {
+
+}
+
+/*
+go func Execute(){
+	Tengo que usar semaforos aca para poder acceder y modificar variables compartidas
+}
+
+*/

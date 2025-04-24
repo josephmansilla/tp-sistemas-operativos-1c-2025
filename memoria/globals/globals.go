@@ -17,10 +17,14 @@ var MemoryConfig *Config
 
 // Tipo de datos recibidos de1 Kernel
 
-type DatosDeKernel struct {
+type DatosConsultaDeKernel struct {
 	PID            int `json:"pid"`
-	TamanioMemoria int `json:"tamanio_memoria"` // Placeholder
-	// toDO....
+	TamanioMemoria int `json:"tamanio_memoria"`
+	// con el tamaño de memoria consulta si es posible ejecutarlo en memoria
+}
+
+type DatosRespuestaDeKernel struct {
+	pseudocodigo int `json:"pseudocodigo"`
 }
 
 // Tipo de datos recibidos de la CPU
@@ -34,5 +38,5 @@ type DatosParaCPU struct {
 	// TODO
 }
 
-var Kernel DatosDeKernel
+var Kernel DatosConsultaDeKernel
 var CPU DatosDeCPU
