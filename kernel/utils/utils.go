@@ -6,8 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"github.com/sisoputnfrba/tp-golang/utils/data"
+
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
+	"github.com/sisoputnfrba/tp-golang/utils/data"
 )
 
 // Body JSON a recibir
@@ -77,7 +78,7 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 		globals.IO.Nombre, globals.IO.Ip, globals.IO.Puerto)
 
 	//Asignar PID y Duracion
-	EnviarContextoIO(globals.IO.Ip,globals.IO.Puerto)
+	EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
@@ -96,12 +97,12 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 		ID:     mensajeRecibido.ID,
 	}
 
-	log.Printf("Se ha recibido CPU: Ip: %s Puerto: %d ID: %s", 
+	log.Printf("Se ha recibido CPU: Ip: %s Puerto: %d ID: %s",
 		globals.CPU.Ip, globals.CPU.Puerto, globals.CPU.ID)
 
 	//Asignar PID al CPU
-	EnviarContextoCPU(globals.CPU.Ip,globals.CPU.Puerto)
-		
+	EnviarContextoCPU(globals.CPU.Ip, globals.CPU.Puerto)
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
 }
@@ -116,13 +117,13 @@ func EnviarContextoACPU(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(mensaje)
 }*/
 
-//Enviar PID y PC al CPU
+// Enviar PID y PC al CPU
 func EnviarContextoCPU(ipDestino string, puertoDestino int) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/cpu/kernel", ipDestino, puertoDestino)
 
 	mensaje := PedirInformacion() //pedir a la memoria
-	
+
 	//Hace el POST a CPU
 	err := data.EnviarDatos(url, mensaje)
 	//Verifico si hubo error y logue si lo hubo
@@ -134,13 +135,13 @@ func EnviarContextoCPU(ipDestino string, puertoDestino int) {
 	log.Printf("PID: %d y PC: %d enviados exitosamente a CPU", mensaje.Pid, mensaje.Pc)
 }
 
-//Enviar PID y Duracion a IO
+// Enviar PID y Duracion a IO
 func EnviarContextoIO(ipDestino string, puertoDestino int) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/io/kernel", ipDestino, puertoDestino)
 
 	mensaje := PedirInformacionIO() //pedir a la memoria
-	
+
 	//Hace el POST a CPU
 	err := data.EnviarDatos(url, mensaje)
 	//Verifico si hubo error y logue si lo hubo
@@ -164,8 +165,8 @@ func PedirInformacion() MensajeToCPU {
 // Pedir PC Y Duracion a la memoria
 func PedirInformacionIO() MensajeToIO {
 	mensaje := MensajeToIO{
-		Pid: 1,
-		Duracion:  20,
+		Pid:      1,
+		Duracion: 10,
 	}
 	return mensaje
 }
