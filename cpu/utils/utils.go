@@ -88,10 +88,6 @@ func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Me llego el PID:%d y el PC:%d", mensajeRecibido.PID, mensajeRecibido.PC)
 	//Con el PID y PC le pido a Memoria las instrucciones
 	Fetch(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensajeRecibido.PID, mensajeRecibido.PC)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("STATUS OK"))
-
 }
 
 func Fetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int) {

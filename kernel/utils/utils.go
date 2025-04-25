@@ -36,7 +36,7 @@ type MensajeToIO struct {
 
 type MensajeToMemoria struct {
 	Filename string `json:"filename"` //filename
-	Tamanio  int    `json:"tamanio"`
+	Tamanio  int    `json:"tamanio_memoria"`
 }
 
 // 1. CARGAR ARCHIVO CONFIG
@@ -85,8 +85,9 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 	//Asignar PID y Duracion
 	EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto)
 
+	/*
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("STATUS OK"))
+	w.Write([]byte("STATUS OK"))*/
 }
 
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
@@ -107,9 +108,6 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 
 	//Asignar PID al CPU
 	EnviarContextoCPU(globals.CPU.Ip, globals.CPU.Puerto)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("STATUS OK"))
 }
 
 /*// Enviar PC Y PID a CPU

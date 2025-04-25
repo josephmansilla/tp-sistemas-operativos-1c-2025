@@ -24,7 +24,8 @@ type DatosConsultaDeKernel struct {
 }
 
 type DatosRespuestaDeKernel struct {
-	pseudocodigo int `json:"pseudocodigo"`
+	Pseudocodigo string `json:"filename"`
+	TamanioMemoria int `json:"tamanio_memoria"`
 }
 
 // Tipo de datos recibidos de la CPU
