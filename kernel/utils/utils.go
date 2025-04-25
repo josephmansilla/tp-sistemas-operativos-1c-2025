@@ -84,10 +84,6 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 
 	//Asignar PID y Duracion
 	EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto)
-
-	/*
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("STATUS OK"))*/
 }
 
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
@@ -109,16 +105,6 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 	//Asignar PID al CPU
 	EnviarContextoCPU(globals.CPU.Ip, globals.CPU.Puerto)
 }
-
-/*// Enviar PC Y PID a CPU
-func EnviarContextoACPU(w http.ResponseWriter, r *http.Request) {
-	mensaje := PedirInformacion() //pedir a la memoria
-	log.Printf("Enviando contexto a CPU por GET: PID %d, PC %d", mensaje.Pid, mensaje.Pc)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(mensaje)
-}*/
 
 // Enviar PID y PC al CPU
 func EnviarContextoCPU(ipDestino string, puertoDestino int) {
@@ -145,7 +131,9 @@ func EnviarContextoIO(ipDestino string, puertoDestino int) {
 
 	mensaje := PedirInformacionIO() //pedir a la memoria
 
-	//Hace el POST a CPU
+	log.Printf("## (%d) - Bloqueado por IO: %s", mensaje.Pid, globals.IO.Nombre)
+
+	//Hace el POST a IO
 	err := data.EnviarDatos(url, mensaje)
 	//Verifico si hubo error y logue si lo hubo
 	if err != nil {
@@ -153,7 +141,7 @@ func EnviarContextoIO(ipDestino string, puertoDestino int) {
 		return
 	}
 	//Si no hubo error, logueo que salio bien
-	log.Printf("PID: %d y Duracion: %d segs enviados exitosamente a IO", mensaje.Pid, mensaje.Duracion)
+	log.Printf("## (%d) finalizó IO y pasa a READY", mensaje.Pid)
 }
 
 // Pedir PC Y PID a la memoria
@@ -193,3 +181,13 @@ func EnviarFileMemoria(ipDestino string, puertoDestino int, filename string, tam
 	//Si no hubo error, logueo que salio bien
 	log.Printf("Pseudocodigo: %s enviado exitosamente a Memoria", mensaje.Filename)
 }
+
+/*// Enviar PC Y PID a CPU
+func EnviarContextoACPU(w http.ResponseWriter, r *http.Request) {
+	mensaje := PedirInformacion() //pedir a la memoria
+	log.Printf("Enviando contexto a CPU por GET: PID %d, PC %d", mensaje.Pid, mensaje.Pc)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(mensaje)
+}*/
