@@ -65,7 +65,7 @@ func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) error {
 	}
 	log.Printf("Me llegó un mensaje: %+v", mensaje)
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("STATUS OK"))
+	//w.WriteHeader(http.StatusOK)
+	//w.Write([]byte("STATUS OK"))
 	return nil
 }
