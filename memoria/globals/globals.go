@@ -24,7 +24,8 @@ type DatosConsultaDeKernel struct {
 }
 
 type DatosRespuestaDeKernel struct {
-	pseudocodigo int `json:"pseudocodigo"`
+	Pseudocodigo   string `json:"filename"`
+	TamanioMemoria int    `json:"tamanio_memoria"`
 }
 
 // Tipo de datos recibidos de la CPU
@@ -38,5 +39,15 @@ type DatosParaCPU struct {
 	// TODO
 }
 
+type ContextoDeCPU struct {
+	PID int `json:"pid"`
+	PC  int `json:"pc"`
+}
+
+type InstruccionCPU struct {
+	Instruccion string `json:"instruccion"`
+}
+
+var RespuestaKernel DatosRespuestaDeKernel
 var Kernel DatosConsultaDeKernel
 var CPU DatosDeCPU

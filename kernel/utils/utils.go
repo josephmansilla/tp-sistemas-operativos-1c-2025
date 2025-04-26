@@ -157,7 +157,7 @@ func EnviarContextoIO(ipDestino string, puertoDestino int) {
 func PedirInformacion() MensajeToCPU {
 	mensaje := MensajeToCPU{
 		Pid: 1,
-		Pc:  8000,
+		Pc:  0,
 	}
 	return mensaje
 }

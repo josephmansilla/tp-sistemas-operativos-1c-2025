@@ -184,4 +184,6 @@ func SolicitarOperacionIO(ipDestino string, puertoDestino int) {
 	}
 	log.Printf("## PID:%d - Fin de IO", mensaje.PID)
 
+	fmt.Printf("Termine de Ejecutar")
+
 }

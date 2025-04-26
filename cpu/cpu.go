@@ -54,4 +54,6 @@ func main() {
 
 	//4. Evito que el modulo termine
 	select {}
+
+	fmt.Printf("Termine de Ejecutar")
 }

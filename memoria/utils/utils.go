@@ -1,11 +1,13 @@
 package utils
 
 import (
+	"bufio"
 	"encoding/json"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func Config(filepath string) *globals.Config {
@@ -66,15 +68,69 @@ func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosD
 	return globals.CPU
 }
 
-func ObtenerInstruccion(PID int, PC int) {
-	// configFile, err := os.Open(filepath)
-	//	if err != nil {
-	//		log.Fatal(err.Error())
-	//	}open(pruebas/nombreArchivo)
-	// string debería ser desde donde se abre el archivo hasta que se
-	// deteca una nueva linea -> ahí deja de tomar chars y retorna ese string
-	// return string
-	log.Printf("## PID: <PID>  - Obtener instrucción: <PC> - Instrucción: <INSTRUCCIÓN>")
+var Instrucciones []string = []string{}
+
+func CargarInstrucciones() { // TODO: (nombreArchivo string)
+	var nombreArchivo string = "archivoPrueba.txt" // TODO: globals.RespuestaKernel.Pseudocodigo
+
+	ruta := "../pruebas/" + nombreArchivo
+
+	file, err := os.Open(ruta)
+	if err != nil {
+		log.Printf("Error al abrir el archivo: %s\n", err)
+		return
+	}
+	defer file.Close()
+
+	log.Println("Se leyó el archivo\n")
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		lineaPseudocodigo := scanner.Text()
+		log.Printf("Línea leída:%s\n", lineaPseudocodigo)
+		if strings.TrimSpace(lineaPseudocodigo) == "" {
+			continue
+		}
+		CargarListaDeInstrucciones(lineaPseudocodigo)
+
+	}
+	if err := scanner.Err(); err != nil {
+		log.Printf("Error al leer el archivo:%s\n", err)
+	}
+	log.Printf("Total de instrucciones cargadas: %d\n", len(Instrucciones))
+}
+
+func CargarListaDeInstrucciones(str string) {
+	Instrucciones = append(Instrucciones, str)
+	log.Println("Se cargó una instrucción al Slice\n")
+}
+
+func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
+	CargarInstrucciones() // TODO: nombreArchivo por parametro
+
+	var mensaje globals.ContextoDeCPU
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON del CPU\n", http.StatusBadRequest)
+		return
+	}
+
+	pc := mensaje.PC
+	var instruccion string
+	if pc >= 0 && pc < len(Instrucciones) {
+		instruccion = Instrucciones[pc]
+	} else {
+		instruccion = "" // Esto indica fin del archivo o error de PC
+	}
+
+	respuesta := globals.InstruccionCPU{
+		Instruccion: instruccion,
+	}
+
+	log.Printf("## PID: <%d>  - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, instruccion)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(respuesta)
 }
 
 // FUNCION PARA RECIBIR LOS MENSAJES PROVENIENTES DEL KERNEL
@@ -89,6 +145,7 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 		// agregar a DatosConsultaDeKernel
 	}
 
+	log.Printf("Se cargó todo bien!\n")
 	log.Printf("PID Pedido: %d\n", mensaje.PID)
 	log.Printf("Tamanio de Memoria Pedido: %d\n", mensaje.TamanioMemoria)
 }
