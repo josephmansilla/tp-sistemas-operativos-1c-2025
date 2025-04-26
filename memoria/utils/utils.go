@@ -1,15 +1,11 @@
 package utils
 
 import (
-	"bufio"
 	"encoding/json"
+	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"log"
 	"net/http"
 	"os"
-	"strings"
-
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
-	"github.com/sisoputnfrba/tp-golang/utils/data"
 )
 
 func Config(filepath string) *globals.Config {
@@ -24,124 +20,23 @@ func Config(filepath string) *globals.Config {
 	return config
 }
 
-// FUNCION PARA RECIBIR LOS MENSAJES PROVENIENTES DE LA CPU
-func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
-	var mensaje globals.DatosDeCPU
-	data.LeerJson(w, r, &mensaje)
-
-	globals.CPU = globals.DatosDeCPU{
-		PID: mensaje.PID,
-		PC:  mensaje.PC,
-	}
-
-	log.Printf("PID Pedido: %d\n", mensaje.PID)
-	log.Printf("PC Pedido: %d\n", mensaje.PC)
-}
-
-// FUNCION PARA RETORNAR LOS MENSAJES PROVENIENTES DE LA CPU
-func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosDeCPU {
-	var mensaje globals.DatosDeCPU
-	data.LeerJson(w, r, &mensaje)
-
-	globals.CPU = globals.DatosDeCPU{
-		PID: mensaje.PID,
-		PC:  mensaje.PC,
-	}
-	// StringInstruccion = ObtenerInstruccion(mensaje.PID, mensaje.PC)
-	// se debe devolver el string mediante un JSON por el ResponseWriter
-	return globals.CPU
-}
-
 var Instrucciones []string = []string{}
 
-func CargarInstrucciones(nombreArchivo string) {
-	ruta := "../pruebas/" + nombreArchivo
-
-	file, err := os.Open(ruta)
-	if err != nil {
-		log.Printf("Error al abrir el archivo: %s\n", err)
-		return
-	}
-	defer file.Close()
-
-	log.Print("Se leyó el archivo\n")
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		lineaPseudocodigo := scanner.Text()
-		log.Printf("Línea leída:%s\n", lineaPseudocodigo)
-		if strings.TrimSpace(lineaPseudocodigo) == "" {
-			continue
-		}
-		CargarListaDeInstrucciones(lineaPseudocodigo)
-
-	}
-	if err := scanner.Err(); err != nil {
-		log.Printf("Error al leer el archivo:%s\n", err)
-	}
-	log.Printf("Total de instrucciones cargadas: %d\n", len(Instrucciones))
-}
-
+// función auxiliar para cargar el slice de instrucciones
 func CargarListaDeInstrucciones(str string) {
 	Instrucciones = append(Instrucciones, str)
 	log.Print("Se cargó una instrucción al Slice\n")
-}
-
-func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
-	var mensaje globals.ContextoDeCPU
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON del CPU\n", http.StatusBadRequest)
-		return
-	}
-
-	pc := mensaje.PC
-	var instruccion string
-	if pc >= 0 && pc < len(Instrucciones) {
-		instruccion = Instrucciones[pc]
-	} else {
-		instruccion = "" // Esto indica fin del archivo o error de PC
-	}
-
-	respuesta := globals.InstruccionCPU{
-		Instruccion: instruccion,
-	}
-
-	log.Printf("## PID: <%d>  - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, instruccion)
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(respuesta)
-}
-
-// FUNCION PARA RECIBIR LOS MENSAJES PROVENIENTES DEL KERNEL
-func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
-	var mensaje globals.DatosRespuestaDeKernel
-
-	data.LeerJson(w, r, &mensaje)
-
-	globals.RespuestaKernel = globals.DatosRespuestaDeKernel{
-		Pseudocodigo:   mensaje.Pseudocodigo,
-		TamanioMemoria: mensaje.TamanioMemoria,
-		// nombreArchivo
-		//TODO agregar a DatosConsultaDeKernel
-	}
-
-	CargarInstrucciones(mensaje.Pseudocodigo)
-
-	log.Printf("Se cargó todo bien!\n")
-	log.Printf("Archivo Pseudocodigo: %s\n", mensaje.Pseudocodigo)
-	log.Printf("Tamanio de Memoria Pedido: %d\n", mensaje.TamanioMemoria)
 }
 
 // ------------------------------------------------------------------
 // ----------- FORMA PARTE DE LA MODIFICACIÓN DE PROCESOS -----------
 // ------------------------------------------------------------------
 
-func CreacionProceso(w http.ResponseWriter, r *http.Request) {
-	tamanioDeseado := 1
-	var datos globals.DatosDeCPU = RetornarMensajeDeCPU(w, r)
+func CreacionProceso(tamanioDeseado int) {
+	PID := 1 // TEMPORAL HASTA QUE SEPAMOS COMO ASIGNAR PID'S
+	log.Printf("## PID: <%d>  - Proceso Creado - Tamaño: <%d>", PID, tamanioDeseado)
 
-	log.Printf("## PID: <%d>  - Proceso Creado - Tamaño: <%d>", datos.PID, tamanioDeseado)
+	// se debe retornar el número de página de 1er nivel de ese proceso
 }
 func DestruccionProceso(w http.ResponseWriter, r *http.Request) {
 	//toDO

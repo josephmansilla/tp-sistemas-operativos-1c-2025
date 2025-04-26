@@ -51,3 +51,5 @@ type InstruccionCPU struct {
 var RespuestaKernel DatosRespuestaDeKernel
 var Kernel DatosConsultaDeKernel
 var CPU DatosDeCPU
+
+// EspacioDeUsuario => make([]byte, TamMemoria)
