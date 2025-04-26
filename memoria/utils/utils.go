@@ -54,9 +54,7 @@ func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosD
 
 var Instrucciones []string = []string{}
 
-func CargarInstrucciones() { // TODO: (nombreArchivo string)
- 	//TODO: globals.RespuestaKernel.Pseudocodigo
-	nombreArchivo := globals.RespuestaKernel.Pseudocodigo
+func CargarInstrucciones(nombreArchivo string) {
 	ruta := "../pruebas/" + nombreArchivo
 
 	file, err := os.Open(ruta)
@@ -90,8 +88,6 @@ func CargarListaDeInstrucciones(str string) {
 }
 
 func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
-	CargarInstrucciones() // TODO: nombreArchivo por parametro
-
 	var mensaje globals.ContextoDeCPU
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
@@ -130,7 +126,7 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 		//TODO agregar a DatosConsultaDeKernel
 	}
 
-	CargarInstrucciones()
+	CargarInstrucciones(mensaje.Pseudocodigo)
 
 	log.Printf("Se cargó todo bien!\n")
 	log.Printf("Archivo Pseudocodigo: %s\n", mensaje.Pseudocodigo)
