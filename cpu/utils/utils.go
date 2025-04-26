@@ -87,10 +87,15 @@ func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Me llego el PID:%d y el PC:%d", mensajeRecibido.PID, mensajeRecibido.PC)
 	//Con el PID y PC le pido a Memoria las instrucciones
-	Fetch(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensajeRecibido.PID, mensajeRecibido.PC)
+
+	FaseFetch(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensajeRecibido.PID, mensajeRecibido.PC)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("STATUS OK"))
+
 }
 
-func Fetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int) {
+func FaseFetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int) {
 	pc := pcInicial
 
 	for {
@@ -105,7 +110,7 @@ func Fetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int) {
 			break
 		}
 
-		url := fmt.Sprintf("http://%s:%d/memoria/cpu", ipDestino, puertoDestino)
+		url := fmt.Sprintf("http://%s:%d/memoria/instruccion", ipDestino, puertoDestino)
 
 		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 		if err != nil {
@@ -122,20 +127,20 @@ func Fetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int) {
 		}
 
 		if respuesta.Instruccion == "" {
-			log.Printf("No hay más instrucciones para PID %d (PC %d)", pidPropio, pc)
+			log.Printf("No hay instruccion para PID %d (PC %d)", pidPropio, pc)
 			break
 		}
 
 		log.Printf("Instrucción recibida (PC %d): %s", pc, respuesta.Instruccion)
 
 		// Ejecuta la instrucción como goroutine
-		go Decode(respuesta.Instruccion) // usar semaforos para variables compartidas
+		FaseDecode(respuesta.Instruccion) // usar semaforos para variables compartidas
 
 		pc++
 	}
 }
 
-func Decode(instruccion string) {
+func FaseDecode(instruccion string) {
 
 }
 

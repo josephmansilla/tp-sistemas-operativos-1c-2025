@@ -41,6 +41,7 @@ func main() {
 	// ESTÁ ESPERANDO LOS MENSAJES DE LOS OTROS MODULOS
 	mux.HandleFunc("/memoria/cpu", utils.RecibirMensajeDeCPU)
 	mux.HandleFunc("/memoria/kernel", utils.RecibirMensajeDeKernel)
+	mux.HandleFunc("/memoria/instruccion", utils.ObtenerInstruccion)
 	//mux.HandleFunc("/memoria/cpu", utils.CreacionProceso)
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
@@ -50,5 +51,7 @@ func main() {
 	if errListenAndServe != nil {
 		panic(errListenAndServe)
 	}
+
+	fmt.Printf("Termine de Ejecutar")
 
 }
