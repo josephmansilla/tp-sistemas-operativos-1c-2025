@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
-
 )
 
 func Config(filepath string) *globals.Config {
@@ -55,8 +55,8 @@ func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosD
 var Instrucciones []string = []string{}
 
 func CargarInstrucciones() { // TODO: (nombreArchivo string)
-	var nombreArchivo string = "archivoPrueba.txt" // TODO: globals.RespuestaKernel.Pseudocodigo
-
+ 	//TODO: globals.RespuestaKernel.Pseudocodigo
+	nombreArchivo := globals.RespuestaKernel.Pseudocodigo
 	ruta := "../pruebas/" + nombreArchivo
 
 	file, err := os.Open(ruta)
@@ -66,7 +66,7 @@ func CargarInstrucciones() { // TODO: (nombreArchivo string)
 	}
 	defer file.Close()
 
-	log.Println("Se leyó el archivo\n")
+	log.Print("Se leyó el archivo\n")
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
@@ -86,7 +86,7 @@ func CargarInstrucciones() { // TODO: (nombreArchivo string)
 
 func CargarListaDeInstrucciones(str string) {
 	Instrucciones = append(Instrucciones, str)
-	log.Println("Se cargó una instrucción al Slice\n")
+	log.Print("Se cargó una instrucción al Slice\n")
 }
 
 func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
@@ -119,18 +119,21 @@ func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 
 // FUNCION PARA RECIBIR LOS MENSAJES PROVENIENTES DEL KERNEL
 func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
-	var mensaje globals.DatosConsultaDeKernel
-	LeerJson(w, r, &mensaje)
+	var mensaje globals.DatosRespuestaDeKernel
 
-	globals.Kernel = globals.DatosConsultaDeKernel{
-		PID:            mensaje.PID,
+	data.LeerJson(w, r, &mensaje)
+
+	globals.RespuestaKernel = globals.DatosRespuestaDeKernel{
+		Pseudocodigo:   mensaje.Pseudocodigo,
 		TamanioMemoria: mensaje.TamanioMemoria,
 		// nombreArchivo
-		// agregar a DatosConsultaDeKernel
+		//TODO agregar a DatosConsultaDeKernel
 	}
 
+	CargarInstrucciones()
+
 	log.Printf("Se cargó todo bien!\n")
-	log.Printf("PID Pedido: %d\n", mensaje.PID)
+	log.Printf("Archivo Pseudocodigo: %s\n", mensaje.Pseudocodigo)
 	log.Printf("Tamanio de Memoria Pedido: %d\n", mensaje.TamanioMemoria)
 }
 
