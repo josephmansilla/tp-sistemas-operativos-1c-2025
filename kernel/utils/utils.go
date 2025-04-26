@@ -34,6 +34,11 @@ type MensajeToIO struct {
 	Duracion int `json:"duracion"` //en segundos
 }
 
+type MensajeToMemoria struct {
+	Filename string `json:"filename"` //filename
+	Tamanio  int    `json:"tamanio_memoria"`
+}
+
 // 1. CARGAR ARCHIVO CONFIG
 func Config(filepath string) *globals.Config {
 	//Recibe un string filepath (ruta al archivo de configuración).
@@ -80,8 +85,9 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 	//Asignar PID y Duracion
 	EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto)
 
+	/*
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("STATUS OK"))
+	w.Write([]byte("STATUS OK"))*/
 }
 
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
@@ -102,9 +108,6 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 
 	//Asignar PID al CPU
 	EnviarContextoCPU(globals.CPU.Ip, globals.CPU.Puerto)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("STATUS OK"))
 }
 
 /*// Enviar PC Y PID a CPU
@@ -169,4 +172,24 @@ func PedirInformacionIO() MensajeToIO {
 		Duracion: 10,
 	}
 	return mensaje
+}
+
+func EnviarFileMemoria(ipDestino string, puertoDestino int, filename string, tamanioProceso int) {
+	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
+	url := fmt.Sprintf("http://%s:%d/memoria/kernel", ipDestino, puertoDestino)
+
+	mensaje := MensajeToMemoria{
+		Filename: filename,
+		Tamanio:  tamanioProceso,
+	}
+
+	//Hace el POST a Memoria
+	err := data.EnviarDatos(url, mensaje)
+	//Verifico si hubo error y logue si lo hubo
+	if err != nil {
+		log.Printf("Error enviando Pseudocodigo a Memoria: %s", err.Error())
+		return
+	}
+	//Si no hubo error, logueo que salio bien
+	log.Printf("Pseudocodigo: %s enviado exitosamente a Memoria", mensaje.Filename)
 }

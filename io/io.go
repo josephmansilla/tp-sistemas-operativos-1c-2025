@@ -139,9 +139,6 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error al notificar al Kernel: %s", err.Error())
 	}
 	log.Printf("## PID:%d - Fin de IO", mensajeRecibido.PID)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("STATUS OK"))
 }
 
 // FIN de IO

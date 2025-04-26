@@ -1,5 +1,5 @@
 {
-    "ip_kernel": "127.0.0.2",
+    "ip_kernel": "127.0.0.1",
     "port_kernel": 8081,
     "port_io": 8082,
     "ip_io": "127.0.0.2",

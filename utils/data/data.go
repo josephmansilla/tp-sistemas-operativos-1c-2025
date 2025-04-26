@@ -54,8 +54,8 @@ func RecibirDatos(url string, data any) error {
 	return nil
 }
 
-//Leer Body JSON recibidos por POST o PUT 
-//Deserializa JSON en un struct de Go.
+// Leer Body JSON recibidos por POST o PUT
+// Deserializa JSON en un struct de Go.
 func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) error {
 	err := json.NewDecoder(r.Body).Decode(mensaje)
 	if err != nil {
@@ -64,5 +64,8 @@ func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) error {
 		return err
 	}
 	log.Printf("Me llegó un mensaje: %+v", mensaje)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("STATUS OK"))
 	return nil
 }

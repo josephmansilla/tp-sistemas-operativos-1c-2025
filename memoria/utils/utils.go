@@ -3,11 +3,13 @@ package utils
 import (
 	"bufio"
 	"encoding/json"
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	"github.com/sisoputnfrba/tp-golang/utils/data"
+
 )
 
 func Config(filepath string) *globals.Config {
@@ -22,28 +24,10 @@ func Config(filepath string) *globals.Config {
 	return config
 }
 
-func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) {
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&mensaje)
-
-	if err != nil {
-		log.Printf("Error al decodificar el mensaje: %s", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Error al decodificar mensaje"))
-		return
-	}
-
-	log.Println("Me llego un mensaje JSON:")
-	log.Printf("%+v\n", mensaje)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("STATUS OK"))
-}
-
 // FUNCION PARA RECIBIR LOS MENSAJES PROVENIENTES DE LA CPU
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.DatosDeCPU
-	LeerJson(w, r, &mensaje)
+	data.LeerJson(w, r, &mensaje)
 
 	globals.CPU = globals.DatosDeCPU{
 		PID: mensaje.PID,
@@ -57,7 +41,7 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 // FUNCION PARA RETORNAR LOS MENSAJES PROVENIENTES DE LA CPU
 func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosDeCPU {
 	var mensaje globals.DatosDeCPU
-	LeerJson(w, r, &mensaje)
+	data.LeerJson(w, r, &mensaje)
 
 	globals.CPU = globals.DatosDeCPU{
 		PID: mensaje.PID,
