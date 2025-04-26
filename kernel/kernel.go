@@ -86,4 +86,6 @@ func main() {
 	//2.inicilizar todas las colas vacias, tipo de dato punteros a PCB y TCB(hilos)
 	//3.fucncion que inicie planificacion largo plazo inicialmente parada esperando un enter desde la consola
 	//4.inicialiar colas que representen los estados new, ready, bloqueado, suspendido blog, suspendido ready, ejecutando.
+
+	fmt.Printf("Termine de Ejecutar")
 }
