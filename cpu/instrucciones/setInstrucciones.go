@@ -1,17 +1,21 @@
-package main
+package instrucciones
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-type Instruction func(context *types.ExecutionContext, arguments []string) error
+type Instruction func(context *globals.ExecutionContext, arguments []string) error
 
-var instructionSet = map[string]Instruction{
+// Una instruccion es una funcion que recibe un puntero a una struct con el contexto de ejecucion del proceso que se esta
+// ejecutando (Pc, variables, registros, etc) y una lista de strings que son los argumentos
+
+var InstructionSet = map[string]Instruction{
 	"SET":       setInstruction,
 	"READ_MEM":  readMemInstruction,
 	"WRITE_MEM": writeMemInstruction,
@@ -33,7 +37,7 @@ var instructionSet = map[string]Instruction{
 	"PROCESS_EXIT":   processExitInstruction,
 }
 
-func writeMemInstruction(context *types.ExecutionContext, arguments []string) error {
+func writeMemInstruction(context *globals.ExecutionContext, arguments []string) error {
 	dataRegister, err := context.GetRegister(arguments[1])
 	if err != nil {
 		return err
@@ -48,8 +52,8 @@ func writeMemInstruction(context *types.ExecutionContext, arguments []string) er
 	logger.Debug("Escribiendo en physicalAddres: %v", physicalAddress)
 	if *virtualAddressRegister >= context.MemorySize {
 		logger.Warn("Se trató de escribir una dirección no perteneciente al proceso! Interrumpiendo...")
-		interruptionChannel <- types.Interruption{
-			Type:        types.InterruptionSegFault,
+		interruptionChannel <- globals.Interruption{
+			Type:        globals.InterruptionSegFault,
 			Description: "La dirección no forma parte del espacio del memoria del proceso"}
 
 		logger.Debug("Intentadno liberar mutexInterruption")
@@ -69,7 +73,7 @@ func writeMemInstruction(context *types.ExecutionContext, arguments []string) er
 	return nil
 }
 
-func readMemInstruction(context *types.ExecutionContext, arguments []string) error {
+func readMemInstruction(context *globals.ExecutionContext, arguments []string) error {
 	dataRegister, err := context.GetRegister(arguments[0])
 	logger.Debug("DataRegister: %v", *dataRegister)
 	if err != nil {
@@ -87,8 +91,8 @@ func readMemInstruction(context *types.ExecutionContext, arguments []string) err
 
 	if *virtualAddressRegister >= context.MemorySize {
 		logger.Warn("Se trató de leer una dirección no perteneciente al proceso! Interrumpiendo...")
-		interruptionChannel <- types.Interruption{
-			Type:        types.InterruptionSegFault,
+		interruptionChannel <- globals.Interruption{
+			Type:        globals.InterruptionSegFault,
 			Description: "La dirección no forma parte del espacio del memoria del proceso"}
 
 		logger.Debug("Intentadno liberar mutexInterruption")
@@ -112,7 +116,7 @@ func readMemInstruction(context *types.ExecutionContext, arguments []string) err
 	return nil
 }
 
-func jnzInstruction(context *types.ExecutionContext, arguments []string) error {
+func jnzInstruction(context *globals.ExecutionContext, arguments []string) error {
 	if err := checkArguments(arguments, 2); err != nil {
 		return err
 	}
@@ -133,10 +137,9 @@ func jnzInstruction(context *types.ExecutionContext, arguments []string) error {
 	}
 
 	return nil
-
 }
 
-func sumInstruction(context *types.ExecutionContext, args []string) error {
+func sumInstruction(context *globals.ExecutionContext, args []string) error {
 	if err := checkArguments(args, 2); err != nil {
 		return err
 	}
@@ -154,10 +157,9 @@ func sumInstruction(context *types.ExecutionContext, args []string) error {
 	*firstRegister = *firstRegister + *secondRegister
 
 	return nil
-
 }
 
-func subInstruction(context *types.ExecutionContext, args []string) error {
+func subInstruction(context *globals.ExecutionContext, args []string) error {
 	if err := checkArguments(args, 2); err != nil {
 		return err
 	}
@@ -175,10 +177,9 @@ func subInstruction(context *types.ExecutionContext, args []string) error {
 	*firstRegister = *firstRegister - *secondRegister
 
 	return nil
-
 }
 
-func setInstruction(ctx *types.ExecutionContext, args []string) error {
+func setInstruction(ctx *globals.ExecutionContext, args []string) error {
 	// Check number of arguments
 	if err := checkArguments(args, 2); err != nil {
 		return err
@@ -209,7 +210,7 @@ func setInstruction(ctx *types.ExecutionContext, args []string) error {
 	return nil
 }
 
-func logInstruction(ctx *types.ExecutionContext, args []string) error {
+func logInstruction(ctx *globals.ExecutionContext, args []string) error {
 	if err := checkArguments(args, 1); err != nil {
 		return err
 	}
@@ -234,9 +235,9 @@ func checkArguments(args []string, correctNumberOfArgs int) error {
 }
 
 // A partir de acá las syscalls
-func doSyscall(ctx types.ExecutionContext, syscall syscalls.Syscall) error {
-	interruption := types.Interruption{
-		Type:        types.InterruptionSyscall,
+func doSyscall(ctx globals.ExecutionContext, syscall syscalls.Syscall) error {
+	interruption := globals.Interruption{
+		Type:        globals.InterruptionSyscall,
 		Description: "Interrupción por syscall",
 	}
 	if len(interruptionChannel) > 0 {
@@ -246,7 +247,7 @@ func doSyscall(ctx types.ExecutionContext, syscall syscalls.Syscall) error {
 		desalojoInterruption := <-interruptionChannel
 		interruptionChannel <- interruption
 
-		interrupcionInsatisfecha := types.InterrupcionInsatisfecha{
+		interrupcionInsatisfecha := globals.InterrupcionInsatisfecha{
 			Thread:       currentThread,
 			Interruption: desalojoInterruption,
 		}
@@ -271,10 +272,9 @@ func doSyscall(ctx types.ExecutionContext, syscall syscalls.Syscall) error {
 	logger.Debug("Syscall enviada al kernel")
 
 	return nil
-
 }
 
-func mutexCreateInstruction(context *types.ExecutionContext, arguments []string) error {
+func mutexCreateInstruction(context *globals.ExecutionContext, arguments []string) error {
 	if err := doSyscall(
 		*context,
 		syscalls.New(syscalls.MutexCreate, arguments),
@@ -285,7 +285,7 @@ func mutexCreateInstruction(context *types.ExecutionContext, arguments []string)
 	return nil
 }
 
-func processExitInstruction(context *types.ExecutionContext, arguments []string) error {
+func processExitInstruction(context *globals.ExecutionContext, arguments []string) error {
 	if err := doSyscall(
 		*context,
 		syscalls.New(syscalls.ProcessExit, arguments),
@@ -296,7 +296,7 @@ func processExitInstruction(context *types.ExecutionContext, arguments []string)
 	return nil
 }
 
-func threadExitInstruction(context *types.ExecutionContext, arguments []string) error {
+func threadExitInstruction(context *globals.ExecutionContext, arguments []string) error {
 	if err := doSyscall(
 		*context,
 		syscalls.New(syscalls.ThreadExit, arguments),
@@ -307,7 +307,7 @@ func threadExitInstruction(context *types.ExecutionContext, arguments []string) 
 	return nil
 }
 
-func mutexLockInstruction(context *types.ExecutionContext, arguments []string) error {
+func mutexLockInstruction(context *globals.ExecutionContext, arguments []string) error {
 	if err := doSyscall(
 		*context,
 		syscalls.New(syscalls.MutexLock, arguments),
@@ -316,10 +316,9 @@ func mutexLockInstruction(context *types.ExecutionContext, arguments []string) e
 	}
 
 	return nil
-
 }
 
-func mutexUnlockInstruction(context *types.ExecutionContext, arguments []string) error {
+func mutexUnlockInstruction(context *globals.ExecutionContext, arguments []string) error {
 	if err := doSyscall(
 		*context,
 		syscalls.New(syscalls.MutexUnlock, arguments),
@@ -328,10 +327,9 @@ func mutexUnlockInstruction(context *types.ExecutionContext, arguments []string)
 	}
 
 	return nil
-
 }
 
-func threadCancelInstruction(context *types.ExecutionContext, arguments []string) error {
+func threadCancelInstruction(context *globals.ExecutionContext, arguments []string) error {
 	if err := doSyscall(
 		*context,
 		syscalls.New(syscalls.ThreadCancel, arguments),
@@ -340,10 +338,9 @@ func threadCancelInstruction(context *types.ExecutionContext, arguments []string
 	}
 
 	return nil
-
 }
 
-func threadCreateInstruction(context *types.ExecutionContext, arguments []string) error {
+func threadCreateInstruction(context *globals.ExecutionContext, arguments []string) error {
 	if err := doSyscall(
 		*context,
 		syscalls.New(syscalls.ThreadCreate, arguments),
@@ -352,10 +349,9 @@ func threadCreateInstruction(context *types.ExecutionContext, arguments []string
 	}
 
 	return nil
-
 }
 
-func threadJoinInstruction(context *types.ExecutionContext, arguments []string) error {
+func threadJoinInstruction(context *globals.ExecutionContext, arguments []string) error {
 	if err := doSyscall(
 		*context,
 		syscalls.New(syscalls.ThreadJoin, arguments),
@@ -366,7 +362,7 @@ func threadJoinInstruction(context *types.ExecutionContext, arguments []string) 
 	return nil
 }
 
-func processCreateInstruction(context *types.ExecutionContext, arguments []string) error {
+func processCreateInstruction(context *globals.ExecutionContext, arguments []string) error {
 	if err := doSyscall(
 		*context,
 		syscalls.New(syscalls.ProcessCreate, arguments),
@@ -377,7 +373,7 @@ func processCreateInstruction(context *types.ExecutionContext, arguments []strin
 	return nil
 }
 
-func ioInstruction(context *types.ExecutionContext, arguments []string) error {
+func ioInstruction(context *globals.ExecutionContext, arguments []string) error {
 	if err := doSyscall(
 		*context,
 		syscalls.New(syscalls.IO, arguments),
@@ -386,10 +382,9 @@ func ioInstruction(context *types.ExecutionContext, arguments []string) error {
 	}
 
 	return nil
-
 }
 
-func dumpMemoryInstruction(context *types.ExecutionContext, arguments []string) error {
+func dumpMemoryInstruction(context *globals.ExecutionContext, arguments []string) error {
 	if err := doSyscall(
 		*context,
 		syscalls.New(syscalls.DumpMemory, arguments),
@@ -398,5 +393,4 @@ func dumpMemoryInstruction(context *types.ExecutionContext, arguments []string) 
 	}
 
 	return nil
-
 }
