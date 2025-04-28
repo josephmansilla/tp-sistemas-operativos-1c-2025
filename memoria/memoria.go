@@ -42,6 +42,8 @@ func main() {
 	mux.HandleFunc("/memoria/cpu", utils.RecibirMensajeDeCPU)
 	mux.HandleFunc("/memoria/kernel", utils.RecibirMensajeDeKernel)
 	mux.HandleFunc("/memoria/instruccion", utils.ObtenerInstruccion)
+	mux.HandleFunc("/memoria/espaciolibre", utils.ObtenerEspacioLibreMock)
+
 	//mux.HandleFunc("/memoria/cpu", utils.CreacionProceso)
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
