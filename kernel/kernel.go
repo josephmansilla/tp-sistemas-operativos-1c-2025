@@ -9,6 +9,8 @@ import (
 
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/utils"
+	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
+	
 )
 
 func main() {
@@ -81,6 +83,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	pcb.ColaNuevo = utils.Queue[*pcb.PCB]{}
+	pcb.ColaBLoqueado = utils.Queue[*pcb.PCB]{}
+	pcb.ColaSalida = utils.Queue[*pcb.PCB]{}
+	pcb.ColaEjecutando = utils.Queue[*pcb.PCB]{}
+	pcb.ColaReady = utils.Queue[*pcb.PCB]{}
+	pcb.ColaBloqueadoSuspendido = utils.Queue[*pcb.PCB]{}
+	pcb.ColaSuspendidoReady= utils.Queue[*pcb.PCB]{}
+
 
 	//TODO
 	//1.funcion que cree primer proceso desde los argumentos del main
