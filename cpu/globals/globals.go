@@ -11,4 +11,11 @@ type Config struct {
 	LogLevel   string `json:"log_level"`
 }
 
+type ExecutionContext struct {
+	PID       int            // ID del proceso en ejecución
+	PC        int            // Program Counter
+	Registros map[string]int // Registros, por ejemplo "R1" -> 42
+}
+
+var CurrentContext *ExecutionContext
 var ClientConfig *Config

@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
+	"github.com/sisoputnfrba/tp-golang/cpu/instrucciones"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 // Body JSON que envia a Kernel
@@ -141,12 +143,31 @@ func FaseFetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int
 }
 
 func FaseDecode(instruccion string) {
+	partes := strings.Fields(instruccion)
+	if len(partes) == 0 {
+		log.Println("Instrucción vacía")
+		return
+	}
 
+	nombreInstruccion := partes[0]
+	argumentos := partes[1:]
+
+	// Llamo a ejecutar la instrucción
+	FaseExecute(nombreInstruccion, argumentos)
 }
 
-/*
-go func Execute(){
-	Tengo que usar semaforos aca para poder acceder y modificar variables compartidas
-}
+func FaseExecute(nombre string, argumentos []string) {
+	// Usamos el instructionSet y el contexto globales
+	instruccion, existe := instrucciones.InstructionSet[nombre]
+	if !existe {
+		log.Printf("Instrucción desconocida: %s", nombre)
+		return
+	}
 
-*/
+	// Usamos CurrentContext directamente
+	err := instruccion(globals.CurrentContext, argumentos) // ejecuto funcion
+	log.Printf("Ejecutando instruccion: %s", nombre)
+	if err != nil {
+		log.Printf("Error ejecutando %s: %v", nombre, err)
+	}
+}
