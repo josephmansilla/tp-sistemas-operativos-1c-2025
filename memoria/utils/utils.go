@@ -2,10 +2,11 @@ package utils
 
 import (
 	"encoding/json"
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 )
 
 func Config(filepath string) *globals.Config {
@@ -51,9 +52,8 @@ func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 // ------------------------------------------------------------------
 
 func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
-	respuesta := globals.EspacioLibreRTA{EspacioLibre: 2 /*globals.MemoryConfig.MemorySize*/}
-	// el EspacioLibre es un valor arbritrario
-
+	respuesta := globals.EspacioLibreRTA{EspacioLibre: globals.MemoryConfig.MemorySize}
+	// el EspacioLibre es un valor arbitrario
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {

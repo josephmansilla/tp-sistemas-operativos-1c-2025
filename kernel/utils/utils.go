@@ -183,12 +183,11 @@ func EnviarFileMemoria(ipDestino string, puertoDestino int, filename string, tam
 }
 
 // NUEVA CONEXIÓN AGREGADA PARA QUE KERNEL LE CONSULTE LA DISPONIBILIDAD DE ESPACIOLIBRE A MEMORIA
-
 func ConsultarEspacioLibreMemoria(ipDestino string, puertoDestino int) (int, error) {
 	// SE LE PASA LA DIRECCIÓN DE LA MEMORIA POR LOS PARAMETROS
 	// EL TIPO DE LA FUNCIÓN ES DE ENTERO Y ERROR
 	// ESTOS TIPOS SERÁN USADOS PARA MANEJAR LA CONSULTA EN OTRAS FUNCIONES
-	url := fmt.Sprintf("http://%s:%d/memoria/espacio", ipDestino, puertoDestino)
+	url := fmt.Sprintf("http://%s:%d/memoria/espaciolibre", ipDestino, puertoDestino)
 
 	rta, err := http.Get(url)
 	if err != nil {
