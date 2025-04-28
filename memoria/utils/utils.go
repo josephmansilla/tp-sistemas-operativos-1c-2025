@@ -50,6 +50,19 @@ func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 // ---------- FORMA PARTE DEL ACCESO A ESPACIO DE USUARIO ----------
 // ------------------------------------------------------------------
 
+func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
+	respuesta := globals.EspacioLibreRTA{EspacioLibre: 2 /*globals.MemoryConfig.MemorySize*/}
+	// el EspacioLibre es un valor arbritrario
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		log.Printf("Error al serializar mock de espacio: %v", err)
+	}
+
+	log.Printf("## Espacio libre mock devuelto - Tamaño: <%d>\n", respuesta.EspacioLibre)
+}
+
 func EscrituraEspacio(w http.ResponseWriter, r *http.Request) {
 	//toDO
 	log.Printf("## PID: <PID>  - <Escritura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")

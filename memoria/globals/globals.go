@@ -48,6 +48,10 @@ type InstruccionCPU struct {
 	Instruccion string `json:"instruccion"`
 }
 
+type EspacioLibreRTA struct {
+	EspacioLibre int `json:"espacio_libre"`
+}
+
 var RespuestaKernel DatosRespuestaDeKernel
 var Kernel DatosConsultaDeKernel
 var CPU DatosDeCPU

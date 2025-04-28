@@ -9,6 +9,8 @@ import (
 
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/utils"
+	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
+	
 )
 
 func main() {
@@ -64,7 +66,8 @@ func main() {
 	var ipMemory = globals.KernelConfig.IpMemory
 	var portMemory = globals.KernelConfig.PortMemory
 
-	utils.EnviarFileMemoria(ipMemory,portMemory,archivoPseudocodigo,tamanioProceso)
+	utils.EnviarFileMemoria(ipMemory, portMemory, archivoPseudocodigo, tamanioProceso)
+	utils.IntentarIniciarProceso(tamanioProceso)
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU E IO --------------
@@ -80,8 +83,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	pcb.ColaNuevo = utils.Queue[*pcb.PCB]{}
+	pcb.ColaBLoqueado = utils.Queue[*pcb.PCB]{}
+	pcb.ColaSalida = utils.Queue[*pcb.PCB]{}
+	pcb.ColaEjecutando = utils.Queue[*pcb.PCB]{}
+	pcb.ColaReady = utils.Queue[*pcb.PCB]{}
+	pcb.ColaBloqueadoSuspendido = utils.Queue[*pcb.PCB]{}
+	pcb.ColaSuspendidoReady= utils.Queue[*pcb.PCB]{}
 
-	//TODO	
+
+	//TODO
 	//1.funcion que cree primer proceso desde los argumentos del main
 	//2.inicilizar todas las colas vacias, tipo de dato punteros a PCB y TCB(hilos)
 	//3.fucncion que inicie planificacion largo plazo inicialmente parada esperando un enter desde la consola
