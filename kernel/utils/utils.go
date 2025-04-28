@@ -182,6 +182,50 @@ func EnviarFileMemoria(ipDestino string, puertoDestino int, filename string, tam
 	log.Printf("Pseudocodigo: %s enviado exitosamente a Memoria", mensaje.Filename)
 }
 
+// NUEVA CONEXIÓN AGREGADA PARA QUE KERNEL LE CONSULTE LA DISPONIBILIDAD DE ESPACIOLIBRE A MEMORIA
+
+func ConsultarEspacioLibreMemoria(ipDestino string, puertoDestino int) (int, error) {
+	// SE LE PASA LA DIRECCIÓN DE LA MEMORIA POR LOS PARAMETROS
+	// EL TIPO DE LA FUNCIÓN ES DE ENTERO Y ERROR
+	// ESTOS TIPOS SERÁN USADOS PARA MANEJAR LA CONSULTA EN OTRAS FUNCIONES
+	url := fmt.Sprintf("http://%s:%d/memoria/espacio", ipDestino, puertoDestino)
+
+	rta, err := http.Get(url)
+	if err != nil {
+		log.Printf("Error al hacer el GET a Memoria: %s", err.Error())
+		return 0, err
+		// SI HAY UN ERROR SE DEVUELVE EL ERROR, PERO TAMBIÉN ES NECESARIO INDICAR
+		// QUE EL ESPACIOLIBRE ES 0
+	}
+	defer rta.Body.Close()
+
+	// USANDO EL STRUCT QUE COMPARTEN MEMORIA Y KERNEL
+	// POR AHORA ES LÓGICA REPETIDA
+	var respuesta globals.EspacioLibreRTA
+	err = json.NewDecoder(rta.Body).Decode(&respuesta)
+	if err != nil {
+		log.Printf("Error al hacer el Decode para consultar a Memoria: %s", err.Error())
+		return 0, err
+	}
+	log.Printf("Espacio libre reportado por Memoria: %d", respuesta.EspacioLibre)
+	// SE LOGUEA EL ESPACIO LIBRE Y SE DEVUELVE, AL IGUAL QUE UN NIL PARA EL ERROR
+	return respuesta.EspacioLibre, nil
+}
+
+func IntentarIniciarProceso(tamanioProceso int) {
+	espacioLibre, err := /*utils.*/ ConsultarEspacioLibreMemoria(globals.KernelConfig.IpMemory, globals.KernelConfig.PortMemory)
+	if err != nil {
+		log.Println("No se pudo consultar a la memoria por Espacio Libre")
+		return
+	}
+
+	if espacioLibre >= tamanioProceso {
+		log.Println("Hay suficiente espacio libre en Memoria para el proceso")
+	} else {
+		log.Println("No hay suficiente espacio libre en memoria para el proceso")
+	}
+}
+
 /*// Enviar PC Y PID a CPU
 func EnviarContextoACPU(w http.ResponseWriter, r *http.Request) {
 	mensaje := PedirInformacion() //pedir a la memoria
