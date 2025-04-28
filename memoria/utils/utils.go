@@ -51,7 +51,7 @@ func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 // ------------------------------------------------------------------
 
 func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
-	respuesta := globals.EspacioLibreRTA{EspacioLibre: globals.MemoryConfig.MemorySize}
+	respuesta := globals.EspacioLibreRTA{EspacioLibre: 2 /*globals.MemoryConfig.MemorySize*/}
 	// el EspacioLibre es un valor arbritrario
 
 	w.Header().Set("Content-Type", "application/json")
