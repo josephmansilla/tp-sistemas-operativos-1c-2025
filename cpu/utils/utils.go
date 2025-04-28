@@ -35,6 +35,11 @@ type RespuestaInstruccion struct {
 	Instruccion string `json:"instruccion"`
 }
 
+type Interrupcion struct {
+	PID int `json:"pid"`
+	PC  int `json:"pc"`
+}
+
 func Config(filepath string) *globals.Config {
 	//Recibe un string filepath (ruta al archivo de configuración).
 	var config *globals.Config
@@ -135,39 +140,101 @@ func FaseFetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int
 
 		log.Printf("Instrucción recibida (PC %d): %s", pc, respuesta.Instruccion)
 
-		// Ejecuta la instrucción como goroutine
-		FaseDecode(respuesta.Instruccion) // usar semaforos para variables compartidas
+		// Parsear y ejecutar instrucción
+		if seguir := FaseDecode(respuesta.Instruccion); !seguir {
+			log.Println("Se pidió un syscall, finalizando ejecución del proceso.")
+			break
+		}
 
 		pc++
 	}
 }
 
-func FaseDecode(instruccion string) {
+func FaseDecode(instruccion string) bool {
 	partes := strings.Fields(instruccion)
 	if len(partes) == 0 {
 		log.Println("Instrucción vacía")
-		return
+		return true
 	}
 
-	nombreInstruccion := partes[0]
-	argumentos := partes[1:]
+	nombre := partes[0]
+	args := partes[1:]
 
-	// Llamo a ejecutar la instrucción
-	FaseExecute(nombreInstruccion, argumentos)
+	return FaseExecute(nombre, args)
 }
 
-func FaseExecute(nombre string, argumentos []string) {
-	// Usamos el instructionSet y el contexto globales
-	instruccion, existe := instrucciones.InstructionSet[nombre]
+func FaseExecute(nombre string, args []string) bool {
+	instrucFunc, existe := instrucciones.InstruccionSet[nombre]
 	if !existe {
 		log.Printf("Instrucción desconocida: %s", nombre)
+		return true
+	}
+
+	err := instrucFunc(globals.CurrentContext, args)
+	log.Printf("Ejecutando instrucción: %s", nombre)
+	if err != nil {
+		log.Printf("Error ejecutando %s: %v", nombre, err)
+		return false
+	}
+
+	FaseCheckInterrupt()
+	return true
+}
+
+func FaseCheckInterrupt() {
+	// Construir la URL para obtener la interrupción desde el Kernel
+	url := fmt.Sprintf("http://%s:%d/kernel/interrupcion", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
+
+	// Enviar la solicitud para obtener la interrupción
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Printf("Error al consultar interrupción al Kernel: %s", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Verificar si la respuesta fue exitosa (código 200 OK)
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Error: el Kernel no devolvió una respuesta válida (status: %d)", resp.StatusCode)
 		return
 	}
 
-	// Usamos CurrentContext directamente
-	err := instruccion(globals.CurrentContext, argumentos) // ejecuto funcion
-	log.Printf("Ejecutando instruccion: %s", nombre)
+	// Decodificar la respuesta del Kernel
+	var interrupcion Interrupcion
+	err = json.NewDecoder(resp.Body).Decode(&interrupcion)
 	if err != nil {
-		log.Printf("Error ejecutando %s: %v", nombre, err)
+		log.Printf("Error al decodificar la interrupción recibida: %s", err)
+		return
 	}
+
+	// Si la interrupción está vacía, no hay interrupción pendiente
+	if interrupcion.PID == 0 {
+		log.Println("No hay interrupción pendiente para el PID")
+		return
+	}
+
+	// Si hay una interrupción, debemos actualizar el PID y el PC
+	log.Printf("Interrupción recibida: PID= %d, PC= %d", interrupcion.PID, interrupcion.PC)
+
+	// Enviar el PID y PC actualizado de vuelta al Kernel
+	mensaje := MensajeDeKernel{
+		PID: interrupcion.PID,
+		PC:  interrupcion.PC,
+	}
+
+	// Enviar al Kernel el PID y PC actualizado
+	urlActualizar := fmt.Sprintf("http://%s:%d/kernel/actualizar", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
+	jsonData, err := json.Marshal(mensaje)
+	if err != nil {
+		log.Printf("Error al empaquetar el mensaje para actualizar el Kernel: %s", err)
+		return
+	}
+
+	respActualizar, err := http.Post(urlActualizar, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil || respActualizar.StatusCode != http.StatusOK {
+		log.Printf("Error al enviar la actualización al Kernel: %s", err)
+		return
+	}
+
+	log.Println("PID y PC actualizados y enviados al Kernel")
 }
