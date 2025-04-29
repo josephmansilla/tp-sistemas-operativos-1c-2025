@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 type Instruccion func(context *globals.ExecutionContext, arguments []string) error
@@ -23,6 +22,13 @@ type MensajeIO struct {
 	PID    int    `json:"pid"`
 	PC     uint32 `json:"pc"`
 	Tiempo int    `json:"tiempo"`
+}
+
+type MensajeInitProc struct {
+	PID      int    `json:"pid"`
+	PC       uint32 `json:"pc"`
+	Filename string `json:"filename"` //filename
+	Tamanio  int    `json:"tamanio_memoria"`
 }
 
 // Una instruccion es una funcion que recibe un puntero a una struct con el contexto de ejecucion del proceso que se esta
@@ -48,12 +54,53 @@ var InstruccionSet = map[string]Instruccion{
 }
 
 func dumpMemoryInstruccion(context *globals.ExecutionContext, arguments []string) error {
-	return hacerSyscall()
+	// Validar que no hayan args
+	if err := checkArguments(arguments, 0); err != nil {
+		log.Printf("Error en los argumentos de la Instruccion: %s", err)
+		return err
+	}
+
+	mensaje := MensajeContexto{
+		PID: context.PID,
+		PC:  context.PC,
+	}
+
+	// Lo codifico a JSON
+	jsonData, err := json.Marshal(mensaje)
+	if err != nil {
+		log.Printf("Error al codificar mensaje de syscall de DUMP_MEMORY: %s", err)
+		return err
+	}
+
+	// Armo la URL de syscall hacia Kernel
+	url := fmt.Sprintf("http://%s:%d/kernel/dump_memory", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
+
+	// Envío el POST al Kernel con el contexto y el tiempo de IO
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Printf("Error al hacer syscall de DUMP_MEMORY a Kernel: %s", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Syscall DUMP_MEMORY al Kernel respondió status: %d", resp.StatusCode)
+		return fmt.Errorf("syscall DUMP_MEMORY fallida con status %d", resp.StatusCode)
+	}
+
+	log.Println("Syscall DUMP_MEMORY realizada exitosamente")
+	return nil
 }
 
 func ioInstruccion(context *globals.ExecutionContext, arguments []string) error {
-	// Suponiendo que el tiempo de la IO se pasa como primer argumento
-	tiempoIO, err := strconv.Atoi(arguments[0]) // Parsear el tiempo desde el argumento
+	// Validar que haya exactamente 1 argumento (el tiempo de IO)
+	if err := checkArguments(arguments, 1); err != nil {
+		log.Printf("Error en los argumentos de la Instruccion: %s", err)
+		return err
+	}
+
+	// Parsear el tiempo desde el argumento
+	tiempoIO, err := strconv.Atoi(arguments[0])
 	if err != nil {
 		log.Printf("Error al convertir el tiempo de IO: %s", err)
 		return err
@@ -94,11 +141,92 @@ func ioInstruccion(context *globals.ExecutionContext, arguments []string) error 
 }
 
 func exitInstruccion(context *globals.ExecutionContext, arguments []string) error {
-	return hacerSyscall()
+	// Validar que no hayan args
+	if err := checkArguments(arguments, 0); err != nil {
+		log.Printf("Error en los argumentos de la Instruccion: %s", err)
+		return err
+	}
+
+	mensaje := MensajeContexto{
+		PID: context.PID,
+		PC:  context.PC,
+	}
+
+	// Lo codifico a JSON
+	jsonData, err := json.Marshal(mensaje)
+	if err != nil {
+		log.Printf("Error al codificar mensaje de syscall de EXIT: %s", err)
+		return err
+	}
+
+	// Armo la URL de syscall hacia Kernel
+	url := fmt.Sprintf("http://%s:%d/kernel/exit", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
+
+	// Envío el POST al Kernel con el contexto y el tiempo de IO
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Printf("Error al hacer syscall de EXIT a Kernel: %s", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Syscall EXIT al Kernel respondió status: %d", resp.StatusCode)
+		return fmt.Errorf("syscall EXIT fallida con status %d", resp.StatusCode)
+	}
+
+	log.Println("Syscall EXIT realizada exitosamente")
+	return nil
 }
 
 func iniciarProcesoInstruccion(context *globals.ExecutionContext, arguments []string) error {
-	return hacerSyscall()
+	//Valido tener 2 argumentos (nombreArchivo y tamProceso)
+	if err := checkArguments(arguments, 2); err != nil {
+		log.Printf("Error en los argumentos de la Instruccion: %s", err)
+		return err
+	}
+
+	filename := arguments[0]
+	// Parsear el tamaño
+	tamanio, err := strconv.Atoi(arguments[1])
+	if err != nil {
+		log.Printf("Error al convertir el tamaño del proceso: %s", err)
+		return err
+	}
+
+	//Instancio el mensaje
+	mensaje := MensajeInitProc{
+		PID:      context.PID,
+		PC:       context.PC,
+		Filename: filename,
+		Tamanio:  tamanio,
+	}
+
+	// Lo codifico a JSON
+	jsonData, err := json.Marshal(mensaje)
+	if err != nil {
+		log.Printf("Error al codificar mensaje de syscall de IO: %s", err)
+		return err
+	}
+
+	// Armo la URL de syscall hacia Kernel
+	url := fmt.Sprintf("http://%s:%d/kernel/init_proceso", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
+
+	// Envío el POST al Kernel con el contexto y el tiempo de IO
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Printf("Error al hacer syscall de INIT_PROC a Kernel: %s", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Syscall INIT_PROC al Kernel respondió status: %d", resp.StatusCode)
+		return fmt.Errorf("Syscall INIT_PROC fallida con status %d", resp.StatusCode)
+	}
+
+	log.Println("Syscall IO realizada exitosamente")
+	return nil
 }
 
 func gotoInstruccion(context *globals.ExecutionContext, arguments []string) error {}
@@ -209,40 +337,6 @@ func logInstruccion(ctx *globals.ExecutionContext, args []string) error {
 
 	log.Printf("Logging register '%v': %v", args[0], *register)
 	fmt.Println(*register)
-	return nil
-}
-
-func hacerSyscall() error {
-	// Preparo el mensaje con el PID y el PC actuales
-	mensaje := MensajeContexto{
-		PID: globals.CurrentContext.PID,
-		PC:  globals.CurrentContext.PC,
-	}
-
-	// Lo codifico a JSON
-	jsonData, err := json.Marshal(mensaje)
-	if err != nil {
-		log.Printf("Error al codificar mensaje de syscall: %s", err)
-		return err
-	}
-
-	// Armo la URL de syscall hacia Kernel
-	url := fmt.Sprintf("http://%s:%d/kernel/syscall", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
-
-	// Envío el POST al Kernel
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		log.Printf("Error al hacer syscall a Kernel: %s", err)
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("Syscall al Kernel respondió status: %d", resp.StatusCode)
-		return fmt.Errorf("syscall fallida con status %d", resp.StatusCode)
-	}
-
-	log.Println("Syscall realizada exitosamente")
 	return nil
 }
 
