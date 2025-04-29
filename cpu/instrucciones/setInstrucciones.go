@@ -14,19 +14,19 @@ import (
 type Instruccion func(context *globals.ExecutionContext, arguments []string) error
 
 type MensajeContexto struct {
-	PID int    `json:"pid"`
-	PC  uint32 `json:"pc"`
+	PID int `json:"pid"`
+	PC  int `json:"pc"`
 }
 
 type MensajeIO struct {
-	PID    int    `json:"pid"`
-	PC     uint32 `json:"pc"`
-	Tiempo int    `json:"tiempo"`
+	PID    int `json:"pid"`
+	PC     int `json:"pc"`
+	Tiempo int `json:"tiempo"`
 }
 
 type MensajeInitProc struct {
 	PID      int    `json:"pid"`
-	PC       uint32 `json:"pc"`
+	PC       int    `json:"pc"`
 	Filename string `json:"filename"` //filename
 	Tamanio  int    `json:"tamanio_memoria"`
 }
@@ -256,7 +256,7 @@ func jnzInstruccion(context *globals.ExecutionContext, arguments []string) error
 	}
 
 	if *register != 0 {
-		context.PC = uint32(jump)
+		context.PC = int(jump)
 		log.Printf("Actualizando PC: %v", context.PC)
 	}
 
