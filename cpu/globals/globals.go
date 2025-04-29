@@ -3,6 +3,7 @@ package globals
 import (
 	"errors"
 	"strings"
+	"sync"
 )
 
 // No se si es correcto crear una carpeta globals
@@ -18,7 +19,7 @@ type Config struct {
 
 type ExecutionContext struct {
 	PID int    // ID del proceso
-	PC  uint32 // Program Counter
+	PC  int    // Program Counter
 	Ax  uint32 // unsigned int de 32 bits
 	Bx  uint32
 	Cx  uint32
@@ -31,13 +32,14 @@ type ExecutionContext struct {
 
 var CurrentContext *ExecutionContext
 var ClientConfig *Config
+var InterrupcionPendiente bool
+var PIDInterrumpido int
+var MutexInterrupcion sync.Mutex
 
 // (ectx *ExecutionContext) significa que estoy trabajando sobre la struct original y no sobre una copia, GetRegister pasa a ser un metodo
 func (ectx *ExecutionContext) GetRegister(str string) (*uint32, error) {
 	str = strings.ToLower(str)
 	switch str {
-	case "pc":
-		return &ectx.PC, nil
 	case "ax":
 		return &ectx.Ax, nil
 	case "bx":

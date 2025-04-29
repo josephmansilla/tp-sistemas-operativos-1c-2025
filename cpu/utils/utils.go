@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
@@ -10,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 )
 
 // Body JSON que envia a Kernel
@@ -22,20 +20,6 @@ type MensajeAKernel struct {
 
 // Body JSON que recibe de Kernel
 type MensajeDeKernel struct {
-	PID int `json:"pid"`
-	PC  int `json:"pc"`
-}
-
-type MensajeInstruccion struct {
-	PID int `json:"pid"`
-	PC  int `json:"pc"`
-}
-
-type RespuestaInstruccion struct {
-	Instruccion string `json:"instruccion"`
-}
-
-type Interrupcion struct {
 	PID int `json:"pid"`
 	PC  int `json:"pc"`
 }
@@ -92,149 +76,37 @@ func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	globals.CurrentContext.PID = mensajeRecibido.PID
+	globals.CurrentContext.PC = mensajeRecibido.PC
+
 	log.Printf("Me llego el PID:%d y el PC:%d", mensajeRecibido.PID, mensajeRecibido.PC)
 	//Con el PID y PC le pido a Memoria las instrucciones
 
-	FaseFetch(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensajeRecibido.PID, mensajeRecibido.PC)
+	instrucciones.FaseFetch(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensajeRecibido.PID, mensajeRecibido.PC)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
 
 }
 
-func FaseFetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int) {
-	pc := pcInicial
-
-	for {
-		mensaje := MensajeInstruccion{
-			PID: pidPropio,
-			PC:  pc,
-		}
-
-		jsonData, err := json.Marshal(mensaje)
-		if err != nil {
-			log.Printf("Error codificando mensaje a JSON: %s", err)
-			break
-		}
-
-		url := fmt.Sprintf("http://%s:%d/memoria/instruccion", ipDestino, puertoDestino)
-
-		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-		if err != nil {
-			log.Printf("Error haciendo POST a Memoria: %s", err)
-			break
-		}
-		defer resp.Body.Close()
-
-		var respuesta RespuestaInstruccion
-		err = json.NewDecoder(resp.Body).Decode(&respuesta)
-		if err != nil {
-			log.Printf("Error decodificando respuesta de Memoria: %s", err)
-			break
-		}
-
-		if respuesta.Instruccion == "" {
-			log.Printf("No hay instruccion para PID %d (PC %d)", pidPropio, pc)
-			break
-		}
-
-		log.Printf("Instrucción recibida (PC %d): %s", pc, respuesta.Instruccion)
-
-		// Parsear y ejecutar instrucción
-		if seguir := FaseDecode(respuesta.Instruccion); !seguir {
-			log.Println("Se pidió un syscall, finalizando ejecución del proceso.")
-			break
-		}
-
-		pc++
-	}
-}
-
-func FaseDecode(instruccion string) bool {
-	partes := strings.Fields(instruccion)
-	if len(partes) == 0 {
-		log.Println("Instrucción vacía")
-		return true
+func RecibirInterrupcion(w http.ResponseWriter, r *http.Request) {
+	var interrumpido struct {
+		PID int `json:"pid"`
 	}
 
-	nombre := partes[0]
-	args := partes[1:]
-
-	return FaseExecute(nombre, args)
-}
-
-func FaseExecute(nombre string, args []string) bool {
-	instrucFunc, existe := instrucciones.InstruccionSet[nombre]
-	if !existe {
-		log.Printf("Instrucción desconocida: %s", nombre)
-		return true
-	}
-
-	err := instrucFunc(globals.CurrentContext, args)
-	log.Printf("Ejecutando instrucción: %s", nombre)
-	if err != nil {
-		log.Printf("Error ejecutando %s: %v", nombre, err)
-		return false
-	}
-
-	FaseCheckInterrupt()
-	return true
-}
-
-func FaseCheckInterrupt() {
-	// Construir la URL para obtener la interrupción desde el Kernel
-	url := fmt.Sprintf("http://%s:%d/kernel/interrupcion", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
-
-	// Enviar la solicitud para obtener la interrupción
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Printf("Error al consultar interrupción al Kernel: %s", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	// Verificar si la respuesta fue exitosa (código 200 OK)
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("Error: el Kernel no devolvió una respuesta válida (status: %d)", resp.StatusCode)
+	if err := data.LeerJson(w, r, &interrumpido); err != nil {
+		log.Printf("Error leyendo interrupción: %v", err)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	// Decodificar la respuesta del Kernel
-	var interrupcion Interrupcion
-	err = json.NewDecoder(resp.Body).Decode(&interrupcion)
-	if err != nil {
-		log.Printf("Error al decodificar la interrupción recibida: %s", err)
-		return
-	}
+	log.Printf("Recibida interrupción para PID: %d", interrumpido.PID)
 
-	// Si la interrupción está vacía, no hay interrupción pendiente
-	if interrupcion.PID == 0 {
-		log.Println("No hay interrupción pendiente para el PID")
-		return
-	}
+	globals.MutexInterrupcion.Lock()
+	globals.InterrupcionPendiente = true //aseguro la mutua exclusion
+	globals.PIDInterrumpido = interrumpido.PID
+	globals.MutexInterrupcion.Unlock()
 
-	// Si hay una interrupción, debemos actualizar el PID y el PC
-	log.Printf("Interrupción recibida: PID= %d, PC= %d", interrupcion.PID, interrupcion.PC)
-
-	// Enviar el PID y PC actualizado de vuelta al Kernel
-	mensaje := MensajeDeKernel{
-		PID: interrupcion.PID,
-		PC:  interrupcion.PC,
-	}
-
-	// Enviar al Kernel el PID y PC actualizado
-	urlActualizar := fmt.Sprintf("http://%s:%d/kernel/actualizar", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
-	jsonData, err := json.Marshal(mensaje)
-	if err != nil {
-		log.Printf("Error al empaquetar el mensaje para actualizar el Kernel: %s", err)
-		return
-	}
-
-	respActualizar, err := http.Post(urlActualizar, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil || respActualizar.StatusCode != http.StatusOK {
-		log.Printf("Error al enviar la actualización al Kernel: %s", err)
-		return
-	}
-
-	log.Println("PID y PC actualizados y enviados al Kernel")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Interrupción registrada"))
 }

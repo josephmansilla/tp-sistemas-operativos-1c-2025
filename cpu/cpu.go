@@ -38,6 +38,7 @@ func main() {
 	//1. Creo el handler
 	mux := http.NewServeMux()
 	mux.HandleFunc("/cpu/kernel", utils.RecibirContextoDeKernel)
+	mux.HandleFunc("/cpu/interrupcion", utils.RecibirInterrupcion)
 
 	//2. Uso una goroutine para que no se bloquee el modulo
 	go func() {
@@ -54,6 +55,4 @@ func main() {
 
 	//4. Evito que el modulo termine
 	select {}
-
-	fmt.Printf("Termine de Ejecutar")
 }
