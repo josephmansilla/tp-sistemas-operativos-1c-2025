@@ -19,9 +19,10 @@ type MensajeContexto struct {
 }
 
 type MensajeIO struct {
-	PID    int `json:"pid"`
-	PC     int `json:"pc"`
-	Tiempo int `json:"tiempo"`
+	PID    int    `json:"pid"`
+	PC     int    `json:"pc"`
+	Tiempo int    `json:"tiempo"`
+	Nombre string `json:"nombre"`
 }
 
 type MensajeInitProc struct {
@@ -94,13 +95,14 @@ func dumpMemoryInstruccion(context *globals.ExecutionContext, arguments []string
 
 func ioInstruccion(context *globals.ExecutionContext, arguments []string) error {
 	// Validar que haya exactamente 1 argumento (el tiempo de IO)
-	if err := checkArguments(arguments, 1); err != nil {
+	if err := checkArguments(arguments, 2); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
 	}
 
 	// Parsear el tiempo desde el argumento
-	tiempoIO, err := strconv.Atoi(arguments[0])
+	nombreIO := arguments[0]
+	tiempoIO, err := strconv.Atoi(arguments[1])
 	if err != nil {
 		log.Printf("Error al convertir el tiempo de IO: %s", err)
 		return err
@@ -111,6 +113,7 @@ func ioInstruccion(context *globals.ExecutionContext, arguments []string) error 
 		PID:    context.PID,
 		PC:     context.PC,
 		Tiempo: tiempoIO,
+		Nombre: nombreIO,
 	}
 
 	// Lo codifico a JSON
