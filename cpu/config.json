@@ -5,5 +5,8 @@
     "port_memory": 8083,
     "ip_kernel": "127.0.0.1",
     "port_kernel": 8081,
+    "tlb_entries": 5,
+    "tlb_replacement": "FIFO", // o LRU
+    "cache_delay": 10, //milisegundos que espera antes de responder
     "log_level": "DEBUG"
 }

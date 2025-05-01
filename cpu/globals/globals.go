@@ -8,13 +8,16 @@ import (
 
 // No se si es correcto crear una carpeta globals
 type Config struct {
-	IpSelf     string `json:"ip_self"`
-	PortSelf   int    `json:"port_self"`
-	IpMemory   string `json:"ip_memory"`
-	PortMemory int    `json:"port_memory"`
-	IpKernel   string `json:"ip_kernel"`
-	PortKernel int    `json:"port_kernel"`
-	LogLevel   string `json:"log_level"`
+	IpSelf         string `json:"ip_self"`
+	PortSelf       int    `json:"port_self"`
+	IpMemory       string `json:"ip_memory"`
+	PortMemory     int    `json:"port_memory"`
+	IpKernel       string `json:"ip_kernel"`
+	PortKernel     int    `json:"port_kernel"`
+	TlbEntries     int    `json:"tlb_entries"`
+	TlbReplacement string `json:"tlb_replacement"`
+	CacheDelay     int    `json:"cache_delay"`
+	LogLevel       string `json:"log_level"`
 }
 
 type ExecutionContext struct {
@@ -35,6 +38,7 @@ var ClientConfig *Config
 var InterrupcionPendiente bool
 var PIDInterrumpido int
 var MutexInterrupcion sync.Mutex
+var TamPag int
 
 // (ectx *ExecutionContext) significa que estoy trabajando sobre la struct original y no sobre una copia, GetRegister pasa a ser un metodo
 func (ectx *ExecutionContext) GetRegister(str string) (*uint32, error) {

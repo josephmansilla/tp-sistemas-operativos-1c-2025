@@ -69,3 +69,18 @@ func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) error {
 	//w.Write([]byte("STATUS OK"))
 	return nil
 }
+
+// Enviar datos por POST y obtener la respuesta (útil si la respuesta es un JSON)
+func EnviarDatosConRespuesta(url string, data any) (*http.Response, error) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil // importante: quien la use debe hacer defer resp.Body.Close()
+}

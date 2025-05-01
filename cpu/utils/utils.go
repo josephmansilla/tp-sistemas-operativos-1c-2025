@@ -110,3 +110,28 @@ func RecibirInterrupcion(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Interrupción registrada"))
 }
+
+func ConsultarConfiguracionMemoria(ipDestino string, puertoDestino int) error {
+	// Construimos la URL del endpoint donde la memoria debe proporcionar estos datos.
+	url := fmt.Sprintf("http://%s:%d/memoria/configuracion", ipDestino, puertoDestino)
+
+	// Enviamos la solicitud GET a memoria.
+	var respuesta struct {
+		PageSize int `json:"page_size"` // Tamaño de la página
+	}
+
+	// Usamos la función RecibirDatos del paquete `data` para obtener los datos de configuración
+	err := data.RecibirDatos(url, &respuesta)
+	if err != nil {
+		log.Printf("Error al consultar la configuración de memoria: %s", err.Error())
+		return err
+	}
+
+	// Almacenamos los valores en las variables globales
+	globals.TamPag = respuesta.PageSize
+
+	// Log de la configuración obtenida
+	log.Printf("Configuración de Memoria: Tamaño de Página: %d, Entradas por Página: %d", globals.TamPag)
+
+	return nil
+}

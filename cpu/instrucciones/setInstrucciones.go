@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
+	"github.com/sisoputnfrba/tp-golang/cpu/traducciones"
 	"log"
 	"net/http"
 	"strconv"
@@ -237,10 +238,15 @@ func gotoInstruccion(context *globals.ExecutionContext, arguments []string) erro
 func noopInstruccion(context *globals.ExecutionContext, arguments []string) error {}
 
 func writeMemInstruccion(context *globals.ExecutionContext, arguments []string) error {
+	dirLogica, err := strconv.Atoi(arguments[0])
+	dirFisica := traducciones.Traducir(context.PID, dirLogica)
+	//desp con la dirFisica escribo
 }
 
 func readMemInstruccion(context *globals.ExecutionContext, arguments []string) error {
-
+	dirLogica, err := strconv.Atoi(arguments[0])
+	dirFisica := traducciones.Traducir(context.PID, dirLogica)
+	//desp con la dirFisica leo en mem
 }
 
 func jnzInstruccion(context *globals.ExecutionContext, arguments []string) error {
