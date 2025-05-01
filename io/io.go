@@ -159,28 +159,3 @@ func InformarFinalizacionIO(ipDestino string, puertoDestino int, pid int) error 
 		return nil
 	}
 }
-
-// Recibir PID y Tiempo de duracion de la operacion de IO (alternativa)
-func SolicitarOperacionIO(ipDestino string, puertoDestino int) {
-	//Creo la URL
-	url := fmt.Sprintf("http://%s:%d/kernel/operacion", ipDestino, puertoDestino)
-
-	var mensaje MensajeDeKernel
-	err := data.RecibirDatos(url, &mensaje)
-	if err != nil {
-		log.Printf("Error al recibir PID y duracion del Kernel: %s", err.Error())
-		return
-	}
-	//Realizo la operacion
-	log.Printf("## PID:%d - Inicio de IO - Tiempo:%d", mensaje.PID, mensaje.Duracion)
-	time.Sleep(time.Duration(mensaje.Duracion) * time.Second)
-
-	//IO finalizada
-	if err := InformarFinalizacionIO(ipDestino, puertoDestino, mensaje.PID); err != nil {
-		log.Printf("Error al notificar al Kernel: %s", err.Error())
-	}
-	log.Printf("## PID:%d - Fin de IO", mensaje.PID)
-
-	fmt.Printf("Termine de Ejecutar")
-
-}
