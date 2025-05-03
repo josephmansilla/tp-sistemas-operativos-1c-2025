@@ -1,15 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 
-	"github.com/sisoputnfrba/tp-golang/kernel/globals"
-	"github.com/sisoputnfrba/tp-golang/kernel/syscalls"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
+	"github.com/sisoputnfrba/tp-golang/kernel/syscalls"
 	"github.com/sisoputnfrba/tp-golang/kernel/utils"
 )
 
@@ -37,36 +37,45 @@ func main() {
 	// ----------------------------------------------------
 	// ----------- CARGO LOGS DE KERNEL EN TXT ------------
 	// ----------------------------------------------------
-	logFileName := "kernel.log"
-	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
-	if err != nil {
-		fmt.Printf("Error al crear archivo de log para Kernel: %v\n", err)
+	//NACHITO ACA HAGO UN REFACTOR DE LOS LOGs
+	err1 := utils.ConfigureLogger("kernel.log", "INFO")
+	if err1 != nil {
+		fmt.Println("No se pudo crear el logger -", err.Error())
 		os.Exit(1)
 	}
-	log.SetOutput(logFile)
-
-	log.Printf("Nombre del archivo de pseudocodigo: %s\n", archivoPseudocodigo)
-	log.Printf("Tamaño del proceso: %d\n", tamanioProceso)
+	utils.Debug("Logger creado")
 
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DEL CONFIG ------------------
 	// ----------------------------------------------------
-	globals.KernelConfig = utils.Config("config.json")
-	if globals.KernelConfig == nil {
-		log.Fatal("No se pudo cargar el archivo de configuración")
+	//NACHITO ACA HAGO UN REFACTOR DE LOS CONFIG
+	configData, err := os.ReadFile("config.json")
+	if err != nil {
+		utils.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
 	}
 
-	log.Println("Comenzó ejecucion del Kernel")
-	//TODO Al iniciar el módulo, se creará un proceso inicial para que este lo planifique...
+	err = json.Unmarshal(configData, &utils.Config)
+	if err != nil {
+		utils.Fatal("No se pudo parsear el archivo de configuración - %v", err.Error())
+	}
+
+	if err = utils.Config.Validate(); err != nil {
+		utils.Fatal("La configuración no es válida - %v", err.Error())
+	}
+
+	err = utils.SetLevel(utils.Config.LogLevel)
+	if err != nil {
+		utils.Fatal("No se pudo leer el log-level - %v", err.Error())
+	}
 
 	// ----------------------------------------------------
 	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------
 	// ----------------------------------------------------
-	var portKernel = globals.KernelConfig.PortKernel
-	var ipMemory = globals.KernelConfig.IpMemory
-	var portMemory = globals.KernelConfig.PortMemory
+	//var portKernel = globals.KernelConfig.PortKernel
+	//var ipMemory = globals.KernelConfig.IpMemory
+	//var portMemory = globals.KernelConfig.PortMemory
 
-	utils.EnviarFileMemoria(ipMemory, portMemory, archivoPseudocodigo, tamanioProceso)
+	utils.EnviarFileMemoria(utils.Config.MemoryAddress, utils.Config.MemoryPort, archivoPseudocodigo, tamanioProceso)
 	utils.IntentarIniciarProceso(tamanioProceso)
 
 	// ------------------------------------------------------
@@ -83,20 +92,21 @@ func main() {
 	mux.HandleFunc("/kernel/dump_memory", syscalls.DumpMemory)
 	mux.HandleFunc("/kernel/syscallIO", syscalls.Io)
 
-	fmt.Printf("Servidor escuchando en http://localhost:%d/kernel\n", portKernel)
+	fmt.Printf("Servidor escuchando en http://localhost:%d/kernel\n", utils.Config.KernelPort)
 
-	address := fmt.Sprintf(":%d", portKernel)
+	address := fmt.Sprintf(":%d", utils.Config.KernelPort)
 	err = http.ListenAndServe(address, mux)
 	if err != nil {
 		panic(err)
 	}
-	pcb.ColaNuevo = utils.Queue[*pcb.PCB]{}
-	pcb.ColaBLoqueado = utils.Queue[*pcb.PCB]{}
-	pcb.ColaSalida = utils.Queue[*pcb.PCB]{}
-	pcb.ColaEjecutando = utils.Queue[*pcb.PCB]{}
-	pcb.ColaReady = utils.Queue[*pcb.PCB]{}
-	pcb.ColaBloqueadoSuspendido = utils.Queue[*pcb.PCB]{}
-	pcb.ColaSuspendidoReady= utils.Queue[*pcb.PCB]{}
+	utils.ColaNuevo = utils.Queue[*pcb.PCB]{}
+	utils.ColaBLoqueado = utils.Queue[*pcb.PCB]{}
+	utils.ColaSalida = utils.Queue[*pcb.PCB]{}
+	utils.ColaEjecutando = utils.Queue[*pcb.PCB]{}
+	utils.ColaReady = utils.Queue[*pcb.PCB]{}
+	utils.ColaBloqueadoSuspendido = utils.Queue[*pcb.PCB]{}
+	utils.ColaSuspendidoReady = utils.Queue[*pcb.PCB]{}
+	InitFirstProcess("aca va el nombre del archivo de psudocodigo que te pasan", "aca va el tamaño")
 
 	//TODO
 	//1.funcion que cree primer proceso desde los argumentos del main
@@ -105,4 +115,37 @@ func main() {
 	//4.inicialiar colas que representen los estados new, ready, bloqueado, suspendido blog, suspendido ready, ejecutando.
 
 	fmt.Printf("Termine de Ejecutar")
+}
+func InitFirstProcess(fileName, processSize string) {
+	// Crear el PCB para el proceso inicial
+	pid := pcb.Pid(1) // Asignar el primer PID como 1 (puedes cambiar según la lógica de PID en tu sistema)
+	pcb1 := pcb.PCB{
+		PID: pid,
+		PC:  0,
+		ME:  make(map[string]int),
+		MT:  make(map[string]int), //ACA LAS LISTAS PARA LA TRAZABILIDAD LAS INICIALIZO VAcias
+	}
+
+	log.Printf("## (<%v>:0) Se crea el proceso - Estado: NEW", pid)
+
+	// Agregar el PCB a la lista de PCBs en el kernel
+	utils.ColaNuevo.Add(&pcb1)
+
+	// LE AVISO A MEMORIA QUE SE CREO UN NUEVO PROCESO
+	request := utils.RequestToMemory{
+		Thread:    utils.Thread{PID: utils.Pid(pid)},
+		Type:      utils.CreateProcess,
+		Arguments: []string{fileName, processSize}, // aca le envio como argumentos el nombre del archivo y el tamaño del proceso como strings
+	}
+	for {
+		err := utils.SendMemoryRequest(request)
+		if err != nil {
+			utils.Error("Error al enviar request a memoria: %v", err)
+			//<-kernelsync.InitProcess // Espera a que finalice otro proceso antes de intentar de nuevo
+		} else {
+			utils.Debug("Hay espacio disponible en memoria")
+			break
+		}
+	}
+
 }

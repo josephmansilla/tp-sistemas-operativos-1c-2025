@@ -1,13 +1,14 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
+	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 )
 
@@ -40,7 +41,7 @@ type MensajeToMemoria struct {
 }
 
 // 1. CARGAR ARCHIVO CONFIG
-func Config(filepath string) *globals.Config {
+/*func Config(filepath string) *globals.Config {
 	//Recibe un string filepath (ruta al archivo de configuración).
 	var config *globals.Config
 
@@ -62,7 +63,7 @@ func Config(filepath string) *globals.Config {
 	jsonParser.Decode(&config)
 
 	return config
-}
+}*/
 
 // w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
 // r *http.Request es la peticion que se recibio
@@ -79,7 +80,7 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 		Puerto: mensajeRecibido.Puerto,
 	}
 
-	log.Printf("Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
+	Info("Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
 		globals.IO.Nombre, globals.IO.Ip, globals.IO.Puerto)
 }
 
@@ -96,7 +97,7 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 		ID:     mensajeRecibido.ID,
 	}
 
-	log.Printf("Se ha recibido CPU: Ip: %s Puerto: %d ID: %s",
+	Info("Se ha recibido CPU: Ip: %s Puerto: %d ID: %s",
 		globals.CPU.Ip, globals.CPU.Puerto, globals.CPU.ID)
 
 	//Asignar PID al CPU
@@ -114,11 +115,11 @@ func EnviarContextoCPU(ipDestino string, puertoDestino int) {
 	err := data.EnviarDatos(url, mensaje)
 	//Verifico si hubo error y logue si lo hubo
 	if err != nil {
-		log.Printf("Error enviando PID y PC a CPU: %s", err.Error())
+		Info("Error enviando PID y PC a CPU: %s", err.Error())
 		return
 	}
 	//Si no hubo error, logueo que salio bien
-	log.Printf("PID: %d y PC: %d enviados exitosamente a CPU", mensaje.Pid, mensaje.Pc)
+	Info("PID: %d y PC: %d enviados exitosamente a CPU", mensaje.Pid, mensaje.Pc)
 }
 
 // Enviar PID y Duracion a IO
@@ -131,17 +132,17 @@ func EnviarContextoIO(ipDestino string, puertoDestino int, pid int, duracion int
 		Duracion: duracion,
 	}
 
-	log.Printf("## (%d) - Bloqueado por IO: %s", mensaje.Pid, globals.IO.Nombre)
+	Info("## (%d) - Bloqueado por IO: %s", mensaje.Pid, globals.IO.Nombre)
 
 	//Hace el POST a IO
 	err := data.EnviarDatos(url, mensaje)
 	//Verifico si hubo error y logue si lo hubo
 	if err != nil {
-		log.Printf("Error enviando PID y Duracion a IO: %s", err.Error())
+		Info("Error enviando PID y Duracion a IO: %s", err.Error())
 		return
 	}
 	//Si no hubo error, logueo que salio bien
-	log.Printf("## (%d) finalizó IO y pasa a READY", mensaje.Pid)
+	Info("## (%d) finalizó IO y pasa a READY", mensaje.Pid)
 }
 
 // Pedir PC Y PID a la memoria
@@ -175,11 +176,11 @@ func EnviarFileMemoria(ipDestino string, puertoDestino int, filename string, tam
 	err := data.EnviarDatos(url, mensaje)
 	//Verifico si hubo error y logue si lo hubo
 	if err != nil {
-		log.Printf("Error enviando Pseudocodigo a Memoria: %s", err.Error())
+		Info("Error enviando Pseudocodigo a Memoria: %s", err.Error())
 		return
 	}
 	//Si no hubo error, logueo que salio bien
-	log.Printf("Pseudocodigo: %s enviado exitosamente a Memoria", mensaje.Filename)
+	Info("Pseudocodigo: %s enviado exitosamente a Memoria", mensaje.Filename)
 }
 
 // NUEVA CONEXIÓN AGREGADA PARA QUE KERNEL LE CONSULTE LA DISPONIBILIDAD DE ESPACIOLIBRE A MEMORIA
@@ -191,7 +192,7 @@ func ConsultarEspacioLibreMemoria(ipDestino string, puertoDestino int) (int, err
 
 	rta, err := http.Get(url)
 	if err != nil {
-		log.Printf("Error al hacer el GET a Memoria: %s", err.Error())
+		Info("Error al hacer el GET a Memoria: %s", err.Error())
 		return 0, err
 		// SI HAY UN ERROR SE DEVUELVE EL ERROR, PERO TAMBIÉN ES NECESARIO INDICAR
 		// QUE EL ESPACIOLIBRE ES 0
@@ -203,10 +204,10 @@ func ConsultarEspacioLibreMemoria(ipDestino string, puertoDestino int) (int, err
 	var respuesta globals.EspacioLibreRTA
 	err = json.NewDecoder(rta.Body).Decode(&respuesta)
 	if err != nil {
-		log.Printf("Error al hacer el Decode para consultar a Memoria: %s", err.Error())
+		Info("Error al hacer el Decode para consultar a Memoria: %s", err.Error())
 		return 0, err
 	}
-	log.Printf("Espacio libre reportado por Memoria: %d", respuesta.EspacioLibre)
+	Info("Espacio libre reportado por Memoria: %d", respuesta.EspacioLibre)
 	// SE LOGUEA EL ESPACIO LIBRE Y SE DEVUELVE, AL IGUAL QUE UN NIL PARA EL ERROR
 	return respuesta.EspacioLibre, nil
 }
@@ -214,14 +215,14 @@ func ConsultarEspacioLibreMemoria(ipDestino string, puertoDestino int) (int, err
 func IntentarIniciarProceso(tamanioProceso int) {
 	espacioLibre, err := /*utils.*/ ConsultarEspacioLibreMemoria(globals.KernelConfig.IpMemory, globals.KernelConfig.PortMemory)
 	if err != nil {
-		log.Println("No se pudo consultar a la memoria por Espacio Libre")
+		Info("No se pudo consultar a la memoria por Espacio Libre")
 		return
 	}
 
 	if espacioLibre >= tamanioProceso {
-		log.Println("Hay suficiente espacio libre en Memoria para el proceso")
+		Info("Hay suficiente espacio libre en Memoria para el proceso")
 	} else {
-		log.Println("No hay suficiente espacio libre en memoria para el proceso")
+		Info("No hay suficiente espacio libre en memoria para el proceso")
 	}
 }
 
@@ -234,3 +235,84 @@ func EnviarContextoACPU(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(mensaje)
 }*/
+// ESTO ES PARA ENVIAR POR HTTP A MEMORIA LA DATA PARA INICIALIZAR PRIMER PORCESO
+type RequestToMemory struct {
+	Thread    Thread
+	Type      string   `json:"type"`
+	Arguments []string `json:"arguments"`
+}
+type Pid int
+
+type Thread struct {
+	PID Pid `json:"pid"`
+}
+
+// PARA MANJERAR LOS MENSAJES DEL ENDPOINT QUE ESTAN EN MEMORIA
+// por ejemplo: http.HandleFunc("/kernel/createProcess", createProcess)
+const (
+	CreateProcess = "createProcess"
+	FinishProcess = "finishProcess"
+	CreateThread  = "createThread"
+	FinishThread  = "finishThread"
+	MemoryDump    = "memoryDump"
+	Compactacion  = "compactar"
+)
+
+func SendMemoryRequest(request RequestToMemory) error {
+	Debug("Enviando request a  memoria: %v para el THREAD: %v", request.Type, request.Thread)
+
+	// Serializar mensaje
+	jsonRequest, err := json.Marshal(request)
+	if err != nil {
+		return err
+	}
+
+	// Hacer request a memoria
+	url := fmt.Sprintf("http://%s:%d/memoria/%s", Config.MemoryAddress, Config.MemoryPort, request.Type)
+	Debug("Enviando request a memoria: %v", url)
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonRequest))
+	if err != nil {
+		Error("Error al realizar request memoria: %v", err)
+		return err
+	}
+
+	err = handleMemoryResponseError(resp, request.Type)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// esta funcion es auxiliar de sendMemoryRequest
+func handleMemoryResponseError(response *http.Response, TypeRequest string) error {
+	Debug("Memoria respondio a: %v con: %v", TypeRequest, response.StatusCode)
+	if response.StatusCode != http.StatusOK {
+		if response.StatusCode == http.StatusConflict { // Conflict es compactacion.
+			err := ErrorRequestType[Compactacion]
+			return err
+		}
+		err := ErrorRequestType[TypeRequest]
+		return err
+	}
+	return nil
+}
+
+var ErrorRequestType = map[string]error{
+	CreateProcess: errors.New("memoria: No hay espacio disponible en memoria "),
+	FinishProcess: errors.New("memoria: No se puedo finalizar el proceso"),
+	CreateThread:  errors.New("memoria: No se puedo crear el hilo"),
+	FinishThread:  errors.New("memoria: No se pudo finalizar el hilo"),
+	Compactacion:  errors.New("memoria: Se debe compactar"),
+}
+
+// ESTAS SON VARIABLES GLOBALES OJO¡¡¡¡
+var Config KernelConfig
+var ColaNuevo Queue[*pcb.PCB]
+var NewStateQueue Queue[*pcb.PCB]
+var ColaBLoqueado Queue[*pcb.PCB]
+var ColaSalida Queue[*pcb.PCB]
+var ColaEjecutando Queue[*pcb.PCB]
+var ColaReady Queue[*pcb.PCB]
+var ColaBloqueadoSuspendido Queue[*pcb.PCB]
+var ColaSuspendidoReady Queue[*pcb.PCB]
