@@ -81,7 +81,7 @@ func main() {
 	mux.HandleFunc("/kernel/init_proc", syscalls.InitProc)
 	mux.HandleFunc("/kernel/exit", syscalls.Exit)
 	mux.HandleFunc("/kernel/dump_memory", syscalls.DumpMemory)
-	mux.HandleFunc("/kernel/io", syscalls.Io)
+	mux.HandleFunc("/kernel/syscallIO", syscalls.Io)
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/kernel\n", portKernel)
 
@@ -97,7 +97,6 @@ func main() {
 	pcb.ColaReady = utils.Queue[*pcb.PCB]{}
 	pcb.ColaBloqueadoSuspendido = utils.Queue[*pcb.PCB]{}
 	pcb.ColaSuspendidoReady= utils.Queue[*pcb.PCB]{}
-
 
 	//TODO
 	//1.funcion que cree primer proceso desde los argumentos del main

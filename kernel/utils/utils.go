@@ -81,9 +81,6 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
 		globals.IO.Nombre, globals.IO.Ip, globals.IO.Puerto)
-
-	//Asignar PID y Duracion
-	EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto)
 }
 
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
@@ -125,11 +122,14 @@ func EnviarContextoCPU(ipDestino string, puertoDestino int) {
 }
 
 // Enviar PID y Duracion a IO
-func EnviarContextoIO(ipDestino string, puertoDestino int) {
+func EnviarContextoIO(ipDestino string, puertoDestino int, pid int, duracion int) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/io/kernel", ipDestino, puertoDestino)
 
-	mensaje := PedirInformacionIO() //pedir a la memoria
+	mensaje := MensajeToIO{
+		Pid:      pid,
+		Duracion: duracion,
+	}
 
 	log.Printf("## (%d) - Bloqueado por IO: %s", mensaje.Pid, globals.IO.Nombre)
 

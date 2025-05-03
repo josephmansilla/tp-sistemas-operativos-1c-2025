@@ -60,10 +60,20 @@ func main() {
 	//Lo mando
 	EnviarIpPuertoNombreAKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, mensaje)
 
-	/*
-		for {
-			SolicitarOperacionIO(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
-		}*/
+	// ------------------------------------------------------
+	// ---------- ESCUCHO REQUESTS DE KERNEL ----------------
+	// ------------------------------------------------------
+	mux := http.NewServeMux()
+	mux.HandleFunc("/io/kernel", RecibirMensajeDeKernel)
+
+	// Inicia el servidor HTTP para escuchar las peticiones del Kernel
+	direccion := fmt.Sprintf("%s:%d", globals.ClientConfig.IpIo, globals.ClientConfig.PortIo)
+	log.Printf("Escuchando en %s...", direccion)
+
+	err = http.ListenAndServe(direccion, mux)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func Config(filepath string) *globals.Config {
@@ -94,23 +104,6 @@ func Config(filepath string) *globals.Config {
 func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje MensajeAKernel) {
 	// Construye la URL del endpoint (url + path) a donde se va a enviar el mensaje
 	url := fmt.Sprintf("http://%s:%d/kernel/io", ipDestino, puertoDestino)
-
-	// Solicito Operaciones: Iniciar servidor IO primero
-	mux := http.NewServeMux()
-	mux.HandleFunc("/io/kernel", RecibirMensajeDeKernel)
-
-	// Inicia el servidor HTTP para escuchar las peticiones del Kernel
-	direccion := fmt.Sprintf("%s:%d", globals.ClientConfig.IpIo, globals.ClientConfig.PortIo)
-	log.Printf("Escuchando en %s...", direccion)
-
-	go func() {
-		if err := http.ListenAndServe(direccion, mux); err != nil {
-			log.Fatalf("Error al iniciar el servidor IO: %v", err)
-		}
-	}()
-
-	// Asegurarse de que el servidor IO esté completamente iniciado antes de hacer el POST
-	//time.Sleep(1 * time.Second) // Retraso opcional para asegurar que el servidor esté escuchando
 
 	// Hace el POST al Kernel
 	err := data.EnviarDatos(url, mensaje)

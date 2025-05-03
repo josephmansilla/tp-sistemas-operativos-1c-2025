@@ -26,7 +26,7 @@ func ContextoInterrumpido(w http.ResponseWriter, r *http.Request) {
 
 func InitProc(w http.ResponseWriter, r *http.Request) {
     log.Printf("Syscall recibida: “## (<PID>) - Solicitó syscall: <INIT_PROC>”")
-  
+	
     var mensajeRecibido MensajeInit
 	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
 		return //hubo error
@@ -54,7 +54,9 @@ func DumpMemory(w http.ResponseWriter, r *http.Request) {
 }
 
 func Io(w http.ResponseWriter, r *http.Request) {
-    log.Printf("Syscall recibida: “## (<PID>) - Solicitó syscall: <IO>”")
+	//PID de donde viene?
+	pid := 0
+    log.Printf("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
   
     var mensajeRecibido MensajeIo
 	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
@@ -64,7 +66,8 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Se ha recibido: Nombre: %s Duracion: %d", 
         mensajeRecibido.Nombre, mensajeRecibido.Duracion)
 
+	//Habra que buscar en lista de IOs si existe...
 	if(globals.IO.Nombre == mensajeRecibido.Nombre){
-        utils.EnviarContextoIO(globals.IO.Ip,globals.IO.Puerto)
+        utils.EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto, pid, mensajeRecibido.Duracion)
     }
 }
