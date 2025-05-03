@@ -116,6 +116,7 @@ func main() {
 
 	fmt.Printf("Termine de Ejecutar")
 }
+
 func InitFirstProcess(fileName, processSize string) {
 	// Crear el PCB para el proceso inicial
 	pid := pcb.Pid(1) // Asignar el primer PID como 1 (puedes cambiar según la lógica de PID en tu sistema)

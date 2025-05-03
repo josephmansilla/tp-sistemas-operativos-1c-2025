@@ -3,16 +3,16 @@ package utils
 import "errors"
 
 type KernelConfig struct {
-	MemoryAddress         string `json:"ip_memory"`
-	MemoryPort            int    `json:"port_memory"`
-	SchedulerAlgorithm    string `json:"scheduler_algorithm"`
-	ReadyIngressAlgorithm string `json:"ready_ingress_algorithm"`
-	Alpha                 int    `json:"alpha"`
-	InitialEstimate       int    `json:"initial_estimate"`
-	SuspensionTime        int    `json:"suspension_time"`
-	LogLevel              string `json:"log_level"`
-	KernelPort            int    `json:"port_kernel"`
-	KernelAddress         string `json:"ip_kernel"`
+	MemoryAddress         string  `json:"ip_memory"`
+	MemoryPort            int     `json:"port_memory"`
+	SchedulerAlgorithm    string  `json:"scheduler_algorithm"`
+	ReadyIngressAlgorithm string  `json:"ready_ingress_algorithm"`
+	Alpha                 float64 `json:"alpha"`
+	InitialEstimate       int     `json:"initial_estimate"`
+	SuspensionTime        int     `json:"suspension_time"`
+	LogLevel              string  `json:"log_level"`
+	KernelPort            int     `json:"port_kernel"`
+	KernelAddress         string  `json:"ip_kernel"`
 }
 
 func (cfg KernelConfig) Validate() error {
