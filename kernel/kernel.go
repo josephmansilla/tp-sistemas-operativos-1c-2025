@@ -8,9 +8,9 @@ import (
 	"strconv"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
-	"github.com/sisoputnfrba/tp-golang/kernel/utils"
+	"github.com/sisoputnfrba/tp-golang/kernel/syscalls"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
-	
+	"github.com/sisoputnfrba/tp-golang/kernel/utils"
 )
 
 func main() {
@@ -75,6 +75,13 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/kernel/io", utils.RecibirMensajeDeIO)
 	mux.HandleFunc("/kernel/cpu", utils.RecibirMensajeDeCPU)
+
+	//SYSCALLS
+	mux.HandleFunc("/kernel/contexto_interrumpido", syscalls.ContextoInterrumpido)
+	mux.HandleFunc("/kernel/init_proc", syscalls.InitProc)
+	mux.HandleFunc("/kernel/exit", syscalls.Exit)
+	mux.HandleFunc("/kernel/dump_memory", syscalls.DumpMemory)
+	mux.HandleFunc("/kernel/io", syscalls.Io)
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/kernel\n", portKernel)
 
