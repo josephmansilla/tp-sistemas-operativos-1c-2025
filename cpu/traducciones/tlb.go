@@ -2,6 +2,7 @@ package traducciones
 
 import (
 	"container/list"
+	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"log"
 	"sync"
 	"time"
@@ -22,6 +23,9 @@ type TLB struct {
 }
 
 func NuevaTLB(maxEntradas int, algoritmo string) *TLB {
+	if algoritmo != "FIFO" && algoritmo != "LRU" {
+		log.Printf("Algoritmo TLB inválido: %s", algoritmo)
+	}
 	return &TLB{
 		entradas:    make(map[int]*list.Element),
 		orden:       list.New(),
@@ -40,11 +44,10 @@ func (tlb *TLB) Buscar(pagina int) (int, bool) {
 		if tlb.algoritmo == "LRU" {
 			tlb.orden.MoveToFront(elem)
 		}
-		log.Printf("TLB Hit")
+		log.Printf("PID: %d - TLB HIT - Pagina: %d", globals.CurrentContext.PID, pagina)
 		return elem.Value.(EntradaTLB).Marco, true
 	}
-	log.Printf("TLB Miss")
-
+	log.Printf("PID: %d - TLB MISS - Pagina: %d", globals.CurrentContext.PID, pagina)
 	return -1, false
 }
 
@@ -52,7 +55,7 @@ func (tlb *TLB) AgregarEntrada(pagina int, marco int) {
 	tlb.mutex.Lock()
 	defer tlb.mutex.Unlock()
 
-	// por si un marco cambia de pag
+	// Si ya existe, actualizar
 	if elem, ok := tlb.entradas[pagina]; ok {
 		elem.Value = EntradaTLB{Pagina: pagina, Marco: marco}
 		if tlb.algoritmo == "LRU" {
@@ -61,12 +64,10 @@ func (tlb *TLB) AgregarEntrada(pagina int, marco int) {
 		return
 	}
 
-	// si ya esta llena la tlb, reemplazo una entrada
+	// Si está llena, elegir víctima
 	if len(tlb.entradas) >= tlb.maxEntradas {
 		var victima *list.Element
-		if tlb.algoritmo == "FIFO" || tlb.algoritmo == "LRU" {
-			victima = tlb.orden.Back()
-		}
+		victima = tlb.orden.Back() //Para los dos algoritmos voy a borrar siempre el ultimo elemento
 
 		if victima != nil {
 			entrada := victima.Value.(EntradaTLB)
@@ -75,6 +76,7 @@ func (tlb *TLB) AgregarEntrada(pagina int, marco int) {
 		}
 	}
 
+	// Agregar nueva entrada al frente
 	nuevaEntrada := EntradaTLB{Pagina: pagina, Marco: marco}
 	elem := tlb.orden.PushFront(nuevaEntrada)
 	tlb.entradas[pagina] = elem

@@ -37,17 +37,17 @@ type MensajeInitProc struct {
 // ejecutando (Pc, variables, registros, etc) y una lista de strings que son los argumentos
 
 var InstruccionSet = map[string]Instruccion{
-	// Instrucciones básicas
-	"SET":   setInstruccion,
-	"READ":  readMemInstruccion,
-	"WRITE": writeMemInstruccion,
-	"GOTO":  gotoInstruccion,
+	// Instrucciones de CPU
 	"NOOP":  noopInstruccion,
-	"SUM":   sumInstruccion,
-	"SUB":   subInstruccion,
-	"JNZ":   jnzInstruccion,
-	"LOG":   logInstruccion,
-
+	"GOTO":  gotoInstruccion,
+	"WRITE": writeMemInstruccion,
+	"READ":  readMemInstruccion,
+	//Instrucciones de Registros
+	"JNZ": jnzInstruccion,
+	"SUM": sumInstruccion,
+	"SUB": subInstruccion,
+	"SET": setInstruccion,
+	"LOG": logInstruccion, //Esta no se si va
 	// Syscalls
 	"DUMP_MEMORY": dumpMemoryInstruccion,
 	"IO":          ioInstruccion,
@@ -55,6 +55,176 @@ var InstruccionSet = map[string]Instruccion{
 	"INIT_PROC":   iniciarProcesoInstruccion,
 }
 
+// INSTRUCCIONES DE CPU
+func noopInstruccion(context *globals.ExecutionContext, arguments []string) error {
+	if err := checkArguments(arguments, 0); err != nil {
+		log.Printf("Error en los argumentos de la instrucción: %s", err)
+		return err
+	}
+	log.Printf("## PID: %d - Instrucción NOOP ejecutada. No se realizó ninguna acción.", context.PID)
+	return nil
+}
+
+func gotoInstruccion(context *globals.ExecutionContext, arguments []string) error {
+	if err := checkArguments(arguments, 1); err != nil {
+		log.Printf("Error en los argumentos de la instrucción: %s", err)
+		return err
+	}
+
+	nuevoPC, err := strconv.Atoi(arguments[0])
+	if err != nil {
+		log.Printf("Error al convertir el valor de PC en la instrucción GOTO: %s", err)
+		return err
+	}
+
+	globals.MutexInterrupcion.Lock()
+	context.PC = nuevoPC
+	globals.MutexInterrupcion.Unlock()
+
+	log.Printf("## PID: %d - Instrucción GOTO ejecutada. Nuevo PC: %d", context.PID, context.PC)
+	return nil
+}
+
+func writeMemInstruccion(context *globals.ExecutionContext, arguments []string) error {
+	if err := checkArguments(arguments, 2); err != nil {
+		log.Printf("Error en los argumentos de la Instruccion: %s", err)
+		return err
+	}
+
+	dirLogica, err := strconv.Atoi(arguments[0])
+	if err != nil {
+		log.Printf("Error al convertir la direccion logica: %s", err)
+		return err
+	}
+	datos := arguments[1]
+	dirFisica := traducciones.Traducir(context.PID, dirLogica)
+
+	if err := traducciones.Escribir(dirFisica, datos); err != nil {
+		log.Printf("Error escribiendo en Memoria: %s", err)
+		return err
+	}
+
+	log.Printf("PID: %s - Acción: LEER - Dirección Física: %s - Valor: %s", context.PID, dirFisica, datos)
+
+	return nil
+}
+
+func readMemInstruccion(context *globals.ExecutionContext, arguments []string) error {
+	if err := checkArguments(arguments, 2); err != nil {
+		log.Printf("Error en los argumentos de la Instruccion: %s", err)
+		return err
+	}
+
+	dirLogica, err := strconv.Atoi(arguments[0])
+	if err != nil {
+		log.Printf("Error al convertir la direccion logica: %s", err)
+		return err
+	}
+	tamanio, err := strconv.Atoi(arguments[1])
+	if err != nil {
+		log.Printf("Error al convertir el tamanio: %s", err)
+		return err
+	}
+	dirFisica := traducciones.Traducir(context.PID, dirLogica)
+
+	valorLeido, err := traducciones.Leer(dirFisica, tamanio)
+	if err != nil {
+		log.Printf("Error leyendo en Memoria: %s", err)
+		return err
+	}
+
+	log.Printf("PID: %s - Acción: LEER - Dirección Física: %s - Valor: %s", context.PID, dirFisica, valorLeido)
+
+	return nil
+}
+
+// INSTRUCCIONES DE REGISTROS
+func jnzInstruccion(context *globals.ExecutionContext, arguments []string) error {
+	if err := checkArguments(arguments, 2); err != nil {
+		return err
+	}
+
+	register, err := context.GetRegister(arguments[0])
+	if err != nil {
+		return err
+	}
+
+	jump, err := strconv.Atoi(arguments[1])
+	if err != nil {
+		return err
+	}
+
+	if *register != 0 {
+		context.PC = int(jump)
+		log.Printf("Actualizando PC: %v", context.PC)
+	}
+
+	return nil
+}
+
+func sumInstruccion(context *globals.ExecutionContext, args []string) error {
+	if err := checkArguments(args, 2); err != nil {
+		return err
+	}
+
+	firstRegister, err := context.GetRegister(args[0])
+	if err != nil {
+		return err
+	}
+
+	secondRegister, err := context.GetRegister(args[1])
+	if err != nil {
+		return err
+	}
+
+	*firstRegister = *firstRegister + *secondRegister
+	return nil
+}
+
+func subInstruccion(context *globals.ExecutionContext, args []string) error {
+	if err := checkArguments(args, 2); err != nil {
+		return err
+	}
+
+	firstRegister, err := context.GetRegister(args[0])
+	if err != nil {
+		return err
+	}
+
+	secondRegister, err := context.GetRegister(args[1])
+	if err != nil {
+		return err
+	}
+
+	*firstRegister = *firstRegister - *secondRegister
+	return nil
+}
+
+func setInstruccion(ctx *globals.ExecutionContext, args []string) error {
+	if err := checkArguments(args, 2); err != nil {
+		return err
+	}
+
+	reg, err := ctx.GetRegister(args[0])
+	if err != nil {
+		return err
+	}
+
+	i, err := strconv.Atoi(args[1])
+	if err != nil {
+		reg2, err := ctx.GetRegister(args[1])
+		if err != nil {
+			return errors.New("no se pudo parsear '" + args[1] + "' como un entero o un registro")
+		}
+		*reg = *reg2
+	} else {
+		*reg = uint32(i)
+	}
+
+	return nil
+}
+
+// SYSCALLS
 func dumpMemoryInstruccion(context *globals.ExecutionContext, arguments []string) error {
 	// Validar que no hayan args
 	if err := checkArguments(arguments, 0); err != nil {
@@ -95,7 +265,7 @@ func dumpMemoryInstruccion(context *globals.ExecutionContext, arguments []string
 }
 
 func ioInstruccion(context *globals.ExecutionContext, arguments []string) error {
-	// Validar que haya exactamente 1 argumento (el tiempo de IO)
+	// Validar que haya exactamente 2 argumentos (el tiempo de IO)
 	if err := checkArguments(arguments, 2); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
@@ -233,107 +403,7 @@ func iniciarProcesoInstruccion(context *globals.ExecutionContext, arguments []st
 	return nil
 }
 
-func gotoInstruccion(context *globals.ExecutionContext, arguments []string) error {}
-
-func noopInstruccion(context *globals.ExecutionContext, arguments []string) error {}
-
-func writeMemInstruccion(context *globals.ExecutionContext, arguments []string) error {
-	dirLogica, err := strconv.Atoi(arguments[0])
-	dirFisica := traducciones.Traducir(context.PID, dirLogica)
-	//desp con la dirFisica escribo
-}
-
-func readMemInstruccion(context *globals.ExecutionContext, arguments []string) error {
-	dirLogica, err := strconv.Atoi(arguments[0])
-	dirFisica := traducciones.Traducir(context.PID, dirLogica)
-	//desp con la dirFisica leo en mem
-}
-
-func jnzInstruccion(context *globals.ExecutionContext, arguments []string) error {
-	if err := checkArguments(arguments, 2); err != nil {
-		return err
-	}
-
-	register, err := context.GetRegister(arguments[0])
-	if err != nil {
-		return err
-	}
-
-	jump, err := strconv.Atoi(arguments[1])
-	if err != nil {
-		return err
-	}
-
-	if *register != 0 {
-		context.PC = int(jump)
-		log.Printf("Actualizando PC: %v", context.PC)
-	}
-
-	return nil
-}
-
-func sumInstruccion(context *globals.ExecutionContext, args []string) error {
-	if err := checkArguments(args, 2); err != nil {
-		return err
-	}
-
-	firstRegister, err := context.GetRegister(args[0])
-	if err != nil {
-		return err
-	}
-
-	secondRegister, err := context.GetRegister(args[1])
-	if err != nil {
-		return err
-	}
-
-	*firstRegister = *firstRegister + *secondRegister
-	return nil
-}
-
-func subInstruccion(context *globals.ExecutionContext, args []string) error {
-	if err := checkArguments(args, 2); err != nil {
-		return err
-	}
-
-	firstRegister, err := context.GetRegister(args[0])
-	if err != nil {
-		return err
-	}
-
-	secondRegister, err := context.GetRegister(args[1])
-	if err != nil {
-		return err
-	}
-
-	*firstRegister = *firstRegister - *secondRegister
-	return nil
-}
-
-func setInstruccion(ctx *globals.ExecutionContext, args []string) error {
-	if err := checkArguments(args, 2); err != nil {
-		return err
-	}
-
-	reg, err := ctx.GetRegister(args[0])
-	if err != nil {
-		return err
-	}
-
-	i, err := strconv.Atoi(args[1])
-	if err != nil {
-		reg2, err := ctx.GetRegister(args[1])
-		if err != nil {
-			return errors.New("no se pudo parsear '" + args[1] + "' como un entero o un registro")
-		}
-		*reg = *reg2
-	} else {
-		*reg = uint32(i)
-	}
-
-	return nil
-}
-
+// Esta nose si la van a pedir
 func logInstruccion(ctx *globals.ExecutionContext, args []string) error {
 	if err := checkArguments(args, 1); err != nil {
 		return err

@@ -6,7 +6,9 @@
     "ip_kernel": "127.0.0.1",
     "port_kernel": 8081,
     "tlb_entries": 5,
-    "tlb_replacement": "FIFO", // o LRU
-    "cache_delay": 10, //milisegundos que espera antes de responder
+    "tlb_replacement": "FIFO",
+    "cache_entries": 5,
+    "cache_delay": 10,
+    "cache_replacement" : "CLOCK",
     "log_level": "DEBUG"
 }

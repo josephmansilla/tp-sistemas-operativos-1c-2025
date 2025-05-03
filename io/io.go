@@ -127,28 +127,8 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	log.Printf("## PID:%d - Inicio de IO - Tiempo:%d", mensajeRecibido.PID, mensajeRecibido.Duracion)
 	time.Sleep(time.Duration(mensajeRecibido.Duracion) * time.Second)
 
-	//IO finalizada
-	if err := InformarFinalizacionIO(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, mensajeRecibido.PID); err != nil {
-		log.Printf("Error al notificar al Kernel: %s", err.Error())
-	}
 	log.Printf("## PID:%d - Fin de IO", mensajeRecibido.PID)
-}
-
-// FIN de IO
-func InformarFinalizacionIO(ipDestino string, puertoDestino int, pid int) error {
-	url := fmt.Sprintf("http://%s:%d/kernel/io/finalizado", ipDestino, puertoDestino)
-
-	mensaje := struct {
-		PID int `json:"pid"`
-	}{
-		PID: pid,
-	}
-
-	err := data.EnviarDatos(url, mensaje)
-	if err != nil {
-		log.Printf("Error notificando finalización de IO al Kernel: %s", err.Error())
-		return err
-	} else {
-		return nil
-	}
+	//IO Finalizada
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("IO finalizada correctamente"))
 }

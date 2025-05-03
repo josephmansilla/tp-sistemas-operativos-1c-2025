@@ -100,7 +100,7 @@ func RecibirInterrupcion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Recibida interrupción para PID: %d", interrumpido.PID)
+	log.Printf("## Llega interrupción al puerto Interrupt")
 
 	globals.MutexInterrupcion.Lock()
 	globals.InterrupcionPendiente = true //aseguro la mutua exclusion

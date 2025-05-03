@@ -12,7 +12,7 @@ const (
 )
 
 type PCB struct {
-	PID Pid
+	PID int
 	PC  int
 	ME  map[string]int //asocia cada estado con la cantidad de veces que el proceso estuvo en ese estado.
 	MT  map[string]int //asocia cada estado con el tiempo total que el proceso pasó en ese estado.

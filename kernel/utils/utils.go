@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
+	"io"
+	"net/http"
 )
 
 // Body JSON a recibir
@@ -39,31 +39,6 @@ type MensajeToMemoria struct {
 	Filename string `json:"filename"` //filename
 	Tamanio  int    `json:"tamanio_memoria"`
 }
-
-// 1. CARGAR ARCHIVO CONFIG
-/*func Config(filepath string) *globals.Config {
-	//Recibe un string filepath (ruta al archivo de configuración).
-	var config *globals.Config
-
-	//Abrir archivo en la ruta filepath
-	configFile, err := os.Open(filepath)
-
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	//defer se usa para asegurarse de cerrar recursos (archivos, conexiones, etc.)
-	//incluso si hay errores más adelante.
-	defer configFile.Close()
-
-	//Crear decoder JSON que lee desde el archivo abierto (configFile).
-	jsonParser := json.NewDecoder(configFile)
-
-	//Deserializa el contenido del archivo JSON en una estructura Go.
-	//llena el struct config con los valores que están en el archivo.
-	jsonParser.Decode(&config)
-
-	return config
-}*/
 
 // w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
 // r *http.Request es la peticion que se recibio
@@ -109,7 +84,10 @@ func EnviarContextoCPU(ipDestino string, puertoDestino int) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/cpu/kernel", ipDestino, puertoDestino)
 
-	mensaje := PedirInformacion() //pedir a la memoria
+	mensaje := MensajeToCPU{
+		Pid: 0, //PEDIR AL PCB
+		Pc:  0, //PEDIR A MEMORIA
+	}
 
 	//Hace el POST a CPU
 	err := data.EnviarDatos(url, mensaje)
@@ -124,7 +102,6 @@ func EnviarContextoCPU(ipDestino string, puertoDestino int) {
 
 // Enviar PID y Duracion a IO
 func EnviarContextoIO(ipDestino string, puertoDestino int, pid int, duracion int) {
-	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/io/kernel", ipDestino, puertoDestino)
 
 	mensaje := MensajeToIO{
@@ -134,33 +111,22 @@ func EnviarContextoIO(ipDestino string, puertoDestino int, pid int, duracion int
 
 	Info("## (%d) - Bloqueado por IO: %s", mensaje.Pid, globals.IO.Nombre)
 
-	//Hace el POST a IO
-	err := data.EnviarDatos(url, mensaje)
-	//Verifico si hubo error y logue si lo hubo
+	resp, err := data.EnviarDatosConRespuesta(url, mensaje)
 	if err != nil {
 		Info("Error enviando PID y Duracion a IO: %s", err.Error())
 		return
 	}
-	//Si no hubo error, logueo que salio bien
+	defer resp.Body.Close()
+
+	// Leer el cuerpo del response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		Info("Error leyendo respuesta de IO: %s", err.Error())
+		return
+	}
+
+	Info("Respuesta del módulo IO: %s", string(body))
 	Info("## (%d) finalizó IO y pasa a READY", mensaje.Pid)
-}
-
-// Pedir PC Y PID a la memoria
-func PedirInformacion() MensajeToCPU {
-	mensaje := MensajeToCPU{
-		Pid: 1,
-		Pc:  0,
-	}
-	return mensaje
-}
-
-// Pedir PC Y Duracion a la memoria
-func PedirInformacionIO() MensajeToIO {
-	mensaje := MensajeToIO{
-		Pid:      1,
-		Duracion: 10,
-	}
-	return mensaje
 }
 
 func EnviarFileMemoria(ipDestino string, puertoDestino int, filename string, tamanioProceso int) {
@@ -213,7 +179,7 @@ func ConsultarEspacioLibreMemoria(ipDestino string, puertoDestino int) (int, err
 }
 
 func IntentarIniciarProceso(tamanioProceso int) {
-	espacioLibre, err := /*utils.*/ ConsultarEspacioLibreMemoria(globals.KernelConfig.IpMemory, globals.KernelConfig.PortMemory)
+	espacioLibre, err := ConsultarEspacioLibreMemoria(Config.MemoryAddress, Config.MemoryPort)
 	if err != nil {
 		Info("No se pudo consultar a la memoria por Espacio Libre")
 		return
@@ -226,16 +192,6 @@ func IntentarIniciarProceso(tamanioProceso int) {
 	}
 }
 
-/*// Enviar PC Y PID a CPU
-func EnviarContextoACPU(w http.ResponseWriter, r *http.Request) {
-	mensaje := PedirInformacion() //pedir a la memoria
-	log.Printf("Enviando contexto a CPU por GET: PID %d, PC %d", mensaje.Pid, mensaje.Pc)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(mensaje)
-}*/
-// ESTO ES PARA ENVIAR POR HTTP A MEMORIA LA DATA PARA INICIALIZAR PRIMER PORCESO
 type RequestToMemory struct {
 	Thread    Thread
 	Type      string   `json:"type"`

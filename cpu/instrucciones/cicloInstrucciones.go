@@ -25,12 +25,15 @@ type Interrupcion struct {
 }
 
 func FaseFetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int) {
-	pc := pcInicial
+	globals.CurrentContext.PC = pcInicial
+	globals.CurrentContext.PID = pidPropio
 
 	for {
+		log.Printf("## PID: %d - FETCH - Program Counter: %d", globals.CurrentContext.PID, globals.CurrentContext.PC)
+
 		mensaje := MensajeInstruccion{
-			PID: pidPropio,
-			PC:  pc,
+			PID: globals.CurrentContext.PID,
+			PC:  globals.CurrentContext.PC,
 		}
 
 		jsonData, err := json.Marshal(mensaje)
@@ -46,30 +49,29 @@ func FaseFetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int
 			log.Printf("Error haciendo POST a Memoria: %s", err)
 			break
 		}
-		resp.Body.Close()
+		defer resp.Body.Close() // <-- mover esto después de confirmar que no hubo error
 
 		var respuesta RespuestaInstruccion
-		err = json.NewDecoder(resp.Body).Decode(&respuesta)
-		if err != nil {
+		if err := json.NewDecoder(resp.Body).Decode(&respuesta); err != nil {
 			log.Printf("Error decodificando respuesta de Memoria: %s", err)
 			break
 		}
 
 		if respuesta.Instruccion == "" {
-			log.Printf("No hay instruccion para PID %d (PC %d)", pidPropio, pc)
+			log.Printf("No hay instrucción para PID %d (PC %d)", pidPropio, globals.CurrentContext.PC)
 			break
 		}
 
-		log.Printf("Instrucción recibida (PC %d): %s", pc, respuesta.Instruccion)
+		log.Printf("Instrucción recibida (PC %d): %s", globals.CurrentContext.PC, respuesta.Instruccion)
 
 		// Parsear y ejecutar instrucción
 		if seguir := FaseDecode(respuesta.Instruccion); !seguir {
 			log.Println("Se pidió un syscall, finalizando ejecución del proceso.")
 			break
 		}
-
-		pc++
-		globals.CurrentContext.PC = pc
+		globals.MutexInterrupcion.Lock()
+		globals.CurrentContext.PC++
+		globals.MutexInterrupcion.Unlock()
 	}
 }
 

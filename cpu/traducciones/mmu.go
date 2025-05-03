@@ -60,6 +60,6 @@ func ObtenerMarco(pid int, nroPagina int) int {
 		return -1
 	}
 
-	log.Printf("Marco recibido: %d", respuesta.Marco)
+	log.Printf("PID: %s - OBTENER MARCO - Página: %s - Marco: %s", globals.CurrentContext.PID, nroPagina, respuesta.Marco)
 	return respuesta.Marco
 }

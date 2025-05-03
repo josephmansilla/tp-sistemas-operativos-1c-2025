@@ -71,12 +71,7 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------
 	// ----------------------------------------------------
-	//var portKernel = globals.KernelConfig.PortKernel
-	//var ipMemory = globals.KernelConfig.IpMemory
-	//var portMemory = globals.KernelConfig.PortMemory
-
-	utils.EnviarFileMemoria(utils.Config.MemoryAddress, utils.Config.MemoryPort, archivoPseudocodigo, tamanioProceso)
-	utils.IntentarIniciarProceso(tamanioProceso)
+	InitFirstProcess(archivoPseudocodigo, tamanioProceso)
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU E IO --------------
@@ -87,7 +82,7 @@ func main() {
 
 	//SYSCALLS
 	mux.HandleFunc("/kernel/contexto_interrumpido", syscalls.ContextoInterrumpido)
-	mux.HandleFunc("/kernel/init_proc", syscalls.InitProc)
+	mux.HandleFunc("/kernel/init_proc", syscalls.InitProcess)
 	mux.HandleFunc("/kernel/exit", syscalls.Exit)
 	mux.HandleFunc("/kernel/dump_memory", syscalls.DumpMemory)
 	mux.HandleFunc("/kernel/syscallIO", syscalls.Io)
@@ -99,6 +94,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	utils.ColaNuevo = utils.Queue[*pcb.PCB]{}
 	utils.ColaBLoqueado = utils.Queue[*pcb.PCB]{}
 	utils.ColaSalida = utils.Queue[*pcb.PCB]{}
@@ -106,7 +102,6 @@ func main() {
 	utils.ColaReady = utils.Queue[*pcb.PCB]{}
 	utils.ColaBloqueadoSuspendido = utils.Queue[*pcb.PCB]{}
 	utils.ColaSuspendidoReady = utils.Queue[*pcb.PCB]{}
-	InitFirstProcess("aca va el nombre del archivo de psudocodigo que te pasan", "aca va el tamaño")
 
 	//TODO
 	//1.funcion que cree primer proceso desde los argumentos del main
@@ -117,9 +112,9 @@ func main() {
 	fmt.Printf("Termine de Ejecutar")
 }
 
-func InitFirstProcess(fileName, processSize string) {
+func InitFirstProcess(fileName string, processSize int) {
 	// Crear el PCB para el proceso inicial
-	pid := pcb.Pid(1) // Asignar el primer PID como 1 (puedes cambiar según la lógica de PID en tu sistema)
+	pid := 0 // Asignar el primer PID como 0 (puedes cambiar según la lógica de PID en tu sistema)
 	pcb1 := pcb.PCB{
 		PID: pid,
 		PC:  0,
@@ -127,16 +122,15 @@ func InitFirstProcess(fileName, processSize string) {
 		MT:  make(map[string]int), //ACA LAS LISTAS PARA LA TRAZABILIDAD LAS INICIALIZO VAcias
 	}
 
-	log.Printf("## (<%v>:0) Se crea el proceso - Estado: NEW", pid)
+	log.Printf("## (<%d>:0) Se crea el proceso - Estado: NEW", pid)
 
 	// Agregar el PCB a la lista de PCBs en el kernel
 	utils.ColaNuevo.Add(&pcb1)
-
 	// LE AVISO A MEMORIA QUE SE CREO UN NUEVO PROCESO
 	request := utils.RequestToMemory{
 		Thread:    utils.Thread{PID: utils.Pid(pid)},
 		Type:      utils.CreateProcess,
-		Arguments: []string{fileName, processSize}, // aca le envio como argumentos el nombre del archivo y el tamaño del proceso como strings
+		Arguments: []string{fileName, strconv.Itoa(processSize)}, // aca le envio como argumentos el nombre del archivo y el tamaño del proceso como strings
 	}
 	for {
 		err := utils.SendMemoryRequest(request)
@@ -148,5 +142,4 @@ func InitFirstProcess(fileName, processSize string) {
 			break
 		}
 	}
-
 }
