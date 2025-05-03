@@ -11,6 +11,8 @@ type Config struct {
 	SwapfilePath   string `json:"swapfile_path"`
 	SwapDelay      int    `json:"swap_delay"`
 	LogLevel       string `json:"log_level"`
+	DumpPath       string `json:"dump_path"`
+	ScriptsPath    string `json:"scripts_path"`
 }
 
 var MemoryConfig *Config
