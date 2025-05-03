@@ -74,7 +74,7 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 }
 
 func Exit(w http.ResponseWriter, r *http.Request) {
-	// tu código...
+
 }
 
 func DumpMemory(w http.ResponseWriter, r *http.Request) {
