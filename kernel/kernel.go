@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -114,32 +113,38 @@ func main() {
 
 func InitFirstProcess(fileName string, processSize int) {
 	// Crear el PCB para el proceso inicial
-	pid := 0 // Asignar el primer PID como 0 (puedes cambiar según la lógica de PID en tu sistema)
+	pid := pcb.Pid(1)
 	pcb1 := pcb.PCB{
-		PID: pid,
+		PID: 1,
 		PC:  0,
 		ME:  make(map[string]int),
-		MT:  make(map[string]int), //ACA LAS LISTAS PARA LA TRAZABILIDAD LAS INICIALIZO VAcias
+		MT:  make(map[string]int),
 	}
 
-	log.Printf("## (<%d>:0) Se crea el proceso - Estado: NEW", pid)
+	utils.Info("## (<%v>:0) Se crea el proceso - Estado: NEW", pid)
 
-	// Agregar el PCB a la lista de PCBs en el kernel
+	// Agregar el PCB a la cola de nuevos procesos en el kernel
 	utils.ColaNuevo.Add(&pcb1)
-	// LE AVISO A MEMORIA QUE SE CREO UN NUEVO PROCESO
+
+	// Preparar argumentos como mapa con valores tipados
+	args := map[string]interface{}{
+		"fileName":    fileName,
+		"processSize": processSize,
+	}
+
 	request := utils.RequestToMemory{
 		Thread:    utils.Thread{PID: utils.Pid(pid)},
 		Type:      utils.CreateProcess,
-		Arguments: []string{fileName, strconv.Itoa(processSize)}, // aca le envio como argumentos el nombre del archivo y el tamaño del proceso como strings
+		Arguments: args,
 	}
-	for {
-		err := utils.SendMemoryRequest(request)
-		if err != nil {
-			utils.Error("Error al enviar request a memoria: %v", err)
-			//<-kernelsync.InitProcess // Espera a que finalice otro proceso antes de intentar de nuevo
-		} else {
-			utils.Debug("Hay espacio disponible en memoria")
-			break
-		}
+
+	err := utils.SendMemoryRequest(request)
+	if err != nil {
+		utils.Error("Error al enviar request a memoria: %v", err)
+	} else {
+		utils.Debug("Hay espacio disponible en memoria")
+
 	}
+
+	utils.Info("Pude enviar a memoria todo")
 }

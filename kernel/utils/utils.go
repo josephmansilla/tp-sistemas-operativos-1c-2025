@@ -193,9 +193,9 @@ func IntentarIniciarProceso(tamanioProceso int) {
 }
 
 type RequestToMemory struct {
-	Thread    Thread
-	Type      string   `json:"type"`
-	Arguments []string `json:"arguments"`
+	Thread    Thread      `json:"thread"`
+	Type      string      `json:"type"`
+	Arguments interface{} `json:"arguments"` // <-- puede ser cualquier tipo ahora (map, struct, etc.)
 }
 type Pid int
 

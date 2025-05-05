@@ -92,3 +92,46 @@ func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	//toDO
 }
+
+// Para recibir Creacion de proceso
+func CreateProcess(w http.ResponseWriter, r *http.Request) {
+	log.Println(">>> Entró a utils.CreateProcess")
+	var request RequestToMemory
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, "Error decodificando el request", http.StatusBadRequest)
+		log.Printf("Error decodificando request: %v", err)
+		return
+	}
+
+	// Desempaquetar los argumentos
+	var args CreateProcessArgs
+	argsBytes, _ := json.Marshal(request.Arguments)
+	err = json.Unmarshal(argsBytes, &args)
+	if err != nil {
+		http.Error(w, "Error en los argumentos del proceso", http.StatusBadRequest)
+		log.Printf("Error en los argumentos: %v", err)
+		return
+	}
+	// Log para verificar lo recibido
+	log.Printf(">> [Memoria] Creando proceso: %s - Tamaño: %d", args.FileName, args.ProcessSize)
+
+	// ACA VA LA DE CARGAR INSTRUCCIONES DADO EL NOMBRE DE PSUDO CODIGOañadir la lógica para manejar el proceso en memoria
+
+	w.WriteHeader(http.StatusOK)
+}
+
+type CreateProcessArgs struct {
+	FileName    string `json:"fileName"`
+	ProcessSize int    `json:"processSize"`
+}
+
+type RequestToMemory struct {
+	Thread    Thread                 `json:"thread"`
+	Type      string                 `json:"type"`
+	Arguments map[string]interface{} `json:"arguments"`
+}
+
+type Thread struct {
+	PID int `json:"pid"`
+}

@@ -45,6 +45,7 @@ func main() {
 	mux.HandleFunc("/memoria/espaciolibre", utils.ObtenerEspacioLibreMock)
 	//mux.HandleFunc("/memoria/frame", utils.algo)
 	//mux.HandleFunc("memoria/pagina", utils.algo)
+	mux.HandleFunc("/memoria/createProcess", utils.CreateProcess)
 
 	//mux.HandleFunc("/memoria/cpu", utils.CreacionProceso)
 
