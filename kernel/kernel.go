@@ -36,7 +36,6 @@ func main() {
 	// ----------------------------------------------------
 	// ----------- CARGO LOGS DE KERNEL EN TXT ------------
 	// ----------------------------------------------------
-	//NACHITO ACA HAGO UN REFACTOR DE LOS LOGs
 	err1 := utils.ConfigureLogger("kernel.log", "INFO")
 	if err1 != nil {
 		fmt.Println("No se pudo crear el logger -", err.Error())
@@ -47,7 +46,6 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DEL CONFIG ------------------
 	// ----------------------------------------------------
-	//NACHITO ACA HAGO UN REFACTOR DE LOS CONFIG
 	configData, err := os.ReadFile("config.json")
 	if err != nil {
 		utils.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
@@ -67,19 +65,29 @@ func main() {
 		utils.Fatal("No se pudo leer el log-level - %v", err.Error())
 	}
 
+	utils.ColaNuevo = utils.Queue[*pcb.PCB]{}
+	utils.ColaBLoqueado = utils.Queue[*pcb.PCB]{}
+	utils.ColaSalida = utils.Queue[*pcb.PCB]{}
+	utils.ColaEjecutando = utils.Queue[*pcb.PCB]{}
+	utils.ColaReady = utils.Queue[*pcb.PCB]{}
+	utils.ColaBloqueadoSuspendido = utils.Queue[*pcb.PCB]{}
+	utils.ColaSuspendidoReady = utils.Queue[*pcb.PCB]{}
+
 	// ----------------------------------------------------
 	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------
 	// ----------------------------------------------------
 	InitFirstProcess(archivoPseudocodigo, tamanioProceso)
 
 	// ------------------------------------------------------
-	// ---------- ESCUCHO REQUESTS DE CPU E IO --------------
+	// ---------- ESCUCHO REQUESTS DE CPU E IO (Puertos) ----
 	// ------------------------------------------------------
 	mux := http.NewServeMux()
 	mux.HandleFunc("/kernel/io", utils.RecibirMensajeDeIO)
 	mux.HandleFunc("/kernel/cpu", utils.RecibirMensajeDeCPU)
 
-	//SYSCALLS
+	// ------------------------------------------------------
+	// --------------------- SYSCALLS -----------------------
+	// ------------------------------------------------------
 	mux.HandleFunc("/kernel/contexto_interrumpido", syscalls.ContextoInterrumpido)
 	mux.HandleFunc("/kernel/init_proc", syscalls.InitProcess)
 	mux.HandleFunc("/kernel/exit", syscalls.Exit)
@@ -94,21 +102,13 @@ func main() {
 		panic(err)
 	}
 
-	utils.ColaNuevo = utils.Queue[*pcb.PCB]{}
-	utils.ColaBLoqueado = utils.Queue[*pcb.PCB]{}
-	utils.ColaSalida = utils.Queue[*pcb.PCB]{}
-	utils.ColaEjecutando = utils.Queue[*pcb.PCB]{}
-	utils.ColaReady = utils.Queue[*pcb.PCB]{}
-	utils.ColaBloqueadoSuspendido = utils.Queue[*pcb.PCB]{}
-	utils.ColaSuspendidoReady = utils.Queue[*pcb.PCB]{}
-
 	//TODO
 	//1.funcion que cree primer proceso desde los argumentos del main
 	//2.inicilizar todas las colas vacias, tipo de dato punteros a PCB y TCB(hilos)
 	//3.fucncion que inicie planificacion largo plazo inicialmente parada esperando un enter desde la consola
 	//4.inicialiar colas que representen los estados new, ready, bloqueado, suspendido blog, suspendido ready, ejecutando.
 
-	fmt.Printf("Termine de Ejecutar")
+	fmt.Printf("FIN DE EJECUCION")
 }
 
 func InitFirstProcess(fileName string, processSize int) {
