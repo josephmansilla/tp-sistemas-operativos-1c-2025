@@ -76,7 +76,18 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------
 	// ----------------------------------------------------
-	InitFirstProcess(archivoPseudocodigo, tamanioProceso)
+	var ipMemory = utils.Config.MemoryAddress // CAMBIAR NOMBRE A IPMEMORY: es la convención dada por el TP
+	var portMemory = utils.Config.MemoryPort  // PortMemory es la convención del TP
+
+	utils.EnviarFileMemoria(ipMemory, portMemory, archivoPseudocodigo, tamanioProceso)
+	utils.IntentarIniciarProceso(tamanioProceso)
+	// ESTA FUNCIÓN ES LA QUE TIENE QUE TENER TODA LA LÓGICA QUE TIENE
+	//
+
+	// ESTO NO SE HACE TODAVIA PRIMERO HAY QUE CONSULTAR LA MEMORIA.
+	// EN INIT FIRST PROCESS DEBERÍA ESTAR LA FUNCION DE ARRIBA
+	// ES PARA EL PROXIMO CHECKPOINT
+	// InitFirstProcess(archivoPseudocodigo, tamanioProceso)
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU E IO (Puertos) ----
@@ -121,6 +132,7 @@ func InitFirstProcess(fileName string, processSize int) {
 		MT:  make(map[string]int),
 	}
 
+	// ESTE LOG NO VA.
 	utils.Info("## (<%v>:0) Se crea el proceso - Estado: NEW", pid)
 
 	// Agregar el PCB a la cola de nuevos procesos en el kernel
