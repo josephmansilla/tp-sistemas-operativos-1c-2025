@@ -60,7 +60,7 @@ func EnviarIpPuertoIDAKernel(ipDestino string, puertoDestino int, ipPropia strin
 	url := fmt.Sprintf("http://%s:%d/kernel/cpu", ipDestino, puertoDestino)
 	//Hace el POST a kernel
 	err := data.EnviarDatos(url, mensaje)
-	//Verifico si hubo error y logue si lo hubo
+	//Verifico si hubo error y logueo si lo hubo
 	if err != nil {
 		log.Printf("Error enviando IP, Puerto e ID al Kernel: %s", err.Error())
 		return
@@ -72,21 +72,38 @@ func EnviarIpPuertoIDAKernel(ipDestino string, puertoDestino int, ipPropia strin
 // Recibo PID y PC de Kernel
 func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
 	var mensajeRecibido MensajeDeKernel
+
+	// Intentar decodificar el JSON del request
 	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
+		log.Printf("Error al recibir JSON: %v", err)
+		http.Error(w, "Error procesando datos del Kernel", http.StatusInternalServerError)
 		return
 	}
 
+	// Verificar que CurrentContext esté inicializado
+	if globals.CurrentContext == nil {
+		globals.CurrentContext = &globals.ExecutionContext{}
+		log.Println("Inicializando CurrentContext.")
+	}
+
+	// Asignar el PID y PC a CurrentContext
 	globals.CurrentContext.PID = mensajeRecibido.PID
 	globals.CurrentContext.PC = mensajeRecibido.PC
 
-	log.Printf("Me llego el PID:%d y el PC:%d", mensajeRecibido.PID, mensajeRecibido.PC)
-	//Con el PID y PC le pido a Memoria las instrucciones
+	log.Printf("Me llegó el PID:%d y el PC:%d", mensajeRecibido.PID, mensajeRecibido.PC)
 
+	// Verificar que ClientConfig esté inicializado
+	if globals.ClientConfig == nil {
+		log.Printf("ClientConfig no está inicializado.")
+		http.Error(w, "Configuración del cliente no inicializada", http.StatusInternalServerError)
+		return
+	}
+
+	// Con el PID y PC le pido a Memoria las instrucciones
 	instrucciones.FaseFetch(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensajeRecibido.PID, mensajeRecibido.PC)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
-
 }
 
 func RecibirInterrupcion(w http.ResponseWriter, r *http.Request) {

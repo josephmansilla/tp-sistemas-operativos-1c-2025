@@ -17,7 +17,7 @@ func main() {
 
 	ID := os.Args[1]
 
-	logFileName := fmt.Sprintf("cpu_%s.log", ID)
+	logFileName := fmt.Sprintf("logs/cpu_%s.log", ID)
 	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		fmt.Printf("Error al crear archivo de log para CPU %s: %v\n", ID, err)
@@ -28,17 +28,18 @@ func main() {
 	log.Printf("Comenzo ejecucion del CPU con ID: %s", ID)
 
 	//CPU CLIENTE
-	globals.ClientConfig = utils.Config("config.json")
+	configpath := fmt.Sprintf("configs/cpu_%sconfig.json", ID)
+	globals.ClientConfig = utils.Config(configpath)
 
 	if globals.ClientConfig == nil {
 		log.Fatal("No se pudo cargar el archivo de configuracion")
 	}
 
 	//Solicito la configuracion de memoria
-	err = utils.ConsultarConfiguracionMemoria(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
+	/*err = utils.ConsultarConfiguracionMemoria(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
 	if err != nil {
 		log.Fatalf("Error al obtener la configuración de memoria: %v", err)
-	}
+	}*/
 	//Solicito PID y PC para ejecutar Instrucciones
 	//1. Creo el handler
 	mux := http.NewServeMux()

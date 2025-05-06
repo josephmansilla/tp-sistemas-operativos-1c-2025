@@ -31,7 +31,7 @@ func main() {
 
 	nombre := os.Args[1]
 
-	logFileName := fmt.Sprintf("io_%s.log", nombre)
+	logFileName := fmt.Sprintf("logs/io_%s.log", nombre)
 	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 
 	if err != nil {
@@ -44,7 +44,8 @@ func main() {
 
 	log.Println("Comenzó ejecucion del IO")
 
-	globals.ClientConfig = Config("config.json")
+	configpath := fmt.Sprintf("configs/%sconfig.json", nombre)
+	globals.ClientConfig = Config(configpath)
 
 	if globals.ClientConfig == nil {
 		log.Fatal("No se pudo cargar el archivo de configuración")
