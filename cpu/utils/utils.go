@@ -128,6 +128,7 @@ func RecibirInterrupcion(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Interrupción registrada"))
 }
 
+// TODO: PP
 func ConsultarConfiguracionMemoria(ipDestino string, puertoDestino int) error {
 	// Construimos la URL del endpoint donde la memoria debe proporcionar estos datos.
 	url := fmt.Sprintf("http://%s:%d/memoria/configuracion", ipDestino, puertoDestino)
