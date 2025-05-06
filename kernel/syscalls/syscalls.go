@@ -22,8 +22,8 @@ type MensajeInit struct {
 type MensajeIo struct {
 	PID      int    `json:"pid"`
 	PC       int    `json:"pc"`
+	Duracion int    `json:"tiempo"`
 	Nombre   string `json:"nombre"`
-	Duracion int    `json:"duracion"`
 }
 
 func ContextoInterrumpido(w http.ResponseWriter, r *http.Request) {
@@ -84,15 +84,20 @@ func DumpMemory(w http.ResponseWriter, r *http.Request) {
 func Io(w http.ResponseWriter, r *http.Request) {
 	var mensajeRecibido MensajeIo
 	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
-		return //hubo error
+		return
 	}
 	pid := mensajeRecibido.PID
+
+	// Aquí bloqueas el mutex mientras esperas a que el IO se registre
+	globals.IOMu.Lock()
+	for globals.IO.Ip == "" { // Asumiendo que Ip vacía significa que el IO no está conectado
+		globals.IOCond.Wait() // Espera hasta que el IO se registre
+	}
+	globals.IOMu.Unlock()
 
 	utils.Info("Se ha recibido: Nombre: %s Duracion: %d", mensajeRecibido.Nombre, mensajeRecibido.Duracion)
 	utils.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
 
-	//Habra que buscar en lista de IOs si existe...
-	if globals.IO.Nombre == mensajeRecibido.Nombre {
-		utils.EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto, pid, mensajeRecibido.Duracion)
-	}
+	utils.EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto, pid, mensajeRecibido.Duracion)
+	log.Printf("Operacion de IO enviada correctamente")
 }

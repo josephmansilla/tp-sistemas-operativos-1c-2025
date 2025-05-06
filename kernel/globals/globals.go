@@ -1,5 +1,7 @@
 package globals
 
+import "sync"
+
 // Datos recibidos por el Kernel
 type DatosIO struct {
 	Nombre string
@@ -20,5 +22,7 @@ type EspacioLibreRTA struct {
 var CPU DatosCPU
 var IO DatosIO
 var EspacioLibreProceso EspacioLibreRTA
+var IOMu sync.Mutex
+var IOCond = sync.NewCond(&IOMu)
 
 //crear nodos a punteros PCB, para instanciarlas en main (sera un puntero a pcb creado previamente)

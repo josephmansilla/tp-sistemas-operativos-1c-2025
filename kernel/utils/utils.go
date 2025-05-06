@@ -49,11 +49,14 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Cargar en
+	globals.IOMu.Lock()
 	globals.IO = globals.DatosIO{
 		Nombre: mensajeRecibido.Nombre,
 		Ip:     mensajeRecibido.Ip,
 		Puerto: mensajeRecibido.Puerto,
 	}
+	globals.IOCond.Broadcast() // es como un signal al wait
+	globals.IOMu.Unlock()
 
 	Info("Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
 		globals.IO.Nombre, globals.IO.Ip, globals.IO.Puerto)

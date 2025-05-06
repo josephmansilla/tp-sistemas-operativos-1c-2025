@@ -41,7 +41,7 @@ var MutexInterrupcion sync.Mutex
 var TamPag int
 
 // (ectx *ExecutionContext) significa que estoy trabajando sobre la struct original y no sobre una copia, GetRegister pasa a ser un metodo
-func (ectx *ExecutionContext) GetRegister(str string) (*uint32, error) {
+func (ectx *ExecutionContext) ObtenerRegistro(str string) (*uint32, error) {
 	str = strings.ToLower(str)
 	switch str {
 	case "ax":

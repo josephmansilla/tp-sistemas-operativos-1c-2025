@@ -144,7 +144,7 @@ func jnzInstruccion(context *globals.ExecutionContext, arguments []string) error
 		return err
 	}
 
-	register, err := context.GetRegister(arguments[0])
+	register, err := context.ObtenerRegistro(arguments[0])
 	if err != nil {
 		return err
 	}
@@ -167,12 +167,12 @@ func sumInstruccion(context *globals.ExecutionContext, args []string) error {
 		return err
 	}
 
-	firstRegister, err := context.GetRegister(args[0])
+	firstRegister, err := context.ObtenerRegistro(args[0])
 	if err != nil {
 		return err
 	}
 
-	secondRegister, err := context.GetRegister(args[1])
+	secondRegister, err := context.ObtenerRegistro(args[1])
 	if err != nil {
 		return err
 	}
@@ -186,12 +186,12 @@ func subInstruccion(context *globals.ExecutionContext, args []string) error {
 		return err
 	}
 
-	firstRegister, err := context.GetRegister(args[0])
+	firstRegister, err := context.ObtenerRegistro(args[0])
 	if err != nil {
 		return err
 	}
 
-	secondRegister, err := context.GetRegister(args[1])
+	secondRegister, err := context.ObtenerRegistro(args[1])
 	if err != nil {
 		return err
 	}
@@ -205,14 +205,14 @@ func setInstruccion(ctx *globals.ExecutionContext, args []string) error {
 		return err
 	}
 
-	reg, err := ctx.GetRegister(args[0])
+	reg, err := ctx.ObtenerRegistro(args[0])
 	if err != nil {
 		return err
 	}
 
 	i, err := strconv.Atoi(args[1])
 	if err != nil {
-		reg2, err := ctx.GetRegister(args[1])
+		reg2, err := ctx.ObtenerRegistro(args[1])
 		if err != nil {
 			return errors.New("no se pudo parsear '" + args[1] + "' como un entero o un registro")
 		}
@@ -295,7 +295,7 @@ func ioInstruccion(context *globals.ExecutionContext, arguments []string) error 
 	}
 
 	// Armo la URL de syscall hacia Kernel
-	url := fmt.Sprintf("http://%s:%d/kernel/io", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
+	url := fmt.Sprintf("http://%s:%d/kernel/syscallIO", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
 
 	// Envío el POST al Kernel con el contexto y el tiempo de IO
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
@@ -409,7 +409,7 @@ func logInstruccion(ctx *globals.ExecutionContext, args []string) error {
 		return err
 	}
 
-	register, err := ctx.GetRegister(args[0])
+	register, err := ctx.ObtenerRegistro(args[0])
 	if err != nil {
 		return err
 	}
