@@ -7,14 +7,22 @@ import (
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
-// CREA Y ENVIA PROCESO A NEW
-// PLANIFICADOR LARGO PLAZO
+//PLANIFICADOR LARGO PLAZO:
+//encargado de gestionar las peticiones a la memoria
+//para la creación y eliminación de procesos e hilos.
+
+// CREA PROCESO (NEW) E INICIA (READY)
 func CrearProceso(fileName string, tamanio int) {
 	logger.Info("Intentando crear el proceso con pseudocódigo: %s y tamaño: %d", fileName, tamanio)
 
 	/*
 		Al llegar un nuevo proceso a esta cola (NEW) y la misma esté vacía
 		se enviará un pedido a Memoria para inicializar el mismo.
+	*/
+
+	/*
+		En cambio, si un proceso llega a esta cola y ya hay otros esperando
+		se debe tener en cuenta el algoritmo definido y verificar si corresponde o no su ingreso.
 	*/
 
 	// Paso 1: Pedirle a memoria que reserve espacio
@@ -49,10 +57,14 @@ func CrearProceso(fileName string, tamanio int) {
 	}
 
 	globals.ColaNuevo.Add(&pcbNuevo)
-	logger.Info("Proceso <%v> creado y agregado a la cola NEW", pid)
+	logger.Info("## (<%d>) Se crea el proceso - Estado: NEW", pid)
 }
 
-/*
-En cambio, si un proceso llega a esta cola y ya hay otros esperando
-se debe tener en cuenta el algoritmo definido y verificar si corresponde o no su ingreso.
-*/
+// FIN DE PROCESO (EXIT)
+func FinalizarProceso(pid int) {
+	//NECESITO OBTENER EL PCB para REMOVE E IMPRIMIR METRICAS
+
+	//globals.ColaSalida.Remove();
+	logger.Info("## (<%d>) - Finaliza el proceso", pid)
+	logger.Info("## (<PID>) - Métricas de estado: NEW (NEW_COUNT) (NEW_TIME), READY (READY_COUNT) (READY_TIME),")
+}

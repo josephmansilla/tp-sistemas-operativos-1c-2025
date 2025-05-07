@@ -1,7 +1,6 @@
 package syscalls
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
@@ -41,15 +40,23 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 	filename := mensajeRecibido.Filename
 	tamanio := mensajeRecibido.Tamanio
 
+	logger.Info("## (<%d>) - Solicitó syscall: <INIT_PROC>", pid)
 	logger.Info("Se ha recibido: PID: %d PC: %d Filename: %s Tamaño Memoria: %d", pid, pc, filename, tamanio)
-	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <INIT_PROC>”", pid)
 
-	// Usar CrearProceso del paquete utils
+	//Planificador Largo Plazo
 	planificadores.CrearProceso(filename, tamanio)
 }
 
+// EXIT no recibe parámetros y se encarga de finalizar el proceso que la invocó
 func Exit(w http.ResponseWriter, r *http.Request) {
+	//COMO CONSIGO QUIEN LA INVOCO?????
+	//NO RECIBE PARAMETROS??
+	pid := globals.UltimoPID
 
+	logger.Info("## (<%d>) - Solicitó syscall: <EXIT>", pid)
+
+	//Planificador Largo Plazo
+	planificadores.FinalizarProceso(pid)
 }
 
 func DumpMemory(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +70,8 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	}
 	pid := mensajeRecibido.PID
 
+	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
+
 	// Aquí bloqueas el mutex mientras esperas a que el IO se registre
 	globals.IOMu.Lock()
 	for globals.IO.Ip == "" { // Asumiendo que Ip vacía significa que el IO no está conectado
@@ -71,8 +80,7 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	globals.IOMu.Unlock()
 
 	logger.Info("Se ha recibido: Nombre: %s Duracion: %d", mensajeRecibido.Nombre, mensajeRecibido.Duracion)
-	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
 
 	comunicacion.EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto, pid, mensajeRecibido.Duracion)
-	log.Printf("Operacion de IO enviada correctamente")
+	logger.Info("Operacion de IO enviada correctamente")
 }

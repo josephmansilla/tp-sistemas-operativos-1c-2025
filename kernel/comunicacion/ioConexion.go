@@ -1,10 +1,10 @@
 package comunicacion
 
-
 import (
 	"fmt"
 	"io"
 	"net/http"
+
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
@@ -71,7 +71,7 @@ func EnviarContextoIO(ipDestino string, puertoDestino int, pid int, duracion int
 		logger.Info("Error leyendo respuesta de IO: %s", err.Error())
 		return
 	}
-
 	logger.Info("Respuesta del módulo IO: %s", string(body))
+
 	logger.Info("## (%d) finalizó IO y pasa a READY", mensaje.Pid)
 }
