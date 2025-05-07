@@ -2,10 +2,9 @@ package utils
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
-
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
 var Instrucciones []string = []string{}
@@ -13,7 +12,7 @@ var Instrucciones []string = []string{}
 // función auxiliar para cargar el slice de instrucciones
 func CargarListaDeInstrucciones(str string) {
 	Instrucciones = append(Instrucciones, str)
-	log.Print("Se cargó una instrucción al Slice\n")
+	logger.Info("Se cargó una instrucción al Slice\n")
 }
 
 // ------------------------------------------------------------------
@@ -21,12 +20,12 @@ func CargarListaDeInstrucciones(str string) {
 // ------------------------------------------------------------------
 
 func CreacionProceso(w http.ResponseWriter, r *http.Request) {
-	log.Println(">>> Entró a utils.CreateProcess")
+	logger.Info(">>> Entró a utils.CreateProcess")
 	var request globals.PedidoAMemoria
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
 		http.Error(w, "Error decodificando el request", http.StatusBadRequest)
-		log.Printf("Error decodificando request: %v", err)
+		logger.Error("Error decodificando request: %v", err)
 		return
 	}
 
@@ -36,7 +35,7 @@ func CreacionProceso(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(argsBytes, &args)
 	if err != nil {
 		http.Error(w, "Error en los argumentos del proceso", http.StatusBadRequest)
-		log.Printf("Error en los argumentos: %v", err)
+		logger.Error("Error en los argumentos: %v", err)
 		return
 	}
 	// Log para verificar lo recibido
@@ -50,7 +49,7 @@ func CreacionProceso(w http.ResponseWriter, r *http.Request) {
 
 func DestruccionProceso(w http.ResponseWriter, r *http.Request) {
 	//toDO
-	log.Printf("## PID: <PID>  - Proceso Destruido - Métricas - Acc.T.Pag: <ATP>; Inst.Sol.: <Inst.Sol>; SWAP: <SWAP>; Mem. Prin.: <Mem.Prin.>; Lec.Mem.: <Lec.Mem.>; Esc.Mem.: <Esc.Mem.>")
+	logger.Info("## PID: <PID>  - Proceso Destruido - Métricas - Acc.T.Pag: <ATP>; Inst.Sol.: <Inst.Sol>; SWAP: <SWAP>; Mem. Prin.: <Mem.Prin.>; Lec.Mem.: <Lec.Mem.>; Esc.Mem.: <Esc.Mem.>")
 }
 func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 	// toDO
@@ -66,10 +65,10 @@ func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		log.Printf("Error al serializar mock de espacio: %v", err)
+		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
 
-	log.Printf("## Espacio libre mock devuelto - Tamaño: <%d>\n", respuesta.EspacioLibre)
+	logger.Info("## Espacio libre mock devuelto - Tamaño: <%d>\n", respuesta.EspacioLibre)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ESPACIO DEVUELTO"))
@@ -77,18 +76,18 @@ func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
 
 func EscrituraEspacio(w http.ResponseWriter, r *http.Request) {
 	//toDO
-	log.Printf("## PID: <PID>  - <Escritura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")
+	logger.Info("## PID: <PID>  - <Escritura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")
 }
 
 func LecturaEspacio(w http.ResponseWriter, r *http.Request) {
 	//toDO
-	log.Printf("## PID: <PID>  - <Lectura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")
+	logger.Info("## PID: <PID>  - <Lectura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")
 }
 
 func MemoryDump(w http.ResponseWriter, r *http.Request) {
 	// toDO
 	// Llamado: "<PID>-<TIMESTAMP>.dmp" dentro del path definido por el archivo de configuración
-	log.Printf("## PID: <PID>  - Memory Dump solicitado")
+	logger.Info("## PID: <PID>  - Memory Dump solicitado")
 }
 
 // --------------------------------------------------------------------
