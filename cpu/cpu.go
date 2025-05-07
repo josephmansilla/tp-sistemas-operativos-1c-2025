@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/cpu/utils"
+	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
 	"log"
 	"net/http"
 	"os"
@@ -24,6 +25,11 @@ func main() {
 		os.Exit(1)
 	}
 	log.SetOutput(logFile)
+
+	err = logger.SetLevel(globals.ClientConfig.LogLevel)
+	if err != nil {
+		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
+	}
 
 	log.Printf("=========================================================")
 	log.Printf("======== Comenzo la ejecucion del CPU con ID: %s ========", ID)

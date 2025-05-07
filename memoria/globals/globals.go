@@ -1,18 +1,21 @@
 package globals
 
-type Config struct {
-	PortMemory     int    `json:"port_memory"`
-	IpMemory       string `json:"ip_memory"`
-	MemorySize     int    `json:"memory_size"`
-	PagSize        int    `json:"pag_size"`
-	EntriesPerPage int    `json:"entries_per_page"`
-	NumberOfLevels int    `json:"number_of_levels"`
-	MemoryDelay    int    `json:"memory_delay"`
-	SwapfilePath   string `json:"swapfile_path"`
-	SwapDelay      int    `json:"swap_delay"`
-	LogLevel       string `json:"log_level"`
-	DumpPath       string `json:"dump_path"`
-	ScriptsPath    string `json:"scripts_path"`
+import (
+	"encoding/json"
+	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
+	"os"
+)
+
+func ConfigCheck(filepath string) *Config {
+	var configCheck *Config
+	configFile, err := os.Open(filepath)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	defer configFile.Close()
+	jsonParser := json.NewDecoder(configFile)
+	jsonParser.Decode(&configCheck)
+	return configCheck
 }
 
 var MemoryConfig *Config
@@ -59,3 +62,20 @@ var Kernel DatosConsultaDeKernel
 var CPU DatosDeCPU
 
 // EspacioDeUsuario => make([]byte, TamMemoria)
+
+type ArgmentosCreacionProceso struct {
+	NombrePseudocodigo string `json:"nombre_pseudocodigo"`
+	TamanioProceso     int    `json:"tamanioProceso"`
+	// PID
+	//
+}
+
+type PedidoAMemoria struct {
+	Thread    Thread                 `json:"thread"`
+	Type      string                 `json:"type"`
+	Arguments map[string]interface{} `json:"arguments"`
+}
+
+type Thread struct {
+	PID int `json:"pid"`
+}

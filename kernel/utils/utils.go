@@ -61,6 +61,9 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
 		globals.IO.Nombre, globals.IO.Ip, globals.IO.Puerto)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("STATUS OK"))
 }
 
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
@@ -81,6 +84,9 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 
 	//Asignar PID al CPU
 	EnviarContextoCPU(globals.CPU.Ip, globals.CPU.Puerto)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("STATUS OK"))
 }
 
 // Enviar PID y PC al CPU

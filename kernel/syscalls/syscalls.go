@@ -2,7 +2,7 @@ package syscalls
 
 import (
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
-	utils2 "github.com/sisoputnfrba/tp-golang/utils/logger"
+	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
 	"log"
 	"net/http"
 	"strconv"
@@ -41,8 +41,8 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 	pc := mensajeRecibido.PC
 	filename := mensajeRecibido.Filename
 	tamanio := mensajeRecibido.Tamanio
-	utils2.Info("Se ha recibido: PID: %d PC: %d Filename: %s Tamaño Memoria: %d", pid, pc, filename, tamanio)
-	utils2.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <INIT_PROC>”", pid)
+	logger.Info("Se ha recibido: PID: %d PC: %d Filename: %s Tamaño Memoria: %d", pid, pc, filename, tamanio)
+	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <INIT_PROC>”", pid)
 
 	// Crear el PCB para el proceso inicial
 	pcb1 := pcb.PCB{
@@ -65,10 +65,10 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 	for {
 		err := utils.SendMemoryRequest(request)
 		if err != nil {
-			utils2.Error("Error al enviar request a memoria: %v", err)
+			logger.Error("Error al enviar request a memoria: %v", err)
 			//<-kernelsync.InitProcess // Espera a que finalice otro proceso antes de intentar de nuevo
 		} else {
-			utils2.Debug("Hay espacio disponible en memoria")
+			logger.Debug("Hay espacio disponible en memoria")
 			break
 		}
 	}
@@ -96,8 +96,8 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	}
 	globals.IOMu.Unlock()
 
-	utils2.Info("Se ha recibido: Nombre: %s Duracion: %d", mensajeRecibido.Nombre, mensajeRecibido.Duracion)
-	utils2.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
+	logger.Info("Se ha recibido: Nombre: %s Duracion: %d", mensajeRecibido.Nombre, mensajeRecibido.Duracion)
+	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
 
 	utils.EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto, pid, mensajeRecibido.Duracion)
 	log.Printf("Operacion de IO enviada correctamente")
