@@ -30,10 +30,10 @@ func (cfg Config) Validate() error {
 	if cfg.PagSize <= 0 {
 		return errors.New("falta el campo 'Pagsize'")
 	}
-	if cfg.EntriesPerPage <= 0 {
+	if cfg.EntriesPerPage < 0 {
 		return errors.New("falta el campo 'EntriesPerPage' o es inválido")
 	}
-	if cfg.NumberOfLevels <= 0 {
+	if cfg.NumberOfLevels < 0 {
 		return errors.New("falta el campo 'NumberOfLevels' o es inválido")
 	}
 	if cfg.MemoryDelay <= 0 {
