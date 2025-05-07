@@ -82,11 +82,7 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------
 	// ----------------------------------------------------
-	var ipMemory = utils.Config.MemoryAddress // CAMBIAR NOMBRE A IPMEMORY: es la convención dada por el TP
-	var portMemory = utils.Config.MemoryPort  // PortMemory es la convención del TP
-
-	utils.EnviarFileMemoria(ipMemory, portMemory, archivoPseudocodigo, tamanioProceso)
-	utils.IntentarIniciarProceso(tamanioProceso)
+	utils.CrearProceso(archivoPseudocodigo, tamanioProceso)
 	// ESTA FUNCIÓN ES LA QUE TIENE QUE TENER TODA LA LÓGICA QUE TIENE
 	//
 
@@ -129,45 +125,4 @@ func main() {
 	//4.inicialiar colas que representen los estados new, ready, bloqueado, suspendido blog, suspendido ready, ejecutando.
 
 	fmt.Printf("FIN DE EJECUCION")
-}
-
-// ESTO DEBE IR EN OTRO LADO
-
-func InitFirstProcess(fileName string, processSize int) {
-	// Crear el PCB para el proceso inicial
-	pid := pcb.Pid(1)
-	pcb1 := pcb.PCB{
-		PID: 1,
-		PC:  0,
-		ME:  make(map[string]int),
-		MT:  make(map[string]int),
-	}
-
-	// ESTE LOG NO VA.
-	logger.Info("## (<%v>:0) Se crea el proceso - Estado: NEW", pid)
-
-	// Agregar el PCB a la cola de nuevos procesos en el kernel
-	utils.ColaNuevo.Add(&pcb1)
-
-	// Preparar argumentos como mapa con valores tipados
-	args := map[string]interface{}{
-		"fileName":    fileName,
-		"processSize": processSize,
-	}
-
-	request := utils.RequestToMemory{
-		Thread:    utils.Thread{PID: utils.Pid(pid)},
-		Type:      utils.CreateProcess,
-		Arguments: args,
-	}
-
-	err := utils.SendMemoryRequest(request)
-	if err != nil {
-		logger.Error("Error al enviar request a memoria: %v", err)
-	} else {
-		logger.Debug("Hay espacio disponible en memoria")
-
-	}
-
-	logger.Info("Pude enviar a memoria todo")
 }

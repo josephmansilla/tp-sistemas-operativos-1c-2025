@@ -26,19 +26,35 @@ type MensajeDeCPU struct {
 	ID     string `json:"id"`
 }
 
-type MensajeToCPU struct {
+type MensajeACPU struct {
 	Pid int `json:"pid"`
 	Pc  int `json:"pc"`
 }
 
-type MensajeToIO struct {
+type MensajeAIO struct {
 	Pid      int `json:"pid"`
 	Duracion int `json:"duracion"` //en segundos
 }
 
-type MensajeToMemoria struct {
+type MensajeAMemoria struct {
 	Filename string `json:"filename"` //filename
 	Tamanio  int    `json:"tamanio_memoria"`
+}
+
+type ConsultaAMemoria struct {
+	Hilo      Hilo        `json:"hilo"`
+	Tipo      string      `json:"tipo"`
+	Arguments interface{} `json:"argumentos"` // <-- puede ser cualquier tipo ahora (map, struct, etc.)
+}
+type Pid int
+
+type Hilo struct {
+	PID Pid `json:"pid"`
+}
+
+type RespuestaMemoria struct {
+	Exito   bool   `json:"exito"`
+	Mensaje string `json:"mensaje"`
 }
 
 // w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
@@ -94,7 +110,7 @@ func EnviarContextoCPU(ipDestino string, puertoDestino int) {
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
 	url := fmt.Sprintf("http://%s:%d/cpu/kernel", ipDestino, puertoDestino)
 
-	mensaje := MensajeToCPU{
+	mensaje := MensajeACPU{
 		Pid: 0, //PEDIR AL PCB
 		Pc:  0, //PEDIR A MEMORIA
 	}
@@ -114,7 +130,7 @@ func EnviarContextoCPU(ipDestino string, puertoDestino int) {
 func EnviarContextoIO(ipDestino string, puertoDestino int, pid int, duracion int) {
 	url := fmt.Sprintf("http://%s:%d/io/kernel", ipDestino, puertoDestino)
 
-	mensaje := MensajeToIO{
+	mensaje := MensajeAIO{
 		Pid:      pid,
 		Duracion: duracion,
 	}
@@ -139,78 +155,58 @@ func EnviarContextoIO(ipDestino string, puertoDestino int, pid int, duracion int
 	logger.Info("## (%d) finalizó IO y pasa a READY", mensaje.Pid)
 }
 
-func EnviarFileMemoria(ipDestino string, puertoDestino int, filename string, tamanioProceso int) {
-	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
-	url := fmt.Sprintf("http://%s:%d/memoria/kernel", ipDestino, puertoDestino)
+func SolicitarCreacionEnMemoria(fileName string, tamanio int) (bool, error) {
+	url := fmt.Sprintf("http://%s:%d/memoria/kernel", Config.MemoryAddress, Config.MemoryPort)
 
-	mensaje := MensajeToMemoria{
-		Filename: filename,
-		Tamanio:  tamanioProceso,
+	mensaje := MensajeAMemoria{
+		Filename: fileName,
+		Tamanio:  tamanio,
 	}
 
-	//Hace el POST a Memoria
-	err := data.EnviarDatos(url, mensaje)
-	//Verifico si hubo error y logue si lo hubo
+	resp, err := data.EnviarDatosConRespuesta(url, mensaje)
 	if err != nil {
-		logger.Info("Error enviando Pseudocodigo a Memoria: %s", err.Error())
-		return
+		logger.Error("Error enviando pseudocódigo a Memoria: %s", err.Error())
+		return false, err
 	}
-	//Si no hubo error, logueo que salio bien
-	logger.Info("Pseudocodigo: %s enviado exitosamente a Memoria", mensaje.Filename)
+	defer resp.Body.Close()
+
+	var rta RespuestaMemoria
+	err = json.NewDecoder(resp.Body).Decode(&rta)
+	if err != nil {
+		logger.Error("Error al decodificar respuesta de Memoria: %s", err.Error())
+		return false, err
+	}
+
+	logger.Info("Respuesta de Memoria: %s", rta.Mensaje)
+	return rta.Exito, nil
 }
 
-// NUEVA CONEXIÓN AGREGADA PARA QUE KERNEL LE CONSULTE LA DISPONIBILIDAD DE ESPACIOLIBRE A MEMORIA
-func ConsultarEspacioLibreMemoria(ipDestino string, puertoDestino int) (int, error) {
-	// SE LE PASA LA DIRECCIÓN DE LA MEMORIA POR LOS PARAMETROS
-	// EL TIPO DE LA FUNCIÓN ES DE ENTERO Y ERROR
-	// ESTOS TIPOS SERÁN USADOS PARA MANEJAR LA CONSULTA EN OTRAS FUNCIONES
-	url := fmt.Sprintf("http://%s:%d/memoria/espaciolibre", ipDestino, puertoDestino)
+func CrearProceso(fileName string, tamanio int) {
+	logger.Info("Intentando crear el proceso con pseudocódigo: %s y tamaño: %d", fileName, tamanio)
 
-	rta, err := http.Get(url)
+	// Paso 1: Pedirle a memoria que reserve espacio
+	exito, err := SolicitarCreacionEnMemoria(fileName, tamanio)
 	if err != nil {
-		logger.Info("Error al hacer el GET a Memoria: %s", err.Error())
-		return 0, err
-		// SI HAY UN ERROR SE DEVUELVE EL ERROR, PERO TAMBIÉN ES NECESARIO INDICAR
-		// QUE EL ESPACIOLIBRE ES 0
-	}
-	defer rta.Body.Close()
-
-	// USANDO EL STRUCT QUE COMPARTEN MEMORIA Y KERNEL
-	// POR AHORA ES LÓGICA REPETIDA
-	var respuesta globals.EspacioLibreRTA
-	err = json.NewDecoder(rta.Body).Decode(&respuesta)
-	if err != nil {
-		logger.Info("Error al hacer el Decode para consultar a Memoria: %s", err.Error())
-		return 0, err
-	}
-	logger.Info("Espacio libre reportado por Memoria: %d", respuesta.EspacioLibre)
-	// SE LOGUEA EL ESPACIO LIBRE Y SE DEVUELVE, AL IGUAL QUE UN NIL PARA EL ERROR
-	return respuesta.EspacioLibre, nil
-}
-
-func IntentarIniciarProceso(tamanioProceso int) {
-	espacioLibre, err := ConsultarEspacioLibreMemoria(Config.MemoryAddress, Config.MemoryPort)
-	if err != nil {
-		logger.Info("No se pudo consultar a la memoria por Espacio Libre")
+		logger.Error("Error al intentar reservar memoria: %v", err)
 		return
 	}
 
-	if espacioLibre >= tamanioProceso {
-		logger.Info("Hay suficiente espacio libre en Memoria para el proceso")
-	} else {
-		logger.Info("No hay suficiente espacio libre en memoria para el proceso")
+	if !exito {
+		logger.Info("Memoria rechazó la creación del proceso (no hay espacio suficiente o error interno)")
+		return
 	}
-}
 
-type RequestToMemory struct {
-	Thread    Thread      `json:"thread"`
-	Type      string      `json:"type"`
-	Arguments interface{} `json:"arguments"` // <-- puede ser cualquier tipo ahora (map, struct, etc.)
-}
-type Pid int
+	// Paso 2: Crear el PCB y encolarlo
+	pid := globals.GenerarNuevoPID()
+	pcbNuevo := pcb.PCB{
+		PID: pid,
+		PC:  0,
+		ME:  make(map[string]int),
+		MT:  make(map[string]int),
+	}
 
-type Thread struct {
-	PID Pid `json:"pid"`
+	ColaNuevo.Add(&pcbNuevo)
+	logger.Info("Proceso <%v> creado y agregado a la cola NEW", pid)
 }
 
 // PARA MANJERAR LOS MENSAJES DEL ENDPOINT QUE ESTAN EN MEMORIA
@@ -224,8 +220,8 @@ const (
 	Compactacion  = "compactar"
 )
 
-func SendMemoryRequest(request RequestToMemory) error {
-	logger.Debug("Enviando request a  memoria: %v para el THREAD: %v", request.Type, request.Thread)
+func SendMemoryRequest(request ConsultaAMemoria) error {
+	logger.Debug("Enviando request a  memoria: %v para el THREAD: %v", request.Tipo, request.Hilo)
 
 	// Serializar mensaje
 	jsonRequest, err := json.Marshal(request)
@@ -234,7 +230,7 @@ func SendMemoryRequest(request RequestToMemory) error {
 	}
 
 	// Hacer request a memoria
-	url := fmt.Sprintf("http://%s:%d/memoria/%s", Config.MemoryAddress, Config.MemoryPort, request.Type)
+	url := fmt.Sprintf("http://%s:%d/memoria/%s", Config.MemoryAddress, Config.MemoryPort, request.Tipo)
 	logger.Debug("Enviando request a memoria: %v", url)
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonRequest))
@@ -243,7 +239,7 @@ func SendMemoryRequest(request RequestToMemory) error {
 		return err
 	}
 
-	err = handleMemoryResponseError(resp, request.Type)
+	err = handleMemoryResponseError(resp, request.Tipo)
 	if err != nil {
 		return err
 	}
