@@ -21,8 +21,8 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 		PC:  mensaje.PC,
 	}
 
-	logger.Info("PID Pedido: %d\n", mensaje.PID)
-	logger.Info("PC Pedido: %d\n", mensaje.PC)
+	logger.Info("PID Pedido: %d", mensaje.PID)
+	logger.Info("PC Pedido: %d", mensaje.PC)
 }
 
 // FUNCION PARA DEVOLVER/RETORNAR LOS MENSAJES PROVENIENTES DE LA CPU
@@ -57,7 +57,7 @@ func CargarInstrucciones(nombreArchivo string) {
 
 	for scanner.Scan() {
 		lineaPseudocodigo := scanner.Text()
-		logger.Info("Línea leída:%s\n", lineaPseudocodigo)
+		logger.Info("Línea leída:%s", lineaPseudocodigo)
 		CargarListaDeInstrucciones(lineaPseudocodigo)
 		if strings.TrimSpace(lineaPseudocodigo) == "EOF" {
 			break
@@ -65,9 +65,9 @@ func CargarInstrucciones(nombreArchivo string) {
 
 	}
 	if err := scanner.Err(); err != nil {
-		logger.Error("Error al leer el archivo:%s\n", err)
+		logger.Error("Error al leer el archivo:%s", err)
 	}
-	logger.Info("Total de instrucciones cargadas: %d\n", len(Instrucciones))
+	logger.Info("Total de instrucciones cargadas: %d", len(Instrucciones))
 }
 
 func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {

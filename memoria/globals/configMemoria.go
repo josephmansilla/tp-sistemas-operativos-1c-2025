@@ -2,7 +2,7 @@ package globals
 
 import "errors"
 
-type MemoriaConfig struct {
+type Config struct {
 	PortMemory     int    `json:"port_memory"`
 	IpMemory       string `json:"ip_memory"`
 	MemorySize     int    `json:"memory_size"`
@@ -17,7 +17,7 @@ type MemoriaConfig struct {
 	ScriptsPath    string `json:"scripts_path"`
 }
 
-func (cfg MemoriaConfig) Validate() error {
+func (cfg Config) Validate() error {
 	if cfg.IpMemory == "" {
 		return errors.New("falta el campo 'ip_memory'")
 	}

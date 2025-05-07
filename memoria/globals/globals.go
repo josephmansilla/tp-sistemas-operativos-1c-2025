@@ -2,12 +2,13 @@ package globals
 
 import (
 	"encoding/json"
-	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
 	"os"
+
+	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
-func ConfigCheck(filepath string) *MemoriaConfig {
-	var configCheck *MemoriaConfig
+func ConfigCheck(filepath string) *Config {
+	var configCheck *Config
 	configFile, err := os.Open(filepath)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -18,7 +19,7 @@ func ConfigCheck(filepath string) *MemoriaConfig {
 	return configCheck
 }
 
-var MemoryConfig *MemoriaConfig
+var MemoryConfig *Config
 
 // Tipo de datos recibidos de1 Kernel
 
