@@ -3,15 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
 
+	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"github.com/sisoputnfrba/tp-golang/kernel/syscalls"
 	"github.com/sisoputnfrba/tp-golang/kernel/utils"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
 func main() {
@@ -35,9 +35,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Printf("=================================================")
-	log.Printf("======== Comenzo la ejecucion del Kernel ========")
-	log.Printf("=================================================\n")
+	logger.Info("======== Comenzo la ejecucion del Kernel ========")
 
 	// ----------------------------------------------------
 	// ----------- CARGO LOGS DE KERNEL EN TXT ------------
@@ -57,16 +55,16 @@ func main() {
 		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
 	}
 
-	err = json.Unmarshal(configData, &utils.Config)
+	err = json.Unmarshal(configData, &globals.KConfig)
 	if err != nil {
 		logger.Fatal("No se pudo parsear el archivo de configuración - %v", err.Error())
 	}
 
-	if err = utils.Config.Validate(); err != nil {
+	if err = globals.KConfig.Validate(); err != nil {
 		logger.Fatal("La configuración no es válida - %v", err.Error())
 	}
 
-	err = logger.SetLevel(utils.Config.LogLevel)
+	err = logger.SetLevel(globals.KConfig.LogLevel)
 	if err != nil {
 		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
 	}
@@ -110,9 +108,9 @@ func main() {
 	mux.HandleFunc("/kernel/dump_memory", syscalls.DumpMemory)
 	mux.HandleFunc("/kernel/syscallIO", syscalls.Io)
 
-	fmt.Printf("Servidor escuchando en http://localhost:%d/kernel\n", utils.Config.KernelPort)
+	fmt.Printf("Servidor escuchando en http://localhost:%d/kernel\n", globals.KConfig.KernelPort)
 
-	address := fmt.Sprintf(":%d", utils.Config.KernelPort)
+	address := fmt.Sprintf(":%d", globals.KConfig.KernelPort)
 	err = http.ListenAndServe(address, mux)
 	if err != nil {
 		panic(err)

@@ -156,7 +156,7 @@ func EnviarContextoIO(ipDestino string, puertoDestino int, pid int, duracion int
 }
 
 func SolicitarCreacionEnMemoria(fileName string, tamanio int) (bool, error) {
-	url := fmt.Sprintf("http://%s:%d/memoria/kernel", Config.MemoryAddress, Config.MemoryPort)
+	url := fmt.Sprintf("http://%s:%d/memoria/kernel", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
 
 	mensaje := MensajeAMemoria{
 		Filename: fileName,
@@ -230,7 +230,7 @@ func SendMemoryRequest(request ConsultaAMemoria) error {
 	}
 
 	// Hacer request a memoria
-	url := fmt.Sprintf("http://%s:%d/memoria/%s", Config.MemoryAddress, Config.MemoryPort, request.Tipo)
+	url := fmt.Sprintf("http://%s:%d/memoria/%s", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort, request.Tipo)
 	logger.Debug("Enviando request a memoria: %v", url)
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonRequest))
@@ -269,7 +269,6 @@ var ErrorRequestType = map[string]error{
 }
 
 // ESTAS SON VARIABLES GLOBALES OJO¡¡¡¡
-var Config KernelConfig
 var ColaNuevo Queue[*pcb.PCB]
 var NewStateQueue Queue[*pcb.PCB]
 var ColaBLoqueado Queue[*pcb.PCB]

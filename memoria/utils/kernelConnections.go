@@ -1,10 +1,11 @@
 package utils
 
 import (
+	"net/http"
+
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
-	"log"
-	"net/http"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
 // --------------------------------------------------------
@@ -24,6 +25,6 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 
 	CargarInstrucciones(mensaje.Pseudocodigo)
 
-	log.Printf("Archivo Pseudocodigo: %s\n", mensaje.Pseudocodigo)
-	log.Printf("Tamanio de Memoria Pedido: %d\n", mensaje.TamanioMemoria)
+	logger.Info("Archivo Pseudocodigo: %s\n", mensaje.Pseudocodigo)
+	logger.Info("Tamanio de Memoria Pedido: %d\n", mensaje.TamanioMemoria)
 }

@@ -19,6 +19,8 @@ type EspacioLibreRTA struct {
 	EspacioLibre int `json:"espacio_libre"`
 }
 
+var KConfig *KernelConfig
+
 var CPU DatosCPU
 var IO DatosIO
 var EspacioLibreProceso EspacioLibreRTA

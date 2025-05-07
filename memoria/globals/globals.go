@@ -6,8 +6,8 @@ import (
 	"os"
 )
 
-func ConfigCheck(filepath string) *Config {
-	var configCheck *Config
+func ConfigCheck(filepath string) *MemoriaConfig {
+	var configCheck *MemoriaConfig
 	configFile, err := os.Open(filepath)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -18,7 +18,7 @@ func ConfigCheck(filepath string) *Config {
 	return configCheck
 }
 
-var MemoryConfig *Config
+var MemoryConfig *MemoriaConfig
 
 // Tipo de datos recibidos de1 Kernel
 
