@@ -4,22 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 )
-
-func Config(filepath string) *globals.Config {
-	var config *globals.Config
-	configFile, err := os.Open(filepath)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	defer configFile.Close()
-	jsonParser := json.NewDecoder(configFile)
-	jsonParser.Decode(&config)
-	return config
-}
 
 var Instrucciones []string = []string{}
 
@@ -33,12 +20,34 @@ func CargarListaDeInstrucciones(str string) {
 // ----------- FORMA PARTE DE LA MODIFICACIÓN DE PROCESOS -----------
 // ------------------------------------------------------------------
 
-func CreacionProceso(tamanioDeseado int) {
-	PID := 1 // TEMPORAL HASTA QUE SEPAMOS COMO ASIGNAR PID'S
-	log.Printf("## PID: <%d>  - Proceso Creado - Tamaño: <%d>", PID, tamanioDeseado)
+func CreacionProceso(w http.ResponseWriter, r *http.Request) {
+	log.Println(">>> Entró a utils.CreateProcess")
+	var request globals.PedidoAMemoria
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, "Error decodificando el request", http.StatusBadRequest)
+		log.Printf("Error decodificando request: %v", err)
+		return
+	}
+
+	// Desempaquetar los argumentos
+	var args globals.ArgmentosCreacionProceso
+	argsBytes, _ := json.Marshal(request.Arguments)
+	err = json.Unmarshal(argsBytes, &args)
+	if err != nil {
+		http.Error(w, "Error en los argumentos del proceso", http.StatusBadRequest)
+		log.Printf("Error en los argumentos: %v", err)
+		return
+	}
+	// Log para verificar lo recibido
+	// log.Printf(">> [Memoria] Creando proceso: %s - Tamaño: %d", args.FileName, args.ProcessSize)
+	// log.Printf("## PID: <%d>  - Proceso Creado - Tamaño: <%d>", PID, tamanioDeseado) "log deseado"
 
 	// se debe retornar el número de página de 1er nivel de ese proceso
+
+	w.WriteHeader(http.StatusOK)
 }
+
 func DestruccionProceso(w http.ResponseWriter, r *http.Request) {
 	//toDO
 	log.Printf("## PID: <PID>  - Proceso Destruido - Métricas - Acc.T.Pag: <ATP>; Inst.Sol.: <Inst.Sol>; SWAP: <SWAP>; Mem. Prin.: <Mem.Prin.>; Lec.Mem.: <Lec.Mem.>; Esc.Mem.: <Esc.Mem.>")
@@ -61,6 +70,9 @@ func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("## Espacio libre mock devuelto - Tamaño: <%d>\n", respuesta.EspacioLibre)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ESPACIO DEVUELTO"))
 }
 
 func EscrituraEspacio(w http.ResponseWriter, r *http.Request) {
@@ -91,49 +103,4 @@ func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 }
 func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	//toDO
-}
-
-// TODO
-
-// Para recibir Creacion de proceso
-func CreateProcess(w http.ResponseWriter, r *http.Request) {
-	log.Println(">>> Entró a utils.CreateProcess")
-	var request RequestToMemory
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, "Error decodificando el request", http.StatusBadRequest)
-		log.Printf("Error decodificando request: %v", err)
-		return
-	}
-
-	// Desempaquetar los argumentos
-	var args CreateProcessArgs
-	argsBytes, _ := json.Marshal(request.Arguments)
-	err = json.Unmarshal(argsBytes, &args)
-	if err != nil {
-		http.Error(w, "Error en los argumentos del proceso", http.StatusBadRequest)
-		log.Printf("Error en los argumentos: %v", err)
-		return
-	}
-	// Log para verificar lo recibido
-	log.Printf(">> [Memoria] Creando proceso: %s - Tamaño: %d", args.FileName, args.ProcessSize)
-
-	// ACA VA LA DE CARGAR INSTRUCCIONES DADO EL NOMBRE DE PSUDO CODIGOañadir la lógica para manejar el proceso en memoria
-
-	w.WriteHeader(http.StatusOK)
-}
-
-type CreateProcessArgs struct {
-	FileName    string `json:"fileName"`
-	ProcessSize int    `json:"processSize"`
-}
-
-type RequestToMemory struct {
-	Thread    Thread                 `json:"thread"`
-	Type      string                 `json:"type"`
-	Arguments map[string]interface{} `json:"arguments"`
-}
-
-type Thread struct {
-	PID int `json:"pid"`
 }

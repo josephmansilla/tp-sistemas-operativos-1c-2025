@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/memoria/utils"
+	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
 	"log"
 	"net/http"
 	"os"
@@ -14,24 +15,40 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- PRIMERA PARTE CARGA DEL CONFIG ----------
 	// ----------------------------------------------------
-	globals.MemoryConfig = utils.Config("config.json")
+	globals.MemoryConfig = globals.ConfigCheck("config.json")
 	if globals.MemoryConfig == nil {
-		log.Fatal("No se pudo cargar el archivo de configuración")
+		logger.Fatal("No se pudo cargar el archivo de configuración", nil)
 	}
 	var portMemory = globals.MemoryConfig.PortMemory
-	log.Println("Comenzó ejecucion de la memoria")
-
 	// ----------------------------------------------------
 	// ----------- CARGO LOGS DE MEMORIA EN TXT -----------
 	// ----------------------------------------------------
-
 	logFileName := "memoria.log"
-	logFile, errLogFile := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
-	if errLogFile != nil {
-		fmt.Printf("Error al crear archivo de log para la Memoria: %v\n", errLogFile)
+	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	if err != nil {
+		logger.Error("Error al crear archivo de log para la Memoria: %v\n", err)
 		os.Exit(1)
 	}
+	// ----------------------------------------------------
+	// ----------------- SETEO LOG LEVEL ------------------
+	// ----------------------------------------------------
 	log.SetOutput(logFile)
+	err = logger.SetLevel(globals.MemoryConfig.LogLevel)
+	if err != nil {
+		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
+	}
+	// ------------------------------------------------------
+	// ----------------- VALIDACION CONFIG ------------------
+	// ------------------------------------------------------
+	if err = globals.MemoryConfig.Validate(); err != nil {
+		logger.Fatal("La configuración no es válida - %v", err.Error())
+	}
+
+	log.Printf("=================================================")
+	log.Printf("======== Comenzo la ejecucion de Memoria ========")
+	log.Printf("=================================================\n")
+	fmt.Printf("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
+	log.Printf("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU Y KERNEL ----------
@@ -46,11 +63,8 @@ func main() {
 	//mux.HandleFunc("/memoria/frame", utils.algo)
 	//mux.HandleFunc("memoria/pagina", utils.algo)
 	//mux.HandleFunc("memoria/configuracion", utils.algo)
-	mux.HandleFunc("/memoria/createProcess", utils.CreateProcess)
 
 	//mux.HandleFunc("/memoria/cpu", utils.CreacionProceso)
-
-	fmt.Printf("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
 
 	direccion := fmt.Sprintf(":%d", portMemory)
 	errListenAndServe := http.ListenAndServe(direccion, mux)
@@ -58,6 +72,6 @@ func main() {
 		panic(errListenAndServe)
 	}
 
-	fmt.Printf("Termine de Ejecutar")
+	log.Println("======== Final de Ejecución memoria ========")
 
 }

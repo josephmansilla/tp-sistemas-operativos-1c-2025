@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -33,36 +35,40 @@ func main() {
 		os.Exit(1)
 	}
 
+	log.Printf("=================================================")
+	log.Printf("======== Comenzo la ejecucion del Kernel ========")
+	log.Printf("=================================================\n")
+
 	// ----------------------------------------------------
 	// ----------- CARGO LOGS DE KERNEL EN TXT ------------
 	// ----------------------------------------------------
-	err1 := utils.ConfigureLogger("kernel.log", "INFO")
-	if err1 != nil {
+	err = logger.ConfigureLogger("kernel.log", "INFO")
+	if err != nil {
 		fmt.Println("No se pudo crear el logger -", err.Error())
 		os.Exit(1)
 	}
-	utils.Debug("Logger creado")
+	logger.Debug("Logger creado")
 
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DEL CONFIG ------------------
 	// ----------------------------------------------------
 	configData, err := os.ReadFile("config.json")
 	if err != nil {
-		utils.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
+		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
 	}
 
 	err = json.Unmarshal(configData, &utils.Config)
 	if err != nil {
-		utils.Fatal("No se pudo parsear el archivo de configuración - %v", err.Error())
+		logger.Fatal("No se pudo parsear el archivo de configuración - %v", err.Error())
 	}
 
 	if err = utils.Config.Validate(); err != nil {
-		utils.Fatal("La configuración no es válida - %v", err.Error())
+		logger.Fatal("La configuración no es válida - %v", err.Error())
 	}
 
-	err = utils.SetLevel(utils.Config.LogLevel)
+	err = logger.SetLevel(utils.Config.LogLevel)
 	if err != nil {
-		utils.Fatal("No se pudo leer el log-level - %v", err.Error())
+		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
 	}
 
 	utils.ColaNuevo = utils.Queue[*pcb.PCB]{}
@@ -96,6 +102,9 @@ func main() {
 	mux.HandleFunc("/kernel/io", utils.RecibirMensajeDeIO)
 	mux.HandleFunc("/kernel/cpu", utils.RecibirMensajeDeCPU)
 
+	// Falta implementaciòn en kernel
+	//mux.HandleFunc("/kernel/cpu", utils.EnviarIpPuertoIDAKernel)
+
 	// ------------------------------------------------------
 	// --------------------- SYSCALLS -----------------------
 	// ------------------------------------------------------
@@ -122,6 +131,8 @@ func main() {
 	fmt.Printf("FIN DE EJECUCION")
 }
 
+// ESTO DEBE IR EN OTRO LADO
+
 func InitFirstProcess(fileName string, processSize int) {
 	// Crear el PCB para el proceso inicial
 	pid := pcb.Pid(1)
@@ -133,7 +144,7 @@ func InitFirstProcess(fileName string, processSize int) {
 	}
 
 	// ESTE LOG NO VA.
-	utils.Info("## (<%v>:0) Se crea el proceso - Estado: NEW", pid)
+	logger.Info("## (<%v>:0) Se crea el proceso - Estado: NEW", pid)
 
 	// Agregar el PCB a la cola de nuevos procesos en el kernel
 	utils.ColaNuevo.Add(&pcb1)
@@ -152,11 +163,11 @@ func InitFirstProcess(fileName string, processSize int) {
 
 	err := utils.SendMemoryRequest(request)
 	if err != nil {
-		utils.Error("Error al enviar request a memoria: %v", err)
+		logger.Error("Error al enviar request a memoria: %v", err)
 	} else {
-		utils.Debug("Hay espacio disponible en memoria")
+		logger.Debug("Hay espacio disponible en memoria")
 
 	}
 
-	utils.Info("Pude enviar a memoria todo")
+	logger.Info("Pude enviar a memoria todo")
 }
