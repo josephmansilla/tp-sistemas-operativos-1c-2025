@@ -37,7 +37,7 @@ func main() {
 	// ----------------------------------------------------
 	// ------------- CARGO LOGS DE IO EN TXT --------------
 	// ----------------------------------------------------
-	logFileName := fmt.Sprintf("io_%s.log", nombre)
+	logFileName := fmt.Sprintf("./logs/io_%s.log", nombre)
 	var err = logger.ConfigureLogger(logFileName, "INFO")
 	if err != nil {
 		fmt.Println("No se pudo crear el logger -", err.Error())

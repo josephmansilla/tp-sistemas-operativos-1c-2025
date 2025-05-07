@@ -39,6 +39,7 @@ var InterrupcionPendiente bool
 var PIDInterrumpido int
 var MutexInterrupcion sync.Mutex
 var TamPag int
+var ErrSyscallBloqueante = errors.New("proceso bloqueado por syscall IO")
 
 // (ectx *ExecutionContext) significa que estoy trabajando sobre la struct original y no sobre una copia, GetRegister pasa a ser un metodo
 func (ectx *ExecutionContext) ObtenerRegistro(str string) (*uint32, error) {

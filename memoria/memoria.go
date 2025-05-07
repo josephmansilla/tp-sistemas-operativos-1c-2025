@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/memoria/utils"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"net/http"
+	"os"
 )
 
 func main() {
@@ -58,6 +58,7 @@ func main() {
 	mux.HandleFunc("/memoria/kernel", utils.RecibirMensajeDeKernel)
 	mux.HandleFunc("/memoria/instruccion", utils.ObtenerInstruccion)
 	mux.HandleFunc("/memoria/espaciolibre", utils.ObtenerEspacioLibreMock)
+	mux.HandleFunc("/memoria/dump", utils.MemoryDump)
 	//mux.HandleFunc("/memoria/frame", utils.algo)
 	//mux.HandleFunc("memoria/pagina", utils.algo)
 	//mux.HandleFunc("memoria/configuracion", utils.algo)

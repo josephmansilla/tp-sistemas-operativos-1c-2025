@@ -311,7 +311,7 @@ func ioInstruccion(context *globals.ExecutionContext, arguments []string) error 
 	}
 
 	log.Println("Syscall IO realizada exitosamente")
-	return nil
+	return globals.ErrSyscallBloqueante
 }
 
 func exitInstruccion(context *globals.ExecutionContext, arguments []string) error {

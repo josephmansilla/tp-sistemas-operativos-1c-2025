@@ -1,7 +1,10 @@
 package syscalls
 
 import (
+	"fmt"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
@@ -23,6 +26,16 @@ type MensajeIo struct {
 	PC       int    `json:"pc"`
 	Duracion int    `json:"tiempo"`
 	Nombre   string `json:"nombre"`
+}
+
+type MensajeSyscall struct {
+	PID int `json:"pid"`
+	PC  int `json:"pc"`
+}
+
+type MensajeDUMP struct {
+	PID       int    `json:"pid"`
+	Timestamp string `json:"timestamp"`
 }
 
 func ContextoInterrumpido(w http.ResponseWriter, r *http.Request) {
@@ -47,20 +60,42 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 	planificadores.CrearProceso(filename, tamanio)
 }
 
-// EXIT no recibe parámetros y se encarga de finalizar el proceso que la invocó
 func Exit(w http.ResponseWriter, r *http.Request) {
-	//COMO CONSIGO QUIEN LA INVOCO?????
-	//NO RECIBE PARAMETROS??
-	pid := globals.UltimoPID
+	var mensajeRecibido MensajeSyscall
 
-	logger.Info("## (<%d>) - Solicitó syscall: <EXIT>", pid)
+	logger.Info("## (<%d>) - Solicitó syscall: <EXIT>", mensajeRecibido.PID)
 
 	//Planificador Largo Plazo
-	planificadores.FinalizarProceso(pid)
+	planificadores.FinalizarProceso(mensajeRecibido.PID)
 }
 
 func DumpMemory(w http.ResponseWriter, r *http.Request) {
+	var mensaje MensajeDUMP
+	if err := data.LeerJson(w, r, &mensaje); err != nil {
+		return // El error ya fue respondido por LeerJson
+	}
 
+	// Generar el timestamp en formato yyyyMMddTHHmmss
+	timestamp := time.Now().Format("20060102T150405")
+
+	// Crear mensaje para enviar a Memoria
+	req := MensajeDUMP{
+		PID:       mensaje.PID,
+		Timestamp: timestamp,
+	}
+
+	// Armar URL del módulo Memoria
+	url := fmt.Sprintf("http://%s:%d/memoria/dump", globals.Config.MemoryAddress, globals.Config.MemoryPort)
+
+	// Usar helper para enviar datos
+	if err := data.EnviarDatos(url, req); err != nil {
+		log.Printf("Error enviando dump a Memoria: %v", err)
+		http.Error(w, "Error comunicando con Memoria", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Se envió correctamente el pedido de dump del PID %d a Memoria", req.PID)
+	w.WriteHeader(http.StatusOK)
 }
 
 func Io(w http.ResponseWriter, r *http.Request) {

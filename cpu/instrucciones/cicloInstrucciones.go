@@ -96,13 +96,21 @@ func FaseExecute(nombre string, args []string) bool {
 	}
 
 	err := instrucFunc(globals.CurrentContext, args)
-	log.Printf("Registros: AX=%d, BX=%d, CX=%d, DX=%d, EX=%d, FX=%d, GX=%d, HX=%d",
-		globals.CurrentContext.Ax, globals.CurrentContext.Bx, globals.CurrentContext.Cx, globals.CurrentContext.Dx,
-		globals.CurrentContext.Ex, globals.CurrentContext.Fx, globals.CurrentContext.Gx, globals.CurrentContext.Hx)
+
 	if err != nil {
+		if err == globals.ErrSyscallBloqueante {
+			log.Printf("Proceso %d bloqueado por syscall IO", globals.CurrentContext.PID)
+			return false // Detener ejecución por syscall IO
+		}
+
 		log.Printf("Error ejecutando %s: %v", nombre, err)
 		return false
 	}
+
+	// Solo llegás acá si no hubo error
+	log.Printf("Registros: AX=%d, BX=%d, CX=%d, DX=%d, EX=%d, FX=%d, GX=%d, HX=%d",
+		globals.CurrentContext.Ax, globals.CurrentContext.Bx, globals.CurrentContext.Cx, globals.CurrentContext.Dx,
+		globals.CurrentContext.Ex, globals.CurrentContext.Fx, globals.CurrentContext.Gx, globals.CurrentContext.Hx)
 
 	if FaseCheckInterrupt() {
 		log.Println("Finalizando ejecución por interrupción.")

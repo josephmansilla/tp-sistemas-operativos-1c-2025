@@ -15,6 +15,8 @@ type KernelConfig struct {
 	KernelAddress         string  `json:"ip_kernel"`
 }
 
+var Config KernelConfig
+
 func (cfg KernelConfig) Validate() error {
 	if cfg.MemoryAddress == "" {
 		return errors.New("falta el campo 'ip_memory'")
