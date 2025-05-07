@@ -25,7 +25,9 @@ func main() {
 	}
 	log.SetOutput(logFile)
 
-	log.Printf("Comenzo ejecucion del CPU con ID: %s", ID)
+	log.Printf("=========================================================")
+	log.Printf("======== Comenzo la ejecucion del CPU con ID: %s ========", ID)
+	log.Printf("=========================================================\n")
 
 	//CPU CLIENTE
 	configpath := fmt.Sprintf("configs/cpu_%sconfig.json", ID)
@@ -46,6 +48,7 @@ func main() {
 	mux.HandleFunc("/cpu/kernel", utils.RecibirContextoDeKernel)
 	mux.HandleFunc("/cpu/interrupcion", utils.RecibirInterrupcion)
 
+	fmt.Printf("Servidor escuchando en http://localhost:%d/cpu\n", globals.ClientConfig.PortSelf)
 	//2. Uso una goroutine para que no se bloquee el modulo
 	go func() {
 		log.Printf("Escuchando en %s:%d...", globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf)

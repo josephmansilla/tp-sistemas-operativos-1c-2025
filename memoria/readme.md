@@ -14,13 +14,11 @@ La memoria se encarga de tener conexiones entrantes para los módulos:
 El cuerpo del mensaje (`body`) debe ser un JSON con una estructura dependiendo de cada Modulo:
 
 ```json
-//CPU
 {
   "ip": "127.0.0.1",
   "puerto": 8000
 }
 
-//IO
 {
   "nombre":"impresora",
   "ip": "127.0.0.1",
