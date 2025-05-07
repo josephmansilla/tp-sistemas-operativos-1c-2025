@@ -1,10 +1,12 @@
 package syscalls
 
 import (
-	"github.com/sisoputnfrba/tp-golang/kernel/globals"
-	"github.com/sisoputnfrba/tp-golang/kernel/utils"
 	"log"
 	"net/http"
+
+	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
+	"github.com/sisoputnfrba/tp-golang/kernel/globals"
+	"github.com/sisoputnfrba/tp-golang/kernel/planificadores"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
 )
@@ -43,7 +45,7 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <INIT_PROC>”", pid)
 
 	// Usar CrearProceso del paquete utils
-	utils.CrearProceso(filename, tamanio)
+	planificadores.CrearProceso(filename, tamanio)
 }
 
 func Exit(w http.ResponseWriter, r *http.Request) {
@@ -71,6 +73,6 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Se ha recibido: Nombre: %s Duracion: %d", mensajeRecibido.Nombre, mensajeRecibido.Duracion)
 	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
 
-	utils.EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto, pid, mensajeRecibido.Duracion)
+	comunicacion.EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto, pid, mensajeRecibido.Duracion)
 	log.Printf("Operacion de IO enviada correctamente")
 }

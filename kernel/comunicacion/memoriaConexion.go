@@ -1,4 +1,4 @@
-package utils
+package comunicacion
 
 import (
 	"bytes"
@@ -34,6 +34,7 @@ type RespuestaMemoria struct {
 	Mensaje string `json:"mensaje"`
 }
 
+//ENVIAR ARCHIVO DE PSEUDOCODIGO Y TAMAÑO
 func SolicitarCreacionEnMemoria(fileName string, tamanio int) (bool, error) {
 	url := fmt.Sprintf("http://%s:%d/memoria/kernel", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
 
