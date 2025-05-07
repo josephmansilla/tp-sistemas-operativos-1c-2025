@@ -10,6 +10,7 @@ import (
 
 	"github.com/sisoputnfrba/tp-golang/io/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
 type MensajeAKernel struct {
@@ -24,6 +25,9 @@ type MensajeDeKernel struct {
 }
 
 func main() {
+	// ----------------------------------------------------
+	// ---------- PARTE CARGA DE PARAMETROS ---------------
+	// ----------------------------------------------------
 	if len(os.Args) < 2 {
 		fmt.Println("Falta el parametro: nombre de la interfaz de io")
 		os.Exit(1)
@@ -31,35 +35,53 @@ func main() {
 
 	nombre := os.Args[1]
 
-	logFileName := fmt.Sprintf("logs/io_%s.log", nombre)
-	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
-
+	// ----------------------------------------------------
+	// ------------- CARGO LOGS DE IO EN TXT --------------
+	// ----------------------------------------------------
+	logFileName := fmt.Sprintf("io_%s.log", nombre)
+	var err = logger.ConfigureLogger(logFileName, "INFO")
 	if err != nil {
-		fmt.Printf("Error al crear archivo de log para io %s: %v\n", nombre, err)
+		fmt.Println("No se pudo crear el logger -", err.Error())
 		os.Exit(1)
 	}
-	log.SetOutput(logFile)
+	logger.Debug("Logger creado")
 
-	log.Printf("Nombre de la Interfaz de IO: %s\n", nombre)
+	logger.Info("Comenzó ejecucion del IO")
+	logger.Info("Nombre de la Interfaz de IO: %s", nombre)
 
-	log.Println("Comenzó ejecucion del IO")
+	// ----------------------------------------------------
+	// ---------- PARTE CARGA DEL CONFIG ------------------
+	// ----------------------------------------------------
+	configFilename := fmt.Sprintf("%sconfig.json", nombre)
+	configPath := fmt.Sprintf("./configs/%s", configFilename)
+	configData, err := os.ReadFile(configPath)
+	if err != nil {
+		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
+	}
 
-	configpath := fmt.Sprintf("configs/%sconfig.json", nombre)
-	globals.ClientConfig = Config(configpath)
+	err = json.Unmarshal(configData, &globals.IoConfig)
+	if err != nil {
+		logger.Fatal("No se pudo parsear el archivo de configuración - %v", err.Error())
+	}
 
-	if globals.ClientConfig == nil {
-		log.Fatal("No se pudo cargar el archivo de configuración")
+	if err = globals.IoConfig.Validate(); err != nil {
+		logger.Fatal("La configuración no es válida - %v", err.Error())
+	}
+
+	err = logger.SetLevel(globals.IoConfig.LogLevel)
+	if err != nil {
+		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
 	}
 
 	//Instancio el mensaje a mandar a Kernel
 	mensaje := MensajeAKernel{
-		Ip:     globals.ClientConfig.IpIo,
-		Puerto: globals.ClientConfig.PortIo,
+		Ip:     globals.IoConfig.IpIo,
+		Puerto: globals.IoConfig.PortIo,
 		Nombre: nombre,
 	}
 
 	//Lo mando
-	EnviarIpPuertoNombreAKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, mensaje)
+	EnviarIpPuertoNombreAKernel(globals.IoConfig.IpKernel, globals.IoConfig.PortKernel, mensaje)
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE KERNEL ----------------
@@ -68,7 +90,7 @@ func main() {
 	mux.HandleFunc("/io/kernel", RecibirMensajeDeKernel)
 
 	// Inicia el servidor HTTP para escuchar las peticiones del Kernel
-	direccion := fmt.Sprintf("%s:%d", globals.ClientConfig.IpIo, globals.ClientConfig.PortIo)
+	direccion := fmt.Sprintf("%s:%d", globals.IoConfig.IpIo, globals.IoConfig.PortIo)
 	log.Printf("Escuchando en %s...", direccion)
 
 	err = http.ListenAndServe(direccion, mux)

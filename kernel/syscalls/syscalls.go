@@ -3,10 +3,10 @@ package syscalls
 import (
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/utils"
-	"github.com/sisoputnfrba/tp-golang/utils/data"
-	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
 	"log"
 	"net/http"
+	"github.com/sisoputnfrba/tp-golang/utils/data"
+	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
 // Body JSON a recibir

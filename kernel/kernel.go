@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"github.com/sisoputnfrba/tp-golang/kernel/syscalls"
@@ -35,8 +36,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Info("======== Comenzo la ejecucion del Kernel ========")
-
 	// ----------------------------------------------------
 	// ----------- CARGO LOGS DE KERNEL EN TXT ------------
 	// ----------------------------------------------------
@@ -47,6 +46,8 @@ func main() {
 	}
 	logger.Debug("Logger creado")
 
+	logger.Info("Comenzo la ejecucion del Kernel")
+	
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DEL CONFIG ------------------
 	// ----------------------------------------------------
@@ -69,13 +70,13 @@ func main() {
 		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
 	}
 
-	utils.ColaNuevo = utils.Queue[*pcb.PCB]{}
-	utils.ColaBLoqueado = utils.Queue[*pcb.PCB]{}
-	utils.ColaSalida = utils.Queue[*pcb.PCB]{}
-	utils.ColaEjecutando = utils.Queue[*pcb.PCB]{}
-	utils.ColaReady = utils.Queue[*pcb.PCB]{}
-	utils.ColaBloqueadoSuspendido = utils.Queue[*pcb.PCB]{}
-	utils.ColaSuspendidoReady = utils.Queue[*pcb.PCB]{}
+	globals.ColaNuevo = algoritmos.Queue[*pcb.PCB]{}
+	globals.ColaBLoqueado = algoritmos.Queue[*pcb.PCB]{}
+	globals.ColaSalida = algoritmos.Queue[*pcb.PCB]{}
+	globals.ColaEjecutando = algoritmos.Queue[*pcb.PCB]{}
+	globals.ColaReady = algoritmos.Queue[*pcb.PCB]{}
+	globals.ColaBloqueadoSuspendido = algoritmos.Queue[*pcb.PCB]{}
+	globals.ColaSuspendidoReady = algoritmos.Queue[*pcb.PCB]{}
 
 	// ----------------------------------------------------
 	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------

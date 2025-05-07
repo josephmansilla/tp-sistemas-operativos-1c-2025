@@ -1,4 +1,4 @@
-package utils
+package algoritmos
 
 import (
 	"errors"

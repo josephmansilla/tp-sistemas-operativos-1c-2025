@@ -1,6 +1,11 @@
 package globals
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
+	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
+)
 
 // Datos recibidos por el Kernel
 type DatosIO struct {
@@ -36,5 +41,15 @@ func GenerarNuevoPID() int {
 	UltimoPID++
 	return UltimoPID
 }
+
+// ESTAS SON VARIABLES GLOBALES OJO¡¡¡¡
+var ColaNuevo algoritmos.Queue[*pcb.PCB]
+var NewStateQueue algoritmos.Queue[*pcb.PCB]
+var ColaBLoqueado algoritmos.Queue[*pcb.PCB]
+var ColaSalida algoritmos.Queue[*pcb.PCB]
+var ColaEjecutando algoritmos.Queue[*pcb.PCB]
+var ColaReady algoritmos.Queue[*pcb.PCB]
+var ColaBloqueadoSuspendido algoritmos.Queue[*pcb.PCB]
+var ColaSuspendidoReady algoritmos.Queue[*pcb.PCB]
 
 //crear nodos a punteros PCB, para instanciarlas en main (sera un puntero a pcb creado previamente)
