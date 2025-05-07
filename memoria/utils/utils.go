@@ -12,7 +12,7 @@ var Instrucciones []string = []string{}
 // función auxiliar para cargar el slice de instrucciones
 func CargarListaDeInstrucciones(str string) {
 	Instrucciones = append(Instrucciones, str)
-	logger.Info("Se cargó una instrucción al Slice\n")
+	logger.Info("Se cargó una instrucción al Slice")
 }
 
 // ------------------------------------------------------------------
@@ -68,7 +68,7 @@ func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
 
-	logger.Info("## Espacio libre mock devuelto - Tamaño: <%d>\n", respuesta.EspacioLibre)
+	logger.Info("## Espacio libre mock devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ESPACIO DEVUELTO"))
