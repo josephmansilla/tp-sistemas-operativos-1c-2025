@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -91,7 +90,7 @@ func main() {
 
 	// Inicia el servidor HTTP para escuchar las peticiones del Kernel
 	direccion := fmt.Sprintf("%s:%d", globals.IoConfig.IpIo, globals.IoConfig.PortIo)
-	log.Printf("Escuchando en %s...", direccion)
+	fmt.Printf("Escuchando en %s...", direccion)
 
 	err = http.ListenAndServe(direccion, mux)
 	if err != nil {
@@ -107,7 +106,7 @@ func Config(filepath string) *globals.Config {
 	configFile, err := os.Open(filepath)
 
 	if err != nil {
-		log.Fatal(err.Error())
+		logger.Fatal("%s", err.Error())
 	}
 	//defer se usa para asegurarse de cerrar recursos (archivos, conexiones, etc.)
 	//incluso si hay errores más adelante.
@@ -132,11 +131,11 @@ func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje Me
 	err := data.EnviarDatos(url, mensaje)
 	// Verifico si hubo error y logueo si lo hubo
 	if err != nil {
-		log.Printf("Error enviando mensaje: %s", err.Error())
+		logger.Error("Error enviando mensaje: %s", err.Error())
 		return
 	}
 	// Si no hubo error, logueo que todo salió bien
-	log.Printf("Mensaje enviado a Kernel")
+	logger.Info("Mensaje enviado a Kernel")
 }
 
 // Recibir PID Y Tiempo de Kernel
@@ -147,10 +146,10 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Realizo la operacion
-	log.Printf("## PID:%d - Inicio de IO - Tiempo:%d", mensajeRecibido.PID, mensajeRecibido.Duracion)
+	logger.Info("## PID: <%d> - Inicio de IO - Tiempo: %d", mensajeRecibido.PID, mensajeRecibido.Duracion)
 	time.Sleep(time.Duration(mensajeRecibido.Duracion) * time.Second)
 
-	log.Printf("## PID:%d - Fin de IO", mensajeRecibido.PID)
+	logger.Info("## PID: <%d> - Fin de IO", mensajeRecibido.PID)
 	//IO Finalizada
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("IO finalizada correctamente"))

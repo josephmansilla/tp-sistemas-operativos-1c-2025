@@ -8,10 +8,11 @@ import (
 	"strconv"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
+	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
+	"github.com/sisoputnfrba/tp-golang/kernel/planificadores"
 	"github.com/sisoputnfrba/tp-golang/kernel/syscalls"
-	"github.com/sisoputnfrba/tp-golang/kernel/utils"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
@@ -47,7 +48,7 @@ func main() {
 	logger.Debug("Logger creado")
 
 	logger.Info("Comenzo la ejecucion del Kernel")
-	
+
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DEL CONFIG ------------------
 	// ----------------------------------------------------
@@ -81,24 +82,14 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------
 	// ----------------------------------------------------
-	utils.CrearProceso(archivoPseudocodigo, tamanioProceso)
-	// ESTA FUNCIÓN ES LA QUE TIENE QUE TENER TODA LA LÓGICA QUE TIENE
-	//
-
-	// ESTO NO SE HACE TODAVIA PRIMERO HAY QUE CONSULTAR LA MEMORIA.
-	// EN INIT FIRST PROCESS DEBERÍA ESTAR LA FUNCION DE ARRIBA
-	// ES PARA EL PROXIMO CHECKPOINT
-	// InitFirstProcess(archivoPseudocodigo, tamanioProceso)
+	planificadores.CrearProceso(archivoPseudocodigo, tamanioProceso)
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU E IO (Puertos) ----
 	// ------------------------------------------------------
 	mux := http.NewServeMux()
-	mux.HandleFunc("/kernel/io", utils.RecibirMensajeDeIO)
-	mux.HandleFunc("/kernel/cpu", utils.RecibirMensajeDeCPU)
-
-	// Falta implementaciòn en kernel
-	//mux.HandleFunc("/kernel/cpu", utils.EnviarIpPuertoIDAKernel)
+	mux.HandleFunc("/kernel/io", comunicacion.RecibirMensajeDeIO)
+	mux.HandleFunc("/kernel/cpu", comunicacion.RecibirMensajeDeCPU)
 
 	// ------------------------------------------------------
 	// --------------------- SYSCALLS -----------------------
