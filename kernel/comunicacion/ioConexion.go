@@ -30,9 +30,11 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 		return //hubo error
 	}
 
+	nombre := mensajeRecibido.Nombre
+
 	//Cargar en
 	globals.IOMu.Lock()
-	globals.IO = globals.DatosIO{
+	globals.IOs[nombre] = globals.DatosIO{
 		Nombre: mensajeRecibido.Nombre,
 		Ip:     mensajeRecibido.Ip,
 		Puerto: mensajeRecibido.Puerto,
@@ -41,22 +43,31 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 	globals.IOMu.Unlock()
 
 	logger.Info("Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
-		globals.IO.Nombre, globals.IO.Ip, globals.IO.Puerto)
+		globals.IOs[nombre].Nombre, globals.IOs[nombre].Ip, globals.IOs[nombre].Puerto)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
 }
 
 // Enviar PID y Duracion a IO
-func EnviarContextoIO(ipDestino string, puertoDestino int, pid int, duracion int) {
-	url := fmt.Sprintf("http://%s:%d/io/kernel", ipDestino, puertoDestino)
+func EnviarContextoIO(nombreIO string, pid int, duracion int) {
+	//Necesito elegir a que IO mandarle
+	globals.IOMu.Lock()
+	ioData, ok := globals.IOs[nombreIO]
+	for !ok {
+		globals.IOCond.Wait()
+		ioData, ok = globals.IOs[nombreIO]
+	}
+	globals.IOMu.Unlock()
+	
+	url := fmt.Sprintf("http://%s:%d/io/kernel", ioData.Ip, ioData.Puerto)
 
 	mensaje := MensajeAIO{
 		Pid:      pid,
 		Duracion: duracion,
 	}
 
-	logger.Info("## (%d) - Bloqueado por IO: %s", mensaje.Pid, globals.IO.Nombre)
+	logger.Info("## (%d) - Bloqueado por IO: %s", mensaje.Pid, nombreIO)
 
 	resp, err := data.EnviarDatosConRespuesta(url, mensaje)
 	if err != nil {
