@@ -2,10 +2,10 @@ package comunicacion
 
 import (
 	"fmt"
-	"net/http"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
+	"net/http"
 )
 
 // Body JSON a recibir
@@ -26,27 +26,41 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 		return //hubo error
 	}
 
+	id := mensajeRecibido.ID
+
 	//Cargar en
-	globals.CPU = globals.DatosCPU{
+	globals.CPUMu.Lock()
+	globals.CPUs[id] = globals.DatosCPU{
+		ID:     mensajeRecibido.ID,
 		Ip:     mensajeRecibido.Ip,
 		Puerto: mensajeRecibido.Puerto,
-		ID:     mensajeRecibido.ID,
 	}
+	globals.CPUCond.Broadcast() // Despierta a quien espera CPUs
+	globals.CPUMu.Unlock()
 
 	logger.Info("Se ha recibido CPU: Ip: %s Puerto: %d ID: %s",
-		globals.CPU.Ip, globals.CPU.Puerto, globals.CPU.ID)
+		globals.CPUs[id].Ip, globals.CPUs[id].Puerto, globals.CPUs[id].ID)
 
 	//Asignar PID al CPU
-	EnviarContextoCPU(globals.CPU.Ip, globals.CPU.Puerto)
+	EnviarContextoCPU(globals.CPUs[id].ID)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
 }
 
 // Enviar PID y PC al CPU
-func EnviarContextoCPU(ipDestino string, puertoDestino int) {
+func EnviarContextoCPU(id string) {
+	//Necesito elegir a que CPU mandarle
+	globals.CPUMu.Lock()
+	cpuData, ok := globals.CPUs[id]
+	for !ok {
+		globals.CPUCond.Wait()
+		cpuData, ok = globals.CPUs[id]
+	}
+	globals.CPUMu.Unlock()
+
 	//Construye la URL del endpoint(url + path) a donde se va a enviar el mensaje.
-	url := fmt.Sprintf("http://%s:%d/cpu/kernel", ipDestino, puertoDestino)
+	url := fmt.Sprintf("http://%s:%d/cpu/kernel", cpuData.Ip, cpuData.Puerto)
 
 	mensaje := MensajeACPU{
 		Pid: 0, //PEDIR AL PCB

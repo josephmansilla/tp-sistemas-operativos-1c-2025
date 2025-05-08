@@ -15,9 +15,9 @@ type DatosIO struct {
 }
 
 type DatosCPU struct {
+	ID     string
 	Ip     string
 	Puerto int
-	ID     string
 }
 
 type EspacioLibreRTA struct {
@@ -27,11 +27,16 @@ type EspacioLibreRTA struct {
 var KConfig *KernelConfig
 
 var CPU DatosCPU
+var CPUs map[string]DatosCPU = make(map[string]DatosCPU) // clave: ID del CPU
+var CPUMu sync.Mutex
+var CPUCond = sync.NewCond(&CPUMu)
+
 var IO DatosIO
-var EspacioLibreProceso EspacioLibreRTA
 var IOs map[string]DatosIO = make(map[string]DatosIO) // clave: nombre del IO
 var IOMu sync.Mutex
 var IOCond = sync.NewCond(&IOMu)
+
+var EspacioLibreProceso EspacioLibreRTA
 var UltimoPID int = 0
 var PidMutex sync.Mutex
 
