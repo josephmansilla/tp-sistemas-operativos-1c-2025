@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
@@ -16,21 +15,6 @@ import (
 // ------------------------------------------------------------------
 // ---------- FORMA PARTE DEL ACCESO A ESPACIO DE USUARIO ----------
 // ------------------------------------------------------------------
-
-func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
-	respuesta := globals.EspacioLibreRTA{EspacioLibre: globals.MemoryConfig.MemorySize}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
-	}
-
-	logger.Info("## Espacio libre mock devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("ESPACIO DEVUELTO"))
-}
 
 func EscrituraEspacio(w http.ResponseWriter, r *http.Request) int {
 	// TODO: ESCRIBIR LO INDICADO EN LA DIRECCION PEDIDA
@@ -59,12 +43,7 @@ func MemoriaDump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	globals.DatosDump = globals.DatosParaDump{
-		PID:       dump.PID,
-		TimeStamp: dump.TimeStamp,
-	}
-
-	dumpFileName := fmt.Sprintf(globals.MemoryConfig.DumpPath+"<%d>-<%s>.dmp", globals.DatosDump.PID, globals.DatosDump.TimeStamp)
+	dumpFileName := fmt.Sprintf(globals.MemoryConfig.DumpPath+"<%d>-<%s>.dmp", dump.PID, dump.TimeStamp)
 	logger.Info("EL NOMBRE DEL DUMPFILE ES: " + dumpFileName)
 	dumpFile, err := os.OpenFile(dumpFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {

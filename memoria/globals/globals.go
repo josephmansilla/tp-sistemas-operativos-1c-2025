@@ -26,7 +26,7 @@ var DatosDump DatosParaDump
 
 // EspacioDeUsuario => make([]byte, TamMemoria)
 
-type MetricasProceso struct {
+type MetricaProceso struct {
 	CantAccesosTablasPaginas     int `json:"cant_accesos_tablas_paginas"`
 	CantInstruccionesSolicitadas int `json:"cant_instrucciones_solicitadas"`
 	CantBajadasHaciaSwap         int `json:"cant_bajadas_hacia_swap"`

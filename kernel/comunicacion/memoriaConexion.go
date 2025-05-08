@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
+	"net/http"
 )
 
 // Body JSON a recibir
@@ -34,9 +34,9 @@ type RespuestaMemoria struct {
 	Mensaje string `json:"mensaje"`
 }
 
-//ENVIAR ARCHIVO DE PSEUDOCODIGO Y TAMAÑO
+// ENVIAR ARCHIVO DE PSEUDOCODIGO Y TAMAÑO
 func SolicitarCreacionEnMemoria(fileName string, tamanio int) (bool, error) {
-	url := fmt.Sprintf("http://%s:%d/memoria/kernel", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
+	url := fmt.Sprintf("http://%s:%d/memoria/espaciolibre", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
 
 	mensaje := MensajeAMemoria{
 		Filename: fileName,

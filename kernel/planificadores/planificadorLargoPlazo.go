@@ -49,6 +49,7 @@ func IniciarProceso(pcb pcb.PCB, fileName string, tamanio int) {
 	logger.Info("Intentando crear el proceso con pseudocódigo: %s y tamaño: %d", fileName, tamanio)
 
 	// Paso 1: Pedirle a memoria que reserve espacio
+	//TODO: ver si hacer con semaforos
 	exito, err := comunicacion.SolicitarCreacionEnMemoria(fileName, tamanio)
 	if err != nil {
 		logger.Error("Error al intentar reservar memoria: %v", err)
@@ -79,6 +80,8 @@ func IniciarProceso(pcb pcb.PCB, fileName string, tamanio int) {
 // FIN DE PROCESO (EXIT)
 func FinalizarProceso(pid int) {
 	//NECESITO OBTENER EL PCB para REMOVE E IMPRIMIR METRICAS
+
+	// TODO: CREACION DE ENDPOINT PARA AVISARLE A MEMORIA DE OBTENER LAS METRICAS
 
 	//globals.ColaSalida.Remove();
 	logger.Info("## (<%d>) - Finaliza el proceso", pid)
