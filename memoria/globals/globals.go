@@ -58,9 +58,15 @@ type EspacioLibreRTA struct {
 	EspacioLibre int `json:"espacio_libre"`
 }
 
+type DatosParaDump struct {
+	PID       int    `json:"pid"`
+	TimeStamp string `json:"timeStamp"`
+} // HABRIA QUE VER QUE TIPO DE DATOS ES EL TIMESTAMP
+
 var RespuestaKernel DatosRespuestaDeKernel
 var Kernel DatosConsultaDeKernel
 var CPU DatosDeCPU
+var DatosDump DatosParaDump
 
 // EspacioDeUsuario => make([]byte, TamMemoria)
 

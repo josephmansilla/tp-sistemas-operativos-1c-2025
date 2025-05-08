@@ -2,9 +2,13 @@ package utils
 
 import (
 	"encoding/json"
-	"net/http"
+	"fmt"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"log"
+	"net/http"
+	"os"
 )
 
 var Instrucciones []string = []string{}
@@ -61,7 +65,7 @@ func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 
 func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
 	respuesta := globals.EspacioLibreRTA{EspacioLibre: globals.MemoryConfig.MemorySize}
-	// el EspacioLibre es un valor arbitrario
+
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
@@ -84,10 +88,33 @@ func LecturaEspacio(w http.ResponseWriter, r *http.Request) {
 	logger.Info("## PID: <PID>  - <Lectura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")
 }
 
-func MemoryDump(w http.ResponseWriter, r *http.Request) {
-	// toDO
+func MemoriaDump(w http.ResponseWriter, r *http.Request) {
+	var dump globals.DatosParaDump
+
+	if err := data.LeerJson(w, r, &dump); err != nil {
+		log.Printf("Error al recibir JSON: %v", err)
+		http.Error(w, "Error procesando datos del Kernel", http.StatusInternalServerError)
+		return
+	}
+
+	globals.DatosDump = globals.DatosParaDump{
+		PID:       dump.PID,
+		TimeStamp: dump.TimeStamp,
+	}
+
+	dumpFileName := fmt.Sprintf("dump/<%d>-<%s>.dmp", globals.DatosDump.PID, globals.DatosDump.TimeStamp)
+	dumpFile, err := os.OpenFile(dumpFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	if err != nil {
+		fmt.Printf("Error al crear archivo de log para <%d-%s>: %v\n", globals.DatosDump.PID, globals.DatosDump.TimeStamp, err)
+		os.Exit(1)
+	}
+	log.SetOutput(dumpFile)
+
 	// Llamado: "<PID>-<TIMESTAMP>.dmp" dentro del path definido por el archivo de configuración
-	logger.Info("## PID: <PID>  - Memory Dump solicitado")
+	logger.Info("## PID: <%d>  - Memory Dump solicitado", globals.DatosDump.PID)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Dump Realizado"))
 }
 
 // --------------------------------------------------------------------
