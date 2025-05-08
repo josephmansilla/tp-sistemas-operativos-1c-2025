@@ -104,18 +104,20 @@ func Io(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pid := mensajeRecibido.PID
+	nombre := mensajeRecibido.Nombre
 
 	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
 
 	// Aquí bloqueas el mutex mientras esperas a que el IO se registre
 	globals.IOMu.Lock()
-	for globals.IO.Ip == "" { // Asumiendo que Ip vacía significa que el IO no está conectado
-		globals.IOCond.Wait() // Espera hasta que el IO se registre
+	ioData, ok := globals.IOs[nombre]
+	for !ok {
+		globals.IOCond.Wait()
+		ioData, ok = globals.IOs[nombre] // reintenta obtenerlo
 	}
 	globals.IOMu.Unlock()
 
-	logger.Info("Se ha recibido: Nombre: %s Duracion: %d", mensajeRecibido.Nombre, mensajeRecibido.Duracion)
+	logger.Info("Nombre IO: %s Duracion: %d", ioData.Nombre, mensajeRecibido.Duracion)
 
-	comunicacion.EnviarContextoIO(globals.IO.Ip, globals.IO.Puerto, pid, mensajeRecibido.Duracion)
-	logger.Info("Operacion de IO enviada correctamente")
+	comunicacion.EnviarContextoIO(ioData.Nombre, pid, mensajeRecibido.Duracion)
 }

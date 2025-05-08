@@ -29,6 +29,7 @@ var KConfig *KernelConfig
 var CPU DatosCPU
 var IO DatosIO
 var EspacioLibreProceso EspacioLibreRTA
+var IOs map[string]DatosIO = make(map[string]DatosIO) // clave: nombre del IO
 var IOMu sync.Mutex
 var IOCond = sync.NewCond(&IOMu)
 var UltimoPID int = 0
