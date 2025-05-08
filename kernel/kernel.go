@@ -95,7 +95,7 @@ func main() {
 	// --------------------- SYSCALLS -----------------------
 	// ------------------------------------------------------
 	mux.HandleFunc("/kernel/contexto_interrumpido", syscalls.ContextoInterrumpido)
-	mux.HandleFunc("/kernel/init_proc", syscalls.InitProcess)
+	mux.HandleFunc("/kernel/init_proceso", syscalls.InitProcess)
 	mux.HandleFunc("/kernel/exit", syscalls.Exit)
 	mux.HandleFunc("/kernel/dump_memory", syscalls.DumpMemory)
 	mux.HandleFunc("/kernel/syscallIO", syscalls.Io)

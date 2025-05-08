@@ -24,6 +24,13 @@ type MensajeDeKernel struct {
 	PC  int `json:"pc"`
 }
 
+type PCB struct {
+	PID int
+	PC  int
+	ME  map[string]int //asocia cada estado con la cantidad de veces que el proceso estuvo en ese estado.
+	MT  map[string]int //asocia cada estado con el tiempo total que el proceso pasó en ese estado.
+}
+
 func Config(filepath string) *globals.Config {
 	//Recibe un string filepath (ruta al archivo de configuración).
 	var config *globals.Config
@@ -69,12 +76,12 @@ func EnviarIpPuertoIDAKernel(ipDestino string, puertoDestino int, ipPropia strin
 	log.Println("IP, Puerto e ID enviados exitosamente al Kernel")
 }
 
-// Recibo PID y PC de Kernel
+// Recibo PCB de Kernel
 func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
-	var mensajeRecibido MensajeDeKernel
+	var pcbRecibido PCB
 
 	// Intentar decodificar el JSON del request
-	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
+	if err := data.LeerJson(w, r, &pcbRecibido); err != nil {
 		log.Printf("Error al recibir JSON: %v", err)
 		http.Error(w, "Error procesando datos del Kernel", http.StatusInternalServerError)
 		return
@@ -86,11 +93,11 @@ func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
 		log.Println("Inicializando CurrentContext.")
 	}
 
-	// Asignar el PID y PC a CurrentContext
-	globals.CurrentContext.PID = mensajeRecibido.PID
-	globals.CurrentContext.PC = mensajeRecibido.PC
+	// Asignar el PCB completo al CurrentContext
+	globals.CurrentContext.PID = pcbRecibido.PID
+	globals.CurrentContext.PC = pcbRecibido.PC
 
-	log.Printf("Me llegó el PID:%d y el PC:%d", mensajeRecibido.PID, mensajeRecibido.PC)
+	log.Printf("Me llegó el PCB con PID:%d, PC:%d", pcbRecibido.PID, pcbRecibido.PC)
 
 	// Verificar que ClientConfig esté inicializado
 	if globals.ClientConfig == nil {
@@ -100,7 +107,7 @@ func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Con el PID y PC le pido a Memoria las instrucciones
-	instrucciones.FaseFetch(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, mensajeRecibido.PID, mensajeRecibido.PC)
+	instrucciones.FaseFetch(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, pcbRecibido.PID, pcbRecibido.PC)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
