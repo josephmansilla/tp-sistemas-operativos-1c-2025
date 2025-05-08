@@ -2,11 +2,10 @@ package utils
 
 import (
 	"encoding/json"
-	"net/http"
-
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"net/http"
 )
 
 // --------------------------------------------------------
@@ -43,4 +42,19 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(respuesta)
+}
+
+func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
+	respuesta := globals.EspacioLibreRTA{EspacioLibre: globals.MemoryConfig.MemorySize}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	logger.Info("## Espacio libre mock devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ESPACIO DEVUELTO"))
 }

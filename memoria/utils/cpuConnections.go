@@ -3,12 +3,12 @@ package utils
 import (
 	"bufio"
 	"encoding/json"
-	"net/http"
-	"os"
-	"strings"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"net/http"
+	"os"
+	"strings"
 )
 
 // FUNCION PARA RECIBIR LOS MENSAJES PROVENIENTES DE LA CPU

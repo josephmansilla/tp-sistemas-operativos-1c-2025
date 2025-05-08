@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
@@ -12,8 +13,9 @@ func CargarListaDeInstrucciones(str string) {
 	logger.Info("Se cargó una instrucción al Slice")
 }
 
-func InfomarMetricasProceso(metricasDelProceso MetricaProceso) {
-	logger.Info("## Final proceso: ")
+func InfomarMetricasProceso(metricasDelProceso globals.MetricaProceso) {
+
+	logger.Info("## Final proceso: %d", metricasDelProceso.CantAccesosTablasPaginas)
 }
 
 func IncrementarEscrituraMemoria() {}
