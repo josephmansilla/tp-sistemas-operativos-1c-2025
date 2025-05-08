@@ -58,7 +58,7 @@ func main() {
 	mux.HandleFunc("/memoria/kernel", utils.RecibirMensajeDeKernel)
 	mux.HandleFunc("/memoria/instruccion", utils.ObtenerInstruccion)
 	mux.HandleFunc("/memoria/espaciolibre", utils.ObtenerEspacioLibreMock)
-	mux.HandleFunc("/memoria/dump", utils.MemoryDump)
+	mux.HandleFunc("/memoria/dump", utils.MemoriaDump)
 	//mux.HandleFunc("/memoria/frame", utils.algo)
 	//mux.HandleFunc("memoria/pagina", utils.algo)
 	//mux.HandleFunc("memoria/configuracion", utils.algo)
