@@ -2,9 +2,8 @@ package globals
 
 import (
 	"encoding/json"
-	"os"
-
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
+	"os"
 )
 
 func ConfigCheck(filepath string) *Config {
@@ -20,55 +19,21 @@ func ConfigCheck(filepath string) *Config {
 }
 
 var MemoryConfig *Config
-
-// Tipo de datos recibidos de1 Kernel
-
-type DatosConsultaDeKernel struct {
-	PID            int `json:"pid"`
-	TamanioMemoria int `json:"tamanio_memoria"`
-	// con el tamaño de memoria consulta si es posible ejecutarlo en memoria
-}
-
-type DatosRespuestaDeKernel struct {
-	Pseudocodigo   string `json:"filename"`
-	TamanioMemoria int    `json:"tamanio_memoria"`
-}
-
-// Tipo de datos recibidos de la CPU
-
-type DatosDeCPU struct {
-	PID int `json:"pid"`
-	PC  int `json:"pc"`
-}
-
-type DatosParaCPU struct {
-	// TODO
-}
-
-type ContextoDeCPU struct {
-	PID int `json:"pid"`
-	PC  int `json:"pc"`
-}
-
-type InstruccionCPU struct {
-	Instruccion string `json:"instruccion"`
-}
-
-type EspacioLibreRTA struct {
-	EspacioLibre int `json:"espacio_libre"`
-}
-
-type DatosParaDump struct {
-	PID       int    `json:"pid"`
-	TimeStamp string `json:"timeStamp"`
-} // HABRIA QUE VER QUE TIPO DE DATOS ES EL TIMESTAMP
-
 var RespuestaKernel DatosRespuestaDeKernel
 var Kernel DatosConsultaDeKernel
 var CPU DatosDeCPU
 var DatosDump DatosParaDump
 
 // EspacioDeUsuario => make([]byte, TamMemoria)
+
+type MetricasProceso struct {
+	CantAccesosTablasPaginas     int `json:"cant_accesos_tablas_paginas"`
+	CantInstruccionesSolicitadas int `json:"cant_instrucciones_solicitadas"`
+	CantBajadasHaciaSwap         int `json:"cant_bajadas_hacia_swap"`
+	CantSubidasMP                int `json:"cant_subidas_mp"`
+	CantLecturaMemoria           int `json:"cant_lectura_memoria"`
+	CantEscrituraMemoria         int `json:"cant_escritura_memoria"`
+}
 
 type ArgmentosCreacionProceso struct {
 	NombrePseudocodigo string `json:"nombre_pseudocodigo"`
