@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/cpu/instrucciones"
+	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"log"
 	"net/http"
@@ -159,4 +160,27 @@ func ConsultarConfiguracionMemoria(ipDestino string, puertoDestino int) error {
 	log.Printf("Configuración de Memoria: Tamaño de Página: %d, Entradas por Página: %d", globals.TamPag)
 
 	return nil
+}
+
+// //ESTO ES PARA PROBAR EL LARGO PLAZO DE KERNEL LE SIMULO UNAS SYSCALLS DE INICIAR PROCESO
+func SimularSyscallInitProcess(ipDestino string, puertoDestino int, pid int, pc int, filename string, tamanio int) {
+	// Armar el mensaje a enviar al Kernel
+	mensaje := pcb.PCB{
+		PID:         pid,
+		PC:          pc,
+		FileName:    filename,
+		ProcessSize: tamanio,
+	}
+
+	// Construir la URL del endpoint del Kernel
+	url := fmt.Sprintf("http://%s:%d/kernel/init_proceso", ipDestino, puertoDestino)
+
+	// Enviar los datos como POST en formato JSON
+	err := data.EnviarDatos(url, mensaje)
+	if err != nil {
+		log.Printf("Error al enviar syscall INIT_PROCESS al Kernel: %s", err.Error())
+		return
+	}
+
+	log.Printf("Syscall INIT_PROCESS enviada correctamente: PID=%d, PC=%d, Archivo=%s, Tamaño=%d", pid, pc, filename, tamanio)
 }

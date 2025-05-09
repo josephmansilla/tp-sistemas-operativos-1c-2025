@@ -24,16 +24,11 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 		MT:  make(map[string]int),
 	}
 
-	logger.Info("## (<%d>) Se crea el proceso - Estado: NEW", pid)
+	logger.Info("## (<%d>) Se crea el Primer proceso - Estado: NEW", pid)
 
-	// Paso 2: Agregar a la cola NEW
-	globals.ColaNuevo.Add(&pcbNuevo)
-
-	// Paso 3: Mover directamente a READY (sin consultar a memoria)
-	globals.ColaNuevo.Remove(&pcbNuevo)
+	// Paso 2: Agregar a la cola  READY
 	globals.ColaReady.Add(&pcbNuevo)
 
-	logger.Info("## (<%d>) Pasa del estado <NEW> al estado <READY>", pid)
 }
 
 // ///////////////////
@@ -47,17 +42,20 @@ func PlanificadorLargoPlazo() {
 func ManejadorCreacionProcesos() {
 	for {
 		args := <-Utils.ChannelProcessArguments
-		fileName := args[0]
-		processSize, _ := strconv.Atoi(args[1])
+		/*fileName := args[0]
+		processSize, _ := strconv.Atoi(args[1])*/
 		pid, _ := strconv.Atoi(args[2])
 
-		exito, err := comunicacion.SolicitarCreacionEnMemoria(fileName, processSize)
+		/*exito, err := comunicacion.SolicitarCreacionEnMemoria(fileName, processSize)
 		if err != nil || !exito {
 			go reintentarCreacion(pid, fileName, processSize)
 		} else {
 			agregarProcesoAReady(pid)
 			Utils.MutexPuedoCrearProceso.Unlock()
-		}
+		}*/
+		agregarProcesoAReady(pid)
+		Utils.MutexPuedoCrearProceso.Unlock()
+		logger.Info("PUDE CREAR NUEVO PROCESO DESDE SYSCALL")
 	}
 }
 
@@ -75,26 +73,34 @@ func reintentarCreacion(pid int, fileName string, processSize int) {
 }
 
 func agregarProcesoAReady(pid int) {
+	// Buscar el PCB con protección de mutex
 	Utils.MutexNuevo.Lock()
-	defer Utils.MutexNuevo.Unlock()
-
-	pcbPtr := BuscarPCBPorPID(pid) //aca busca el PCB de new para pasarlo a READY sirve para el otr tipo de algoritmo
+	var pcbPtr *pcb.PCB
+	for _, proceso := range globals.ColaNuevo.Values() {
+		logger.Debug("Buscando PID <%d> -- Visto PID <%d>", pid, proceso.PID)
+		if proceso.PID == pid {
+			pcbPtr = proceso
+			break
+		}
+	}
 	if pcbPtr == nil {
-		logger.Error("No se encontro el PCB con PID <%d>", pid)
+		Utils.MutexNuevo.Unlock()
+		logger.Error("No se encontró el PCB con PID <%d> en NEW", pid)
 		return
 	}
 
-	// LO AÑADO A READY
-
-	Utils.MutexReady.Lock()
-	globals.ColaReady.Add(pcbPtr)
-	Utils.MutexReady.Unlock()
-	// LO SACO DE NEW
-	Utils.MutexNuevo.Lock()
+	// Removerlo de NEW
 	globals.ColaNuevo.Remove(pcbPtr)
 	Utils.MutexNuevo.Unlock()
 
+	// Agregarlo a READY con protección
+	Utils.MutexReady.Lock()
+	globals.ColaReady.Add(pcbPtr)
+	Utils.MutexReady.Unlock()
+
 	logger.Info("<PID: %d> agregado a READY", pid)
+
+	// Avisar que el proceso fue creado correctamente
 	Utils.SemProcessCreateOK <- struct{}{}
 }
 
@@ -160,7 +166,6 @@ func CrearProceso(fileName string, tamanio int) {
 	globals.ColaNuevo.Add(&pcbNuevo)
 	Utils.MutexNuevo.Unlock()
 
-	logger.Info("## (<%d>) Pasa del estado <NEW> al estado <READY>", pid)
 }
 func intentarInicializarDesdeSuspReady() bool {
 	Utils.MutexSuspendidoReady.Lock()
@@ -223,4 +228,17 @@ func BuscarPCBPorPID(pid int) *pcb.PCB {
 	}
 
 	return nil
+}
+func MostrarPCBsEnNew() {
+	Utils.MutexNuevo.Lock()
+	defer Utils.MutexNuevo.Unlock()
+
+	if globals.ColaReady.IsEmpty() {
+		logger.Info("La cola READYYY está vacía.")
+		return
+	}
+
+	for _, pcb := range globals.ColaReady.Values() {
+		logger.Info("- esto son los PCB en NEW CON PID: %d", pcb.PID)
+	}
 }

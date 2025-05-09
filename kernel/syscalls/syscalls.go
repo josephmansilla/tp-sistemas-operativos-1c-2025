@@ -2,8 +2,10 @@ package syscalls
 
 import (
 	"fmt"
+	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
@@ -18,7 +20,7 @@ type MensajeInit struct {
 	PID      int    `json:"pid"`
 	PC       int    `json:"pc"`
 	Filename string `json:"filename"`
-	Tamanio  int    `json:"tamanio_memoria"`
+	Tamanio  int    `json:"tamanio"`
 }
 
 type MensajeIo struct {
@@ -48,8 +50,8 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pid := mensajeRecibido.PID
-	pc := mensajeRecibido.PC
+	pid := mensajeRecibido.PID //
+	pc := mensajeRecibido.PC   //
 	filename := mensajeRecibido.Filename
 	tamanio := mensajeRecibido.Tamanio
 
@@ -59,6 +61,10 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 	//LO QUE BUSCO ACA ES SOLAMENTE CREAR EL PCB Y PONERLO EN LA COLA DE NEW
 	planificadores.CrearProceso(filename, tamanio)
 	//cuando un proceso Inicia entonces tambien debe inciarse el planificador de largo PLAZO, osea debe intentar pasarse de NEW A READY
+
+	Utils.MutexPuedoCrearProceso.Lock()
+	args := []string{filename, strconv.Itoa(tamanio), strconv.Itoa(pid)}
+	Utils.ChannelProcessArguments <- args
 
 }
 

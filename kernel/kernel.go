@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"net/http"
 	"os"
 	"strconv"
@@ -90,6 +91,14 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/kernel/io", comunicacion.RecibirMensajeDeIO)
 	mux.HandleFunc("/kernel/cpu", comunicacion.RecibirMensajeDeCPU)
+
+	// ------------------------------------------------------
+	// ---------- INICIA PLANIFICADOR DE LARGO PLAZO----
+	// ------------------------------------------------------
+	// DEBERIA  INICIAR SI INGRESAN UN ENTER DESDE CONSOLA
+	Utils.InicializarMutexes()
+	Utils.InicializarCanales()
+	planificadores.PlanificadorLargoPlazo()
 
 	// ------------------------------------------------------
 	// --------------------- SYSCALLS -----------------------

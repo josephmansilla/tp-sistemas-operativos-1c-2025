@@ -55,6 +55,7 @@ func main() {
 	mux.HandleFunc("/cpu/interrupcion", utils.RecibirInterrupcion)
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/cpu\n", globals.ClientConfig.PortSelf)
+	utils.SimularSyscallInitProcess("127.0.0.1", 8081, 0, 0, "holiii", 64)
 	//2. Uso una goroutine para que no se bloquee el modulo
 	go func() {
 		log.Printf("Escuchando en %s:%d...", globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf)
