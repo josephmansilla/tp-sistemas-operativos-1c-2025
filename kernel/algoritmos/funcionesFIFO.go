@@ -81,3 +81,28 @@ func (c *Queue[T]) Remove(t T) error {
 	}
 	return errors.New("elemento no encontrado en la cola")
 }
+
+/*
+	func (c *Queue[T]) First() *T {
+		c.mutex.Lock()
+		defer c.mutex.Unlock()
+
+		if len(c.elements) == 0 {
+			return nil
+		}
+		return &c.elements[0]
+	}
+*/
+func (c *Queue[T]) First() T {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	if len(c.elements) == 0 {
+		var zero T
+		return zero // o T.Null(*new(T)) si usás Null() como en otros métodos
+	}
+	return c.elements[0]
+}
+func (q *Queue[T]) Values() []T {
+	return q.elements
+}

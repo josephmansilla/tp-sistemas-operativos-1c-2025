@@ -11,11 +11,24 @@ const (
 	EstadoSuspReady   = "suspready"
 )
 
+/*
+	type PCB struct {
+		PID int
+		PC  int
+		ME  map[string]int //asocia cada estado con la cantidad de veces que el proceso estuvo en ese estado.
+		MT  map[string]int //asocia cada estado con el tiempo total que el proceso pasó en ese estado.
+	}
+*/
+
+// /CHICOS ES NECESARIO AGREGAR AL PCB EL TAMAÑO Y NOMBRE DE ARCHIVO DE PESUDO COGIO TANTO PARA PLANIFICADOR DE LARGO PLAZO
+// (cuando termina un proceso hay que preguntar si el pcb de NEW puede inicilizar)Y PARA SJF
 type PCB struct {
-	PID int
-	PC  int
-	ME  map[string]int //asocia cada estado con la cantidad de veces que el proceso estuvo en ese estado.
-	MT  map[string]int //asocia cada estado con el tiempo total que el proceso pasó en ese estado.
+	PID         int
+	PC          int
+	ME          map[string]int
+	MT          map[string]int
+	FileName    string // nombre de archivo de pesudoCodigo
+	ProcessSize int
 }
 
 func (a *PCB) Null() *PCB {

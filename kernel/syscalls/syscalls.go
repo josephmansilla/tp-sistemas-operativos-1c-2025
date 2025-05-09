@@ -56,8 +56,10 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 	logger.Info("## (<%d>) - Solicitó syscall: <INIT_PROC>", pid)
 	logger.Info("Se ha recibido: PID: %d PC: %d Filename: %s Tamaño Memoria: %d", pid, pc, filename, tamanio)
 
-	//Planificador Largo Plazo
+	//LO QUE BUSCO ACA ES SOLAMENTE CREAR EL PCB Y PONERLO EN LA COLA DE NEW
 	planificadores.CrearProceso(filename, tamanio)
+	//cuando un proceso Inicia entonces tambien debe inciarse el planificador de largo PLAZO, osea debe intentar pasarse de NEW A READY
+
 }
 
 func Exit(w http.ResponseWriter, r *http.Request) {
@@ -65,8 +67,10 @@ func Exit(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## (<%d>) - Solicitó syscall: <EXIT>", mensajeRecibido.PID)
 
-	//Planificador Largo Plazo
-	planificadores.FinalizarProceso(mensajeRecibido.PID)
+	//Planificador Largo Plazo, aca tu funcion tiene que solamente sacar el PCB dado de la lista de Runnig
+	//planificadores.FinalizarProceso(mensajeRecibido.PID)
+	//Utils.ColaRunnig.remove(PID)
+	//cuando un proceso finaliza entonces tambien debe inciarse el planificador de largo PLAZO osea debe intentar pasarse algun proceso de la lista NEW A READY
 }
 
 func DumpMemory(w http.ResponseWriter, r *http.Request) {

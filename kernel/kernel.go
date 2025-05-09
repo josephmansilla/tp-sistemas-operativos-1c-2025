@@ -82,7 +82,7 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------
 	// ----------------------------------------------------
-	planificadores.CrearProceso(archivoPseudocodigo, tamanioProceso)
+	planificadores.CrearPrimerProceso(archivoPseudocodigo, tamanioProceso)
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU E IO (Puertos) ----
