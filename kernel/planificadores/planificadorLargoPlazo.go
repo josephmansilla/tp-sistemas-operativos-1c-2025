@@ -93,6 +93,11 @@ func agregarProcesoAReady(pid int) {
 
 	// 4) Señal al planificador para continuar
 	Utils.SemProcessCreateOK <- struct{}{}
+	//MUESTOR LA COLA DE READY PARA VER SI SE AGREGAN CORRECTAMENTE
+	MostrarColaReady()
+	//MUESTRO LA COLA NEW PARA VER SI ESTAN VACIAS
+	MostrarColaNew()
+
 }
 
 func ManejadorFinalizacionProcesos() {
@@ -233,5 +238,31 @@ func MostrarPCBsEnNew() {
 
 	for _, pcb := range globals.ColaReady.Values() {
 		logger.Info("- esto son los PCB en NEW CON PID: %d", pcb.PID)
+	}
+}
+func MostrarColaReady() {
+	lista := globals.ColaReady.Values()
+
+	if len(lista) == 0 {
+		logger.Info("Cola READY vacía")
+		return
+	}
+
+	logger.Info("Contenido de la cola READY:")
+	for _, pcb := range lista {
+		logger.Info(" - PCB EN COLA READY con PID: %d", pcb.PID)
+	}
+}
+func MostrarColaNew() {
+	lista := globals.ColaNuevo.Values()
+
+	if len(lista) == 0 {
+		logger.Info("Cola NEW vacía")
+		return
+	}
+
+	logger.Info("Contenido de la cola New:")
+	for _, pcb := range lista {
+		logger.Info(" - PCB EN COLA New con PID: %d", pcb.PID)
 	}
 }
