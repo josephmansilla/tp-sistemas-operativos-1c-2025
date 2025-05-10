@@ -33,7 +33,7 @@ func InicializarCanales() {
 	ChannelProcessArguments = make(chan []string, 10) // Canal buffered (para enviar argumentos de creación)
 	ChannelFinishprocess = make(chan int, 5)          // También puede tener buffer
 	InitProcess = make(chan struct{})                 // Unbuffered para sincronización
-	SemProcessCreateOK = make(chan struct{})          // Unbuffered, tipo semáforo
+	SemProcessCreateOK = make(chan struct{}, 1)       // Unbuffered, tipo semáforo
 
 	ChannelFinishProcess2 = make(chan bool, 5) // Puede ser buffered si varios procesos notifican
 }
