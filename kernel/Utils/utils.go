@@ -2,7 +2,8 @@ package Utils
 
 import "sync"
 
-// //VARIABLES PARA PLANIFICACION
+// //VARIABLES PARA PLANIFICACION NOOO ELIMINAR NADA TODAVIA
+/*
 var ChannelProcessArguments chan []string
 var ChannelFinishprocess chan int
 var InitProcess chan struct{}
@@ -36,4 +37,41 @@ func InicializarCanales() {
 	SemProcessCreateOK = make(chan struct{}, 1)       // Unbuffered, tipo semáforo
 
 	ChannelFinishProcess2 = make(chan bool, 5) // Puede ser buffered si varios procesos notifican
+}*/
+var (
+	// Mutex para coordinar creaciones concurrentes
+	MutexPuedoCrearProceso *sync.Mutex
+
+	// Mutex por cada cola
+	MutexNuevo               sync.Mutex
+	MutexReady               sync.Mutex
+	MutexBloqueado           sync.Mutex
+	MutexSalida              sync.Mutex
+	MutexEjecutando          sync.Mutex
+	MutexBloqueadoSuspendido sync.Mutex
+	MutexSuspendidoReady     sync.Mutex
+
+	// Canales de señalización
+	ChannelProcessArguments chan []string
+	ChannelFinishprocess    chan int
+	InitProcess             chan struct{}
+	SemProcessCreateOK      chan struct{}
+	ChannelFinishProcess2   chan bool
+)
+
+// InicializarMutexes deja listas las variables de mutex.
+// Solo MutexPuedoCrearProceso requiere puntero, el resto ya
+// está listo con su valor cero.
+func InicializarMutexes() {
+	MutexPuedoCrearProceso = &sync.Mutex{}
+	// MutexNuevo, MutexReady, ... ya funcionan sin más
+}
+
+// InicializarCanales crea y configura los canales con buffers adecuados.
+func InicializarCanales() {
+	ChannelProcessArguments = make(chan []string, 10) // buffer para hasta 10 peticiones
+	ChannelFinishprocess = make(chan int, 5)
+	InitProcess = make(chan struct{})           // sin buffer para sincronización exacta
+	SemProcessCreateOK = make(chan struct{}, 1) // semáforo de 1 slot
+	ChannelFinishProcess2 = make(chan bool, 5)
 }

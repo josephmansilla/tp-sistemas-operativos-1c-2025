@@ -1,6 +1,7 @@
 package syscalls
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
@@ -116,14 +117,22 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 }
 
 func Exit(w http.ResponseWriter, r *http.Request) {
-	var mensajeRecibido MensajeSyscall
+	var msg MensajeSyscall
+	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+		http.Error(w, "JSON inválido", http.StatusBadRequest)
+		return
+	}
+	pid := msg.PID
 
-	logger.Info("## (<%d>) - Solicitó syscall: <EXIT>", mensajeRecibido.PID)
+	logger.Info("## (<%d>) - Solicitó syscall: <EXIT>", pid)
 
-	//Planificador Largo Plazo, aca tu funcion tiene que solamente sacar el PCB dado de la lista de Runnig
-	//planificadores.FinalizarProceso(mensajeRecibido.PID)
-	//Utils.ColaRunnig.remove(PID)
-	//cuando un proceso finaliza entonces tambien debe inciarse el planificador de largo PLAZO osea debe intentar pasarse algun proceso de la lista NEW A READY
+	// Despachamos la señal en segundo plano para no bloquear el handler HTTP
+	go func(p int) {
+		Utils.ChannelFinishprocess <- p
+	}(pid)
+
+	// Respondemos de inmediato
+	w.WriteHeader(http.StatusOK)
 }
 
 func DumpMemory(w http.ResponseWriter, r *http.Request) {

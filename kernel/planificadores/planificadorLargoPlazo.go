@@ -48,13 +48,29 @@ func ManejadorCreacionProcesos() {
 		size, _ := strconv.Atoi(args[1])
 		pid, _ := strconv.Atoi(args[2])
 		logger.Info("Solicitud INIT_PROC recibida: filename=%s, size=%d, pid=%d", fileName, size, pid)
+		go func(fn string, sz, p int) {
 
-		// Si existiera comunicación con Memoria, se haría aquí
-		// exito, err := utils.SolicitarCreacionEnMemoria(fileName, size)
-		// if err != nil || !exito { ... reintento ... }
+			// Intentar crear en Memoria
+			/*ok, err := comunicacion.SolicitarCreacionEnMemoria(fn, sz)
+			if err != nil {
+				logger.Warn("Error al consultar Memoria para PID %d: %v", p, err)
+			}
+			if !ok {
+				logger.Info("Memoria sin espacio, pid=%d queda pendiente", p)
+				// Esperar señal de que un proceso finalizó
+				<-Utils.InitProcess
+				logger.Info("Recibida señal de espacio libre, reintentando pid=%d", p)
+				ok, err = comunicacion.SolicitarCreacionEnMemoria(fn, sz)
+				if err != nil || !ok {
+					logger.Error("Reintento falló para pid=%d, abortando", p)
+					return
+				}
+			}*/ //CUANDO PEPE HAGA ESO YA SE PUEDE DESCOMENTAR
 
-		// Mover PCB de NEW a READY
-		agregarProcesoAReady(pid)
+			// Pasar de NEW a READY
+			agregarProcesoAReady(p)
+			return //este return hay que sacarlo cuando pepe complete lo suyo
+		}(fileName, size, pid)
 	}
 }
 func reintentarCreacion(pid int, fileName string, processSize int) {
@@ -103,42 +119,38 @@ func agregarProcesoAReady(pid int) {
 func ManejadorFinalizacionProcesos() {
 	for {
 		pid := <-Utils.ChannelFinishprocess
+		logger.Info("ManejadorFinalizacionProcesos: recibida finalización pid=%d", pid)
 
-		// Paso 1: Avisar a memoria que finalizó
-		request := comunicacion.ConsultaAMemoria{
-			Hilo:      comunicacion.Hilo{PID: comunicacion.Pid(pid)},
-			Tipo:      comunicacion.FinishProcess,
-			Arguments: map[string]interface{}{},
-		}
-
-		err := comunicacion.SendMemoryRequest(request)
+		// Avisar a Memoria para liberar recursos
+		/*err := comunicacion.SolicitarFinProcesoEnMemoria(pid)
 		if err != nil {
-			logger.Error("Error al finalizar proceso PID <%d>: %v", pid, err)
+			logger.Error("Error avisando fin proceso pid=%d: %v", pid, err)
 			continue
-		}
+		}*/ //MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
 
-		logger.Debug("Proceso PID <%d> finalizado. Liberando espacio.", pid)
-
-		// Paso 2: Sacar de Running
+		// Remover de EXECUTING
 		Utils.MutexEjecutando.Lock()
-		for _, pcb := range globals.ColaEjecutando.Values() {
-			if pcb.PID == pid {
-				globals.ColaEjecutando.Remove(pcb)
+		for _, p := range globals.ColaEjecutando.Values() {
+			if p.PID == pid {
+				globals.ColaEjecutando.Remove(p)
 				break
 			}
 		}
 		Utils.MutexEjecutando.Unlock()
 
-		// Paso 3: Intentar inicializar proceso de SUSP.READY
-		if intentarInicializarDesdeSuspReady() {
-			continue
+		// Agregar a EXIT
+		Utils.MutexSalida.Lock()
+		pcbPtr := BuscarPCBPorPID(pid)
+		if pcbPtr != nil {
+			globals.ColaSalida.Add(pcbPtr)
+			logger.Info("PCB pid=%d movido a EXIT", pid)
+		} else {
+			logger.Warn("No se encontró PCB para PID=%d al mover a EXIT", pid)
 		}
+		Utils.MutexSalida.Unlock()
 
-		// Paso 4: Si no hay en SUSP.READY, intentar desde NEW
-		intentarInicializarDesdeNew()
-
-		// Avisar que el proceso fue terminado correctamente
-		Utils.ChannelFinishProcess2 <- true
+		// Señal para reintentos de creación pendientes
+		Utils.InitProcess <- struct{}{}
 	}
 }
 
