@@ -44,10 +44,10 @@ func (tlb *TLB) Buscar(pagina int) (int, bool) {
 		if tlb.algoritmo == "LRU" {
 			tlb.orden.MoveToFront(elem)
 		}
-		log.Printf("PID: %d - TLB HIT - Pagina: %d", globals.CurrentContext.PID, pagina)
+		log.Printf("PID: %d - TLB HIT - Pagina: %d", globals.Pcb.PID, pagina)
 		return elem.Value.(EntradaTLB).Marco, true
 	}
-	log.Printf("PID: %d - TLB MISS - Pagina: %d", globals.CurrentContext.PID, pagina)
+	log.Printf("PID: %d - TLB MISS - Pagina: %d", globals.Pcb.PID, pagina)
 	return -1, false
 }
 

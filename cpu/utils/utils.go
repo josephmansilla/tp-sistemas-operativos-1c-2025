@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/cpu/instrucciones"
-	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"log"
 	"net/http"
@@ -23,13 +22,6 @@ type MensajeAKernel struct {
 type MensajeDeKernel struct {
 	PID int `json:"pid"`
 	PC  int `json:"pc"`
-}
-
-type PCB struct {
-	PID int
-	PC  int
-	ME  map[string]int //asocia cada estado con la cantidad de veces que el proceso estuvo en ese estado.
-	MT  map[string]int //asocia cada estado con el tiempo total que el proceso pasó en ese estado.
 }
 
 func Config(filepath string) *globals.Config {
@@ -79,7 +71,7 @@ func EnviarIpPuertoIDAKernel(ipDestino string, puertoDestino int, ipPropia strin
 
 // Recibo PCB de Kernel
 func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
-	var pcbRecibido PCB
+	var pcbRecibido globals.PCB
 
 	// Intentar decodificar el JSON del request
 	if err := data.LeerJson(w, r, &pcbRecibido); err != nil {
@@ -89,14 +81,13 @@ func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verificar que CurrentContext esté inicializado
-	if globals.CurrentContext == nil {
-		globals.CurrentContext = &globals.ExecutionContext{}
-		log.Println("Inicializando CurrentContext.")
+	if globals.Pcb == nil {
+		globals.Pcb = &globals.PCB{}
+		log.Println("Inicializando PCB.")
 	}
 
-	// Asignar el PCB completo al CurrentContext
-	globals.CurrentContext.PID = pcbRecibido.PID
-	globals.CurrentContext.PC = pcbRecibido.PC
+	// Asignar el PCB
+	*globals.Pcb = pcbRecibido
 
 	log.Printf("Me llegó el PCB con PID:%d, PC:%d", pcbRecibido.PID, pcbRecibido.PC)
 
@@ -160,27 +151,4 @@ func ConsultarConfiguracionMemoria(ipDestino string, puertoDestino int) error {
 	log.Printf("Configuración de Memoria: Tamaño de Página: %d, Entradas por Página: %d", globals.TamPag)
 
 	return nil
-}
-
-// //ESTO ES PARA PROBAR EL LARGO PLAZO DE KERNEL LE SIMULO UNAS SYSCALLS DE INICIAR PROCESO
-func SimularSyscallInitProcess(ipDestino string, puertoDestino int, pid int, pc int, filename string, tamanio int) {
-	// Armar el mensaje a enviar al Kernel
-	mensaje := pcb.PCB{
-		PID:         pid,
-		PC:          pc,
-		FileName:    filename,
-		ProcessSize: tamanio,
-	}
-
-	// Construir la URL del endpoint del Kernel
-	url := fmt.Sprintf("http://%s:%d/kernel/init_proceso", ipDestino, puertoDestino)
-
-	// Enviar los datos como POST en formato JSON
-	err := data.EnviarDatos(url, mensaje)
-	if err != nil {
-		log.Printf("Error al enviar syscall INIT_PROCESS al Kernel: %s", err.Error())
-		return
-	}
-
-	log.Printf("Syscall INIT_PROCESS enviada correctamente: PID=%d, PC=%d, Archivo=%s, Tamaño=%d", pid, pc, filename, tamanio)
 }

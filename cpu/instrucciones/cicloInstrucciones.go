@@ -25,15 +25,15 @@ type Interrupcion struct {
 }
 
 func FaseFetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int) {
-	globals.CurrentContext.PC = pcInicial
-	globals.CurrentContext.PID = pidPropio
+	globals.Pcb.PC = pcInicial
+	globals.Pcb.PID = pidPropio
 
 	for {
-		log.Printf("## PID: %d - FETCH - Program Counter: %d", globals.CurrentContext.PID, globals.CurrentContext.PC)
+		log.Printf("## PID: %d - FETCH - Program Counter: %d", globals.Pcb.PID, globals.Pcb.PC)
 
 		mensaje := MensajeInstruccion{
-			PID: globals.CurrentContext.PID,
-			PC:  globals.CurrentContext.PC,
+			PID: globals.Pcb.PID,
+			PC:  globals.Pcb.PC,
 		}
 
 		jsonData, err := json.Marshal(mensaje)
@@ -58,20 +58,23 @@ func FaseFetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int
 		}
 
 		if respuesta.Instruccion == "" {
-			log.Printf("No hay instrucción para PID %d (PC %d)", pidPropio, globals.CurrentContext.PC)
+			log.Printf("No hay instrucción para PID %d (PC %d)", pidPropio, globals.Pcb.PC)
 			break
 		}
 
-		log.Printf("Instrucción recibida (PC %d): %s", globals.CurrentContext.PC, respuesta.Instruccion)
+		log.Printf("Instrucción recibida (PC %d): %s", globals.Pcb.PC, respuesta.Instruccion)
 
 		// Parsear y ejecutar instrucción
 		if seguir := FaseDecode(respuesta.Instruccion); !seguir {
 			log.Println("Se pidió un syscall, finalizando ejecución del proceso.")
 			break
 		}
-		globals.MutexInterrupcion.Lock()
-		globals.CurrentContext.PC++
-		globals.MutexInterrupcion.Unlock()
+
+		if !globals.SaltarIncrementoPC {
+			globals.Pcb.PC++
+		} else {
+			globals.SaltarIncrementoPC = false // reset para la próxima instrucción
+		}
 	}
 }
 
@@ -95,23 +98,17 @@ func FaseExecute(nombre string, args []string) bool {
 		return true
 	}
 
-	err := instrucFunc(globals.CurrentContext, args)
+	err := instrucFunc(globals.Pcb, args)
 
 	if err != nil {
 		if err == globals.ErrSyscallBloqueante {
-			log.Printf("Proceso %d bloqueado por syscall IO", globals.CurrentContext.PID)
+			log.Printf("Proceso %d bloqueado por syscall IO", globals.Pcb.PID)
 			return false // Detener ejecución por syscall IO
 		}
 
 		log.Printf("Error ejecutando %s: %v", nombre, err)
 		return false
 	}
-
-	// Solo llegás acá si no hubo error
-	log.Printf("Registros: AX=%d, BX=%d, CX=%d, DX=%d, EX=%d, FX=%d, GX=%d, HX=%d",
-		globals.CurrentContext.Ax, globals.CurrentContext.Bx, globals.CurrentContext.Cx, globals.CurrentContext.Dx,
-		globals.CurrentContext.Ex, globals.CurrentContext.Fx, globals.CurrentContext.Gx, globals.CurrentContext.Hx)
-
 	if FaseCheckInterrupt() {
 		log.Println("Finalizando ejecución por interrupción.")
 		return false
@@ -128,20 +125,20 @@ func FaseCheckInterrupt() bool {
 		return false
 	}
 
-	if globals.CurrentContext == nil {
-		log.Println("Interrupción recibida pero no hay contexto en ejecución.")
+	if globals.Pcb == nil {
+		log.Println("Interrupción recibida pero no hay PCB.")
 		globals.InterrupcionPendiente = false
 		return false
 	}
 
-	if globals.PIDInterrumpido != globals.CurrentContext.PID {
+	if globals.PIDInterrumpido != globals.Pcb.PID {
 		log.Printf("Interrupción recibida para PID %d, pero estoy ejecutando PID %d. Ignorando.",
-			globals.PIDInterrumpido, globals.CurrentContext.PID)
+			globals.PIDInterrumpido, globals.Pcb.PID)
 		return false
 	}
 
-	pid := globals.CurrentContext.PID
-	pc := globals.CurrentContext.PC
+	pid := globals.Pcb.PID
+	pc := globals.Pcb.PC
 
 	// Preparar JSON
 	body := Interrupcion{

@@ -10,18 +10,17 @@ import (
 	"strconv"
 )
 
-type Instruccion func(context *globals.ExecutionContext, arguments []string) error
+type Instruccion func(pcb *globals.PCB, arguments []string) error
 
-type MensajeContexto struct {
+type MensajeDump struct {
 	PID int `json:"pid"`
 	PC  int `json:"pc"`
 }
 
 type MensajeIO struct {
-	PID    int    `json:"pid"`
-	PC     int    `json:"pc"`
-	Tiempo int    `json:"tiempo"`
-	Nombre string `json:"nombre"`
+	PCB    globals.PCB `json:"pcb"`
+	Tiempo int         `json:"tiempo"`
+	Nombre string      `json:"nombre"`
 }
 
 type MensajeInitProc struct {
@@ -29,6 +28,10 @@ type MensajeInitProc struct {
 	PC       int    `json:"pc"`
 	Filename string `json:"filename"` //filename
 	Tamanio  int    `json:"tamanio_memoria"`
+}
+
+type MensajeExit struct {
+	PCB globals.PCB `json:"pcb"`
 }
 
 // Una instruccion es una funcion que recibe un puntero a una struct con el contexto de ejecucion del proceso que se esta
@@ -40,12 +43,6 @@ var InstruccionSet = map[string]Instruccion{
 	"GOTO":  gotoInstruccion,
 	"WRITE": writeMemInstruccion,
 	"READ":  readMemInstruccion,
-	//Instrucciones de Registros
-	"JNZ": jnzInstruccion,
-	"SUM": sumInstruccion,
-	"SUB": subInstruccion,
-	"SET": setInstruccion,
-	"LOG": logInstruccion, //Esta no se si va
 	// Syscalls
 	"DUMP_MEMORY": dumpMemoryInstruccion,
 	"IO":          ioInstruccion,
@@ -54,16 +51,16 @@ var InstruccionSet = map[string]Instruccion{
 }
 
 // INSTRUCCIONES DE CPU
-func noopInstruccion(context *globals.ExecutionContext, arguments []string) error {
+func noopInstruccion(pcb *globals.PCB, arguments []string) error {
 	if err := checkArguments(arguments, 0); err != nil {
 		log.Printf("Error en los argumentos de la instrucción: %s", err)
 		return err
 	}
-	log.Printf("## PID: %d - Instrucción NOOP ejecutada. No se realizó ninguna acción.", context.PID)
+	log.Printf("## PID: %d - Instrucción NOOP ejecutada. No se realizó ninguna acción.", pcb.PID)
 	return nil
 }
 
-func gotoInstruccion(context *globals.ExecutionContext, arguments []string) error {
+func gotoInstruccion(pcb *globals.PCB, arguments []string) error {
 	if err := checkArguments(arguments, 1); err != nil {
 		log.Printf("Error en los argumentos de la instrucción: %s", err)
 		return err
@@ -75,15 +72,14 @@ func gotoInstruccion(context *globals.ExecutionContext, arguments []string) erro
 		return err
 	}
 
-	globals.MutexInterrupcion.Lock()
-	context.PC = nuevoPC
-	globals.MutexInterrupcion.Unlock()
+	pcb.PC = nuevoPC
+	globals.SaltarIncrementoPC = true
 
-	log.Printf("## PID: %d - Instrucción GOTO ejecutada. Nuevo PC: %d", context.PID, context.PC)
+	log.Printf("## PID: %d - Instrucción GOTO ejecutada. Nuevo PC: %d", pcb.PID, pcb.PC)
 	return nil
 }
 
-func writeMemInstruccion(context *globals.ExecutionContext, arguments []string) error {
+func writeMemInstruccion(pcb *globals.PCB, arguments []string) error {
 	if err := checkArguments(arguments, 2); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
@@ -95,19 +91,19 @@ func writeMemInstruccion(context *globals.ExecutionContext, arguments []string) 
 		return err
 	}
 	datos := arguments[1]
-	dirFisica := traducciones.Traducir(context.PID, dirLogica)
+	dirFisica := traducciones.Traducir(pcb.PID, dirLogica)
 
 	if err := traducciones.Escribir(dirFisica, datos); err != nil {
 		log.Printf("Error escribiendo en Memoria: %s", err)
 		return err
 	}
 
-	log.Printf("PID: %s - Acción: LEER - Dirección Física: %s - Valor: %s", context.PID, dirFisica, datos)
+	log.Printf("PID: %s - Acción: LEER - Dirección Física: %s - Valor: %s", pcb.PID, dirFisica, datos)
 
 	return nil
 }
 
-func readMemInstruccion(context *globals.ExecutionContext, arguments []string) error {
+func readMemInstruccion(pcb *globals.PCB, arguments []string) error {
 	if err := checkArguments(arguments, 2); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
@@ -123,7 +119,7 @@ func readMemInstruccion(context *globals.ExecutionContext, arguments []string) e
 		log.Printf("Error al convertir el tamanio: %s", err)
 		return err
 	}
-	dirFisica := traducciones.Traducir(context.PID, dirLogica)
+	dirFisica := traducciones.Traducir(pcb.PID, dirLogica)
 
 	valorLeido, err := traducciones.Leer(dirFisica, tamanio)
 	if err != nil {
@@ -131,107 +127,21 @@ func readMemInstruccion(context *globals.ExecutionContext, arguments []string) e
 		return err
 	}
 
-	log.Printf("PID: %s - Acción: LEER - Dirección Física: %s - Valor: %s", context.PID, dirFisica, valorLeido)
-
-	return nil
-}
-
-// INSTRUCCIONES DE REGISTROS
-func jnzInstruccion(context *globals.ExecutionContext, arguments []string) error {
-	if err := checkArguments(arguments, 2); err != nil {
-		return err
-	}
-
-	register, err := context.ObtenerRegistro(arguments[0])
-	if err != nil {
-		return err
-	}
-
-	jump, err := strconv.Atoi(arguments[1])
-	if err != nil {
-		return err
-	}
-
-	if *register != 0 {
-		context.PC = int(jump)
-		log.Printf("Actualizando PC: %v", context.PC)
-	}
-
-	return nil
-}
-
-func sumInstruccion(context *globals.ExecutionContext, args []string) error {
-	if err := checkArguments(args, 2); err != nil {
-		return err
-	}
-
-	firstRegister, err := context.ObtenerRegistro(args[0])
-	if err != nil {
-		return err
-	}
-
-	secondRegister, err := context.ObtenerRegistro(args[1])
-	if err != nil {
-		return err
-	}
-
-	*firstRegister = *firstRegister + *secondRegister
-	return nil
-}
-
-func subInstruccion(context *globals.ExecutionContext, args []string) error {
-	if err := checkArguments(args, 2); err != nil {
-		return err
-	}
-
-	firstRegister, err := context.ObtenerRegistro(args[0])
-	if err != nil {
-		return err
-	}
-
-	secondRegister, err := context.ObtenerRegistro(args[1])
-	if err != nil {
-		return err
-	}
-
-	*firstRegister = *firstRegister - *secondRegister
-	return nil
-}
-
-func setInstruccion(ctx *globals.ExecutionContext, args []string) error {
-	if err := checkArguments(args, 2); err != nil {
-		return err
-	}
-
-	reg, err := ctx.ObtenerRegistro(args[0])
-	if err != nil {
-		return err
-	}
-
-	i, err := strconv.Atoi(args[1])
-	if err != nil {
-		reg2, err := ctx.ObtenerRegistro(args[1])
-		if err != nil {
-			return errors.New("no se pudo parsear '" + args[1] + "' como un entero o un registro")
-		}
-		*reg = *reg2
-	} else {
-		*reg = uint32(i)
-	}
+	log.Printf("PID: %s - Acción: LEER - Dirección Física: %s - Valor: %s", pcb.PID, dirFisica, valorLeido)
 
 	return nil
 }
 
 // SYSCALLS
-func dumpMemoryInstruccion(context *globals.ExecutionContext, arguments []string) error {
+func dumpMemoryInstruccion(pcb *globals.PCB, arguments []string) error {
 	if err := checkArguments(arguments, 0); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
 	}
 
-	mensaje := MensajeContexto{
-		PID: context.PID,
-		PC:  context.PC,
+	mensaje := MensajeDump{
+		PID: pcb.PID,
+		PC:  pcb.PC,
 	}
 
 	url := fmt.Sprintf("http://%s:%d/kernel/dump_memory", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
@@ -245,7 +155,7 @@ func dumpMemoryInstruccion(context *globals.ExecutionContext, arguments []string
 	return nil
 }
 
-func ioInstruccion(context *globals.ExecutionContext, arguments []string) error {
+func ioInstruccion(pcb *globals.PCB, arguments []string) error {
 	if err := checkArguments(arguments, 2); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
@@ -259,8 +169,7 @@ func ioInstruccion(context *globals.ExecutionContext, arguments []string) error 
 	}
 
 	mensaje := MensajeIO{
-		PID:    context.PID,
-		PC:     context.PC,
+		PCB:    *pcb,
 		Tiempo: tiempoIO,
 		Nombre: nombreIO,
 	}
@@ -276,15 +185,14 @@ func ioInstruccion(context *globals.ExecutionContext, arguments []string) error 
 	return globals.ErrSyscallBloqueante
 }
 
-func exitInstruccion(context *globals.ExecutionContext, arguments []string) error {
+func exitInstruccion(pcb *globals.PCB, arguments []string) error {
 	if err := checkArguments(arguments, 0); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
 	}
 
-	mensaje := MensajeContexto{
-		PID: context.PID,
-		PC:  context.PC,
+	mensaje := MensajeExit{
+		PCB: *pcb,
 	}
 
 	url := fmt.Sprintf("http://%s:%d/kernel/exit", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
@@ -298,7 +206,7 @@ func exitInstruccion(context *globals.ExecutionContext, arguments []string) erro
 	return nil
 }
 
-func iniciarProcesoInstruccion(context *globals.ExecutionContext, arguments []string) error {
+func iniciarProcesoInstruccion(pcb *globals.PCB, arguments []string) error {
 	if err := checkArguments(arguments, 2); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
@@ -312,8 +220,8 @@ func iniciarProcesoInstruccion(context *globals.ExecutionContext, arguments []st
 	}
 
 	mensaje := MensajeInitProc{
-		PID:      context.PID,
-		PC:       context.PC,
+		PID:      pcb.PID,
+		PC:       pcb.PC,
 		Filename: filename,
 		Tamanio:  tamanio,
 	}
@@ -326,22 +234,6 @@ func iniciarProcesoInstruccion(context *globals.ExecutionContext, arguments []st
 	}
 
 	log.Println("Syscall INIT_PROC realizada exitosamente")
-	return nil
-}
-
-// Esta nose si la van a pedir
-func logInstruccion(ctx *globals.ExecutionContext, args []string) error {
-	if err := checkArguments(args, 1); err != nil {
-		return err
-	}
-
-	register, err := ctx.ObtenerRegistro(args[0])
-	if err != nil {
-		return err
-	}
-
-	log.Printf("Logging register '%v': %v", args[0], *register)
-	fmt.Println(*register)
 	return nil
 }
 
