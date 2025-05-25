@@ -45,9 +45,9 @@ func PlanificarCortoPlazo() {
 			return
 		}
 
+		comunicacion.EnviarContextoCPU(cpuID, proceso)
 		proceso.ME[pcb.EstadoExecute]++
 		proceso.Estado = pcb.EstadoExecute
-		comunicacion.EnviarContextoCPU(cpuID, proceso)
 
 		cpu := globals.CPUs[cpuID] // Paso 1: obtener copia
 		cpu.Ocupada = true         // Paso 2: modificar la copia

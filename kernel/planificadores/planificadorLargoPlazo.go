@@ -24,21 +24,40 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 	logger.Info("## (<%d>) Se crea el Primer proceso - Estado: NEW", pid)
 
 	// Paso 2: Agregar a la cola  READY
-	algoritmos.ColaReady.Add(&pcbNuevo)
+	algoritmos.ColaNuevo.Add(&pcbNuevo)
 
+	//PASO 3: Mandar archivo a Memoria
+	comunicacion.EnviarArchivoMemoria(fileName, tamanio)
 }
 
 func PlanificadorLargoPlazo() {
 	logger.Info("Iniciando el planificador de largo plazo")
+	var primerProceso *pcb.PCB
+	primerProceso = algoritmos.ColaNuevo.First()
+	algoritmos.ColaNuevo.Remove(primerProceso)
+	algoritmos.ColaReady.Add(primerProceso)
+	logger.Info("## (<%d>) Pasa de estado NEW a estado READY", primerProceso.PID)
 	go ManejadorCreacionProcesos()
 	go ManejadorFinalizacionProcesos()
-
-	//INICIAR CORTO PLAZO
-	go PlanificarCortoPlazo()
 }
+
+/*
+func creacionDeProcesoFifo(){
+	//memoria dice si
+	//mandar a ready FIRST() de colaNew
+
+	//memoria dice no
+}
+
+func creacionDeProcesoSJF(){
+	//memoria dice si
+	//mandar a ready MASCHICO() de colaNew
+
+}*/
 
 func ManejadorCreacionProcesos() {
 	logger.Info("Esperando solicitudes de INIT_PROC para creación de procesos")
+
 	for {
 		// Recibir args [filename, size, pid]
 		args := <-Utils.ChannelProcessArguments
@@ -65,17 +84,24 @@ func ManejadorCreacionProcesos() {
 				}
 			}*/ //CUANDO PEPE HAGA ESO YA SE PUEDE DESCOMENTAR
 
+			//DICE QUE NO
+			//MANDAR NEW
+
+			//DICE QUE SI
+			//SWITCH FIFO O SJF
+
 			// Pasar de NEW a READY
 			agregarProcesoAReady(p)
 			return //este return hay que sacarlo cuando pepe complete lo suyo
 		}(fileName, size, pid)
 	}
 }
+
 func reintentarCreacion(pid int, fileName string, processSize int) {
 	for {
 		logger.Info("<PID: %v> Esperando liberacion de memoria", pid)
 		<-Utils.InitProcess
-		exito, err := comunicacion.SolicitarCreacionEnMemoria(fileName, processSize)
+		exito, err := comunicacion.SolicitarEspacioEnMemoria(fileName, processSize)
 		if err == nil && exito {
 			agregarProcesoAReady(pid)
 			Utils.MutexPuedoCrearProceso.Unlock()
@@ -111,7 +137,6 @@ func agregarProcesoAReady(pid int) {
 	MostrarColaReady()
 	//MUESTRO LA COLA NEW PARA VER SI ESTAN VACIAS
 	MostrarColaNew()
-
 }
 
 func ManejadorFinalizacionProcesos() {
@@ -180,33 +205,6 @@ func CrearProceso(fileName string, tamanio int) {
 
 }
 
-func intentarInicializarDesdeSuspReady() bool {
-	Utils.MutexSuspendidoReady.Lock()
-	defer Utils.MutexSuspendidoReady.Unlock()
-	// la consigna PIDE QUE PRIMERO INTENTE PASAR A READY UN PROCESO DE LA LISTA SUSPENDIDO READY LUEGO DE READY
-
-	if algoritmos.ColaSuspendidoReady.IsEmpty() {
-		return false
-	}
-
-	pcb := algoritmos.ColaSuspendidoReady.First()
-	exito, err := comunicacion.SolicitarCreacionEnMemoria(pcb.FileName, pcb.ProcessSize)
-	if err != nil || !exito {
-		logger.Info("No se pudo inicializar proceso desde SUSP.READY PID <%d>", pcb.PID)
-		return false
-	}
-	Utils.MutexSuspendidoReady.Lock()
-	algoritmos.ColaSuspendidoReady.Remove(pcb)
-	Utils.MutexSuspendidoReady.Unlock()
-
-	Utils.MutexReady.Lock()
-	algoritmos.ColaReady.Add(pcb)
-	Utils.MutexReady.Unlock()
-
-	logger.Info("PID <%d> pasó de SUSP.READY a READY", pcb.PID)
-	return true
-}
-
 func intentarInicializarDesdeNew() {
 	Utils.MutexNuevo.Lock()
 	defer Utils.MutexNuevo.Unlock()
@@ -216,7 +214,7 @@ func intentarInicializarDesdeNew() {
 	}
 
 	pcb := algoritmos.ColaNuevo.First()
-	exito, err := comunicacion.SolicitarCreacionEnMemoria(pcb.FileName, pcb.ProcessSize)
+	exito, err := comunicacion.SolicitarEspacioEnMemoria(pcb.FileName, pcb.ProcessSize)
 	if err != nil || !exito {
 		logger.Info("No se pudo inicializar proceso desde NEW PID <%d>", pcb.PID)
 		return

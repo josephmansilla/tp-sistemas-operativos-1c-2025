@@ -82,6 +82,18 @@ func main() {
 	algoritmos.ColaBloqueadoSuspendido = algoritmos.Cola[*pcb.PCB]{}
 	algoritmos.ColaSuspendidoReady = algoritmos.Cola[*pcb.PCB]{}
 
+	// ----------------------------------------------------
+	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------
+	// ----------------------------------------------------
+	//1. Crear primer proceso desde los argumentos del main
+	planificadores.CrearPrimerProceso(archivoPseudocodigo, tamanioProceso)
+	//planificadores.PlanificarCortoPlazo()
+	//planificadores.PlanificadorMedianoPlazo()
+
+	// Inicializar recursos compartidos
+	Utils.InicializarMutexes()
+	Utils.InicializarCanales()
+
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU E IO (Puertos) ----
 	// ------------------------------------------------------
@@ -100,29 +112,24 @@ func main() {
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/kernel\n", globals.KConfig.KernelPort)
 
+	// ------------------------------------------------------
+	// ---------- INICIAR PLANIFICADOR DE LARGO PLAZO  ------
+	// ------------------------------------------------------
+
+	// Esperar que el usuario presione Enter
+	go iniciarLargoPlazo()
+
 	address := fmt.Sprintf(":%d", globals.KConfig.KernelPort)
 	err = http.ListenAndServe(address, mux)
 	if err != nil {
 		panic(err)
 	}
 
-	// ----------------------------------------------------
-	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------
-	// ----------------------------------------------------
-	//1. Crear primer proceso desde los argumentos del main
-	planificadores.CrearPrimerProceso(archivoPseudocodigo, tamanioProceso)
-
-	// ------------------------------------------------------
-	// ---------- INICIAR PLANIFICADOR DE LARGO PLAZO  ------
-	// ------------------------------------------------------
-	// Inicializar recursos compartidos
-	Utils.InicializarMutexes()
-	Utils.InicializarCanales()
-	// Esperar que el usuario presione Enter
-	fmt.Println("Presione ENTER para iniciar el Planificador de Largo Plazo...")
-	bufio.NewReader(os.Stdin).ReadBytes('\n') // Espera un Enter
-
-	planificadores.PlanificadorLargoPlazo()
-
 	fmt.Printf("FIN DE EJECUCION")
+}
+
+func iniciarLargoPlazo() {
+	fmt.Println("Presione ENTER para iniciar el Planificador de Largo Plazo...")
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	planificadores.PlanificadorLargoPlazo()
 }

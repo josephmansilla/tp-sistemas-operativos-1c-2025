@@ -35,7 +35,7 @@ type RespuestaMemoria struct {
 }
 
 // ENVIAR ARCHIVO DE PSEUDOCODIGO Y TAMAÑO
-func SolicitarCreacionEnMemoria(fileName string, tamanio int) (bool, error) {
+func SolicitarEspacioEnMemoria(fileName string, tamanio int) (bool, error) {
 	url := fmt.Sprintf("http://%s:%d/memoria/espaciolibre", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
 
 	mensaje := MensajeAMemoria{
@@ -59,6 +59,21 @@ func SolicitarCreacionEnMemoria(fileName string, tamanio int) (bool, error) {
 
 	logger.Info("Respuesta de Memoria: %s", rta.Mensaje)
 	return rta.Exito, nil
+}
+
+// ENVIAR ARCHIVO DE PSEUDOCODIGO Y TAMAÑO
+func EnviarArchivoMemoria(fileName string, tamanio int) {
+	url := fmt.Sprintf("http://%s:%d/memoria/kernel", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
+
+	mensaje := MensajeAMemoria{
+		Filename: fileName,
+		Tamanio:  tamanio,
+	}
+
+	err := data.EnviarDatos(url, mensaje)
+	if err != nil {
+		logger.Error("Error enviando pseudocódigo a Memoria: %s", err.Error())
+	}
 }
 
 // PARA MANJERAR LOS MENSAJES DEL ENDPOINT QUE ESTAN EN MEMORIA

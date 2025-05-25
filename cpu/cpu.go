@@ -63,6 +63,7 @@ func main() {
 			log.Fatalf("Error al iniciar servidor HTTP: %v", err)
 		}
 	}()
+	//utils.SimularSyscallInitProcess("127.0.0.1", 8081, 0, 0, "holiii", 64)
 
 	//Las CPUs deberán conectarse al Kernel (destino)
 	//3. Envi0 su IP, su PUERTO y su ID. (self)
