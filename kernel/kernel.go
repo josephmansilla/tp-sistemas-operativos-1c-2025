@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
@@ -72,18 +73,14 @@ func main() {
 		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
 	}
 
-	globals.ColaNuevo = algoritmos.Queue[*pcb.PCB]{}
-	globals.ColaBLoqueado = algoritmos.Queue[*pcb.PCB]{}
-	globals.ColaSalida = algoritmos.Queue[*pcb.PCB]{}
-	globals.ColaEjecutando = algoritmos.Queue[*pcb.PCB]{}
-	globals.ColaReady = algoritmos.Queue[*pcb.PCB]{}
-	globals.ColaBloqueadoSuspendido = algoritmos.Queue[*pcb.PCB]{}
-	globals.ColaSuspendidoReady = algoritmos.Queue[*pcb.PCB]{}
-
-	// ----------------------------------------------------
-	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------
-	// ----------------------------------------------------
-	planificadores.CrearPrimerProceso(archivoPseudocodigo, tamanioProceso)
+	//Inicilizar todas las colas vacias, tipo de dato punteros a PCB y TCB(hilos)
+	algoritmos.ColaNuevo = algoritmos.Cola[*pcb.PCB]{}
+	algoritmos.ColaBloqueado = algoritmos.Cola[*pcb.PCB]{}
+	algoritmos.ColaSalida = algoritmos.Cola[*pcb.PCB]{}
+	algoritmos.ColaEjecutando = algoritmos.Cola[*pcb.PCB]{}
+	algoritmos.ColaReady = algoritmos.Cola[*pcb.PCB]{}
+	algoritmos.ColaBloqueadoSuspendido = algoritmos.Cola[*pcb.PCB]{}
+	algoritmos.ColaSuspendidoReady = algoritmos.Cola[*pcb.PCB]{}
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU E IO (Puertos) ----
@@ -91,14 +88,6 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/kernel/io", comunicacion.RecibirMensajeDeIO)
 	mux.HandleFunc("/kernel/cpu", comunicacion.RecibirMensajeDeCPU)
-
-	// ------------------------------------------------------
-	// ---------- INICIA PLANIFICADOR DE LARGO PLAZO----
-	// ------------------------------------------------------
-	// DEBERIA  INICIAR SI INGRESAN UN ENTER DESDE CONSOLA
-	Utils.InicializarMutexes()
-	Utils.InicializarCanales()
-	planificadores.PlanificadorLargoPlazo()
 
 	// ------------------------------------------------------
 	// --------------------- SYSCALLS -----------------------
@@ -117,11 +106,23 @@ func main() {
 		panic(err)
 	}
 
-	//TODO
-	//1.funcion que cree primer proceso desde los argumentos del main
-	//2.inicilizar todas las colas vacias, tipo de dato punteros a PCB y TCB(hilos)
-	//3.fucncion que inicie planificacion largo plazo inicialmente parada esperando un enter desde la consola
-	//4.inicialiar colas que representen los estados new, ready, bloqueado, suspendido blog, suspendido ready, ejecutando.
+	// ----------------------------------------------------
+	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------
+	// ----------------------------------------------------
+	//1. Crear primer proceso desde los argumentos del main
+	planificadores.CrearPrimerProceso(archivoPseudocodigo, tamanioProceso)
+
+	// ------------------------------------------------------
+	// ---------- INICIAR PLANIFICADOR DE LARGO PLAZO  ------
+	// ------------------------------------------------------
+	// Inicializar recursos compartidos
+	Utils.InicializarMutexes()
+	Utils.InicializarCanales()
+	// Esperar que el usuario presione Enter
+	fmt.Println("Presione ENTER para iniciar el Planificador de Largo Plazo...")
+	bufio.NewReader(os.Stdin).ReadBytes('\n') // Espera un Enter
+
+	planificadores.PlanificadorLargoPlazo()
 
 	fmt.Printf("FIN DE EJECUCION")
 }

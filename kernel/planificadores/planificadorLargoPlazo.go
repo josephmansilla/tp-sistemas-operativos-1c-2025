@@ -2,16 +2,13 @@ package planificadores
 
 import (
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
+	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
 	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
 	"strconv"
 )
-
-//PLANIFICADOR LARGO PLAZO:
-//encargado de gestionar las peticiones a la memoria
-//para la creación y eliminación de procesos e hilos.
 
 // CREA PRIMER PROCESO (NEW)
 func CrearPrimerProceso(fileName string, tamanio int) {
@@ -27,16 +24,17 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 	logger.Info("## (<%d>) Se crea el Primer proceso - Estado: NEW", pid)
 
 	// Paso 2: Agregar a la cola  READY
-	globals.ColaReady.Add(&pcbNuevo)
+	algoritmos.ColaReady.Add(&pcbNuevo)
 
 }
 
-// ///////////////////
-// //////// ESTO ES MIO
 func PlanificadorLargoPlazo() {
 	logger.Info("Iniciando el planificador de largo plazo")
 	go ManejadorCreacionProcesos()
 	go ManejadorFinalizacionProcesos()
+
+	//INICIAR CORTO PLAZO
+	go PlanificarCortoPlazo()
 }
 
 func ManejadorCreacionProcesos() {
@@ -98,11 +96,11 @@ func agregarProcesoAReady(pid int) {
 
 	// 2) Agregar a READY
 	Utils.MutexReady.Lock()
-	globals.ColaReady.Add(pcbPtr)
+	algoritmos.ColaReady.Add(pcbPtr)
 	Utils.MutexReady.Unlock()
 
 	// 3) Remover de NEW
-	globals.ColaNuevo.Remove(pcbPtr)
+	algoritmos.ColaNuevo.Remove(pcbPtr)
 	Utils.MutexNuevo.Unlock()
 
 	logger.Info("PCB pid=%d movido de NEW a READY", pid)
@@ -130,9 +128,9 @@ func ManejadorFinalizacionProcesos() {
 
 		// Remover de EXECUTING
 		Utils.MutexEjecutando.Lock()
-		for _, p := range globals.ColaEjecutando.Values() {
+		for _, p := range algoritmos.ColaEjecutando.Values() {
 			if p.PID == pid {
-				globals.ColaEjecutando.Remove(p)
+				algoritmos.ColaEjecutando.Remove(p)
 				break
 			}
 		}
@@ -142,7 +140,7 @@ func ManejadorFinalizacionProcesos() {
 		Utils.MutexSalida.Lock()
 		pcbPtr := BuscarPCBPorPID(pid)
 		if pcbPtr != nil {
-			globals.ColaSalida.Add(pcbPtr)
+			algoritmos.ColaSalida.Add(pcbPtr)
 			logger.Info("PCB pid=%d movido a EXIT", pid)
 		} else {
 			logger.Warn("No se encontró PCB para PID=%d al mover a EXIT", pid)
@@ -173,7 +171,7 @@ func CrearProceso(fileName string, tamanio int) {
 
 	// Paso 2: Agregar a la cola NEW con protección de mutex
 	Utils.MutexNuevo.Lock()
-	globals.ColaNuevo.Add(&pcbNuevo)
+	algoritmos.ColaNuevo.Add(&pcbNuevo)
 	logger.Info("SE AÑADIO A LA COLA nuevo DESDE SYSCALL")
 	Utils.MutexNuevo.Unlock()
 
@@ -181,79 +179,84 @@ func CrearProceso(fileName string, tamanio int) {
 	Utils.ChannelProcessArguments <- args
 
 }
+
 func intentarInicializarDesdeSuspReady() bool {
 	Utils.MutexSuspendidoReady.Lock()
 	defer Utils.MutexSuspendidoReady.Unlock()
 	// la consigna PIDE QUE PRIMERO INTENTE PASAR A READY UN PROCESO DE LA LISTA SUSPENDIDO READY LUEGO DE READY
 
-	if globals.ColaSuspendidoReady.IsEmpty() {
+	if algoritmos.ColaSuspendidoReady.IsEmpty() {
 		return false
 	}
 
-	pcb := globals.ColaSuspendidoReady.First()
+	pcb := algoritmos.ColaSuspendidoReady.First()
 	exito, err := comunicacion.SolicitarCreacionEnMemoria(pcb.FileName, pcb.ProcessSize)
 	if err != nil || !exito {
 		logger.Info("No se pudo inicializar proceso desde SUSP.READY PID <%d>", pcb.PID)
 		return false
 	}
 	Utils.MutexSuspendidoReady.Lock()
-	globals.ColaSuspendidoReady.Remove(pcb)
+	algoritmos.ColaSuspendidoReady.Remove(pcb)
 	Utils.MutexSuspendidoReady.Unlock()
 
 	Utils.MutexReady.Lock()
-	globals.ColaReady.Add(pcb)
+	algoritmos.ColaReady.Add(pcb)
 	Utils.MutexReady.Unlock()
 
 	logger.Info("PID <%d> pasó de SUSP.READY a READY", pcb.PID)
 	return true
 }
+
 func intentarInicializarDesdeNew() {
 	Utils.MutexNuevo.Lock()
 	defer Utils.MutexNuevo.Unlock()
 
-	if globals.ColaNuevo.IsEmpty() {
+	if algoritmos.ColaNuevo.IsEmpty() {
 		return
 	}
 
-	pcb := globals.ColaNuevo.First()
+	pcb := algoritmos.ColaNuevo.First()
 	exito, err := comunicacion.SolicitarCreacionEnMemoria(pcb.FileName, pcb.ProcessSize)
 	if err != nil || !exito {
 		logger.Info("No se pudo inicializar proceso desde NEW PID <%d>", pcb.PID)
 		return
 	}
 	Utils.MutexNuevo.Lock()
-	globals.ColaNuevo.Remove(pcb)
+	algoritmos.ColaNuevo.Remove(pcb)
 	Utils.MutexNuevo.Unlock()
 
 	Utils.MutexReady.Lock()
-	globals.ColaReady.Add(pcb)
+	algoritmos.ColaReady.Add(pcb)
 	Utils.MutexReady.Unlock()
 
 	logger.Info("PID <%d> pasó de NEW a READY", pcb.PID)
 }
+
 func BuscarPCBPorPID(pid int) *pcb.PCB {
-	for _, p := range globals.ColaNuevo.Values() {
+	for _, p := range algoritmos.ColaNuevo.Values() {
 		if p.PID == pid {
 			return p
 		}
 	}
 	return nil
 }
+
 func MostrarPCBsEnNew() {
 	Utils.MutexNuevo.Lock()
 	defer Utils.MutexNuevo.Unlock()
 
-	if globals.ColaReady.IsEmpty() {
+	if algoritmos.ColaReady.IsEmpty() {
 		logger.Info("La cola READYYY está vacía.")
 		return
 	}
 
-	for _, pcb := range globals.ColaReady.Values() {
+	for _, pcb := range algoritmos.ColaReady.Values() {
 		logger.Info("- esto son los PCB en NEW CON PID: %d", pcb.PID)
 	}
 }
+
 func MostrarColaReady() {
-	lista := globals.ColaReady.Values()
+	lista := algoritmos.ColaReady.Values()
 
 	if len(lista) == 0 {
 		logger.Info("Cola READY vacía")
@@ -266,7 +269,7 @@ func MostrarColaReady() {
 	}
 }
 func MostrarColaNew() {
-	lista := globals.ColaNuevo.Values()
+	lista := algoritmos.ColaNuevo.Values()
 
 	if len(lista) == 0 {
 		logger.Info("Cola NEW vacía")

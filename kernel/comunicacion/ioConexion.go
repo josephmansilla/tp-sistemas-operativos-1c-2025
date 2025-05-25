@@ -59,7 +59,7 @@ func EnviarContextoIO(nombreIO string, pid int, duracion int) {
 		ioData, ok = globals.IOs[nombreIO]
 	}
 	globals.IOMu.Unlock()
-	
+
 	url := fmt.Sprintf("http://%s:%d/io/kernel", ioData.Ip, ioData.Puerto)
 
 	mensaje := MensajeAIO{
@@ -83,6 +83,6 @@ func EnviarContextoIO(nombreIO string, pid int, duracion int) {
 		return
 	}
 	logger.Info("Respuesta del módulo IO: %s", string(body))
-
+	//TODO Pasar proceso de bloqueado a ready
 	logger.Info("## (%d) finalizó IO y pasa a READY", mensaje.Pid)
 }

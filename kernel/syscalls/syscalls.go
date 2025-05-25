@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
+	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"log"
 	"net/http"
@@ -25,15 +26,13 @@ type MensajeInit struct {
 }
 
 type MensajeIo struct {
-	PID      int    `json:"pid"`
-	PC       int    `json:"pc"`
-	Duracion int    `json:"tiempo"`
-	Nombre   string `json:"nombre"`
+	PCB      *pcb.PCB `json:"pcb"`
+	Duracion int      `json:"tiempo"`
+	Nombre   string   `json:"nombre"`
 }
 
 type MensajeSyscall struct {
-	PID int `json:"pid"`
-	PC  int `json:"pc"`
+	PCB *pcb.PCB `json:"pcb"`
 }
 
 type MensajeDUMP struct {
@@ -97,7 +96,7 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 
 		// Encolar en NEW con protección
 		Utils.MutexNuevo.Lock()
-		globals.ColaNuevo.Add(&pcbNuevo)
+		algoritmos.ColaNuevo.Add(&pcbNuevo)
 		Utils.MutexNuevo.Unlock()
 		logger.Debug("PCB <%d> añadido a NEW", pid)
 
@@ -122,15 +121,14 @@ func Exit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "JSON inválido", http.StatusBadRequest)
 		return
 	}
-	pid := msg.PID
-
-	logger.Info("## (<%d>) - Solicitó syscall: <EXIT>", pid)
+	pcb := msg.PCB
+	logger.Info("## (<%d>) - Solicitó syscall: <EXIT>", pcb.PID)
 
 	// Despachamos la señal en segundo plano para no bloquear el handler HTTP
 	go func(p int) {
 		Utils.ChannelFinishprocess <- p
-	}(pid)
-
+	}(pcb.PID)
+	// TODO desalojar
 	// Respondemos de inmediato
 	w.WriteHeader(http.StatusOK)
 }
@@ -169,10 +167,10 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
 		return
 	}
-	pid := mensajeRecibido.PID
+	pcb := mensajeRecibido.PCB
 	nombre := mensajeRecibido.Nombre
 
-	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
+	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pcb.PID)
 
 	// Aquí bloqueas el mutex mientras esperas a que el IO se registre
 	globals.IOMu.Lock()
@@ -185,5 +183,5 @@ func Io(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("Nombre IO: %s Duracion: %d", ioData.Nombre, mensajeRecibido.Duracion)
 
-	comunicacion.EnviarContextoIO(ioData.Nombre, pid, mensajeRecibido.Duracion)
+	comunicacion.EnviarContextoIO(ioData.Nombre, pcb.PID, mensajeRecibido.Duracion)
 }

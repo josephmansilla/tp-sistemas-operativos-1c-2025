@@ -2,7 +2,8 @@ package algoritmos
 
 import (
 	"errors"
-	"sync"
+	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
+	"log"
 )
 
 type Nulleable[T any] interface {
@@ -11,13 +12,8 @@ type Nulleable[T any] interface {
 }
 
 // Queue Cola de procesos o hilos
-type Queue[T Nulleable[T]] struct {
-	elements []T
-	mutex    sync.Mutex
-	Priority int
-}
 
-func (c *Queue[T]) Contains(t T) bool {
+func (c *Cola[T]) Contains(t T) bool {
 	for _, e := range c.elements {
 		if e.Equal(t) {
 			return true
@@ -27,17 +23,17 @@ func (c *Queue[T]) Contains(t T) bool {
 	return false
 }
 
-func (c *Queue[T]) GetElements() []T {
+func (c *Cola[T]) GetElements() []T {
 	return c.elements
 }
 
-func (c *Queue[T]) Add(t T) {
+func (c *Cola[T]) Add(t T) {
 	c.mutex.Lock()
 	c.elements = append(c.elements, t)
 	c.mutex.Unlock()
 }
 
-func (c *Queue[T]) GetAndRemoveNext() (T, error) {
+func (c *Cola[T]) GetAndRemoveNext() (T, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	if len(c.elements) == 0 {
@@ -49,20 +45,20 @@ func (c *Queue[T]) GetAndRemoveNext() (T, error) {
 	return nextThread, nil
 }
 
-func (c *Queue[T]) IsEmpty() bool {
+func (c *Cola[T]) IsEmpty() bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	return len(c.elements) == 0
 }
 
-func (c *Queue[T]) Size() int {
+func (c *Cola[T]) Size() int {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	return len(c.elements)
 }
 
 // TODO: Bonito pero quizás no está bueno que cualquiera pueda hacer cualquier cosa con la cola
-func (c *Queue[T]) Do(f func(T)) {
+func (c *Cola[T]) Do(f func(T)) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	for i := range c.elements {
@@ -70,7 +66,7 @@ func (c *Queue[T]) Do(f func(T)) {
 	}
 }
 
-func (c *Queue[T]) Remove(t T) error {
+func (c *Cola[T]) Remove(t T) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	for i := range c.elements {
@@ -93,7 +89,7 @@ func (c *Queue[T]) Remove(t T) error {
 		return &c.elements[0]
 	}
 */
-func (c *Queue[T]) First() T {
+func (c *Cola[T]) First() T {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -103,6 +99,19 @@ func (c *Queue[T]) First() T {
 	}
 	return c.elements[0]
 }
-func (q *Queue[T]) Values() []T {
+func (q *Cola[T]) Values() []T {
 	return q.elements
+}
+
+func First() *pcb.PCB {
+	ColaReady.mutex.Lock()
+	defer ColaReady.mutex.Unlock()
+
+	if len(ColaReady.elements) == 0 {
+		log.Printf("No hay procesos en Ready para ejecutar")
+	}
+
+	var proceso *pcb.PCB
+	proceso = ColaReady.First()
+	return proceso
 }
