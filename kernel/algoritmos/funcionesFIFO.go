@@ -2,8 +2,6 @@ package algoritmos
 
 import (
 	"errors"
-	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
-	"log"
 )
 
 type Nulleable[T any] interface {
@@ -103,6 +101,7 @@ func (q *Cola[T]) Values() []T {
 	return q.elements
 }
 
+/*
 func First() *pcb.PCB {
 	ColaReady.mutex.Lock()
 	defer ColaReady.mutex.Unlock()
@@ -115,3 +114,4 @@ func First() *pcb.PCB {
 	proceso = ColaReady.First()
 	return proceso
 }
+*/

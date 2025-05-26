@@ -41,6 +41,7 @@ func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosD
 }
 
 func CargarInstrucciones(nombreArchivo string) {
+
 	ruta := "../pruebas/" + nombreArchivo
 	// con el (..) vuelve para atras en los directorios
 	// accede a la carpeta de pruebas y abre el archivo pasado x parametro

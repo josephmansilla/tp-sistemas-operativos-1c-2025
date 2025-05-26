@@ -37,6 +37,7 @@ func PlanificadorLargoPlazo() {
 	algoritmos.ColaNuevo.Remove(primerProceso)
 	algoritmos.ColaReady.Add(primerProceso)
 	logger.Info("## (<%d>) Pasa de estado NEW a estado READY", primerProceso.PID)
+	go PlanificarCortoPlazo() //SOLO PARA TESTEO
 	go ManejadorCreacionProcesos()
 	go ManejadorFinalizacionProcesos()
 }

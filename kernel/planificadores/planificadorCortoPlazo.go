@@ -14,7 +14,7 @@ func PlanificarCortoPlazo() {
 
 		switch globals.KConfig.SchedulerAlgorithm {
 		case "FIFO":
-			proceso = algoritmos.First()
+			proceso = algoritmos.ColaReady.First()
 		case "SJF":
 			proceso = algoritmos.SeleccionarSJF()
 		case "SRT":

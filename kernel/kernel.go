@@ -87,8 +87,8 @@ func main() {
 	// ----------------------------------------------------
 	//1. Crear primer proceso desde los argumentos del main
 	planificadores.CrearPrimerProceso(archivoPseudocodigo, tamanioProceso)
-	//planificadores.PlanificarCortoPlazo()
 	//planificadores.PlanificadorMedianoPlazo()
+	//go planificadores.PlanificarCortoPlazo()//TODO NO FUNCIONA
 
 	// Inicializar recursos compartidos
 	Utils.InicializarMutexes()
