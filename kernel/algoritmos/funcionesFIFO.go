@@ -76,17 +76,6 @@ func (c *Cola[T]) Remove(t T) error {
 	return errors.New("elemento no encontrado en la cola")
 }
 
-/*
-	func (c *Queue[T]) First() *T {
-		c.mutex.Lock()
-		defer c.mutex.Unlock()
-
-		if len(c.elements) == 0 {
-			return nil
-		}
-		return &c.elements[0]
-	}
-*/
 func (c *Cola[T]) First() T {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -100,18 +89,3 @@ func (c *Cola[T]) First() T {
 func (q *Cola[T]) Values() []T {
 	return q.elements
 }
-
-/*
-func First() *pcb.PCB {
-	ColaReady.mutex.Lock()
-	defer ColaReady.mutex.Unlock()
-
-	if len(ColaReady.elements) == 0 {
-		log.Printf("No hay procesos en Ready para ejecutar")
-	}
-
-	var proceso *pcb.PCB
-	proceso = ColaReady.First()
-	return proceso
-}
-*/

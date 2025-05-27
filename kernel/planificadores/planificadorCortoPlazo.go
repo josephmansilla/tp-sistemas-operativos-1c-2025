@@ -21,7 +21,6 @@ func PlanificarCortoPlazo() {
 		switch globals.KConfig.SchedulerAlgorithm {
 		case "FIFO":
 			proceso = algoritmos.ColaReady.First()
-			algoritmos.ColaReady.Remove(proceso)
 		case "SJF":
 			proceso = algoritmos.SeleccionarSJF()
 		case "SRT":
@@ -55,12 +54,49 @@ func PlanificarCortoPlazo() {
 		logger.Info("Proceso <%d> -> EXECUTE en CPU <%s>", proceso.PID, cpuID)
 		proceso.ME[pcb.EstadoExecute]++
 		proceso.Estado = pcb.EstadoExecute
+
+		Utils.MutexEjecutando.Lock()
 		algoritmos.ColaEjecutando.Add(proceso)
+		Utils.MutexEjecutando.Unlock()
+
+		Utils.MutexReady.Lock()
+		algoritmos.ColaReady.Remove(proceso)
+		Utils.MutexReady.Unlock()
 
 		cpu := globals.CPUs[cpuID]
 		cpu.Ocupada = true
 		globals.CPUs[cpuID] = cpu
 
 		comunicacion.EnviarContextoCPU(cpuID, proceso)
+	}
+}
+
+func DesalojarProceso() {
+
+}
+
+func TerminarEjecucion() {
+	logger.Info("Iniciando el planificador de Corto Plazo")
+	for {
+		// WAIT hasta que CPU finaliza
+		//cpuID := <-Utils.ChannelFinishprocess
+
+		var proceso *pcb.PCB
+
+		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado READY", proceso.PID)
+
+		Utils.MutexEjecutando.Lock()
+		algoritmos.ColaEjecutando.Remove(proceso)
+		Utils.MutexEjecutando.Unlock()
+
+		Utils.MutexReady.Lock()
+		algoritmos.ColaReady.Add(proceso)
+		Utils.MutexReady.Unlock()
+
+		/*
+			//liberar cpu
+			cpu := globals.CPUs[cpuID]
+			cpu.Ocupada = false
+			globals.CPUs[cpuID] = cpu*/
 	}
 }
