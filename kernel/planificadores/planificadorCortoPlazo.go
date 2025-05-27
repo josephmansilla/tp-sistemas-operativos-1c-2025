@@ -12,7 +12,7 @@ import (
 func PlanificarCortoPlazo() {
 	logger.Info("Iniciando el Planificador de Corto Plazo")
 	go DespacharProceso()
-	//go BloquearProceso()
+	go BloquearProceso()
 }
 
 func DespacharProceso() {
@@ -85,7 +85,15 @@ func BloquearProceso() {
 		//WAIT mensaje de IO (bloqueante)
 		msg := <-Utils.NotificarComienzoIO
 
-		var proceso = msg.PCB
+		var pid = msg.PID
+
+		//BUSCAR EN PCB EXECUTE
+		var proceso *pcb.PCB
+		for _, p := range algoritmos.ColaEjecutando.Values() {
+			if p.PID == pid {
+				proceso = p
+			}
+		}
 
 		Utils.MutexEjecutando.Lock()
 		algoritmos.ColaEjecutando.Remove(proceso)
@@ -99,6 +107,10 @@ func BloquearProceso() {
 
 		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado BLOCKED", proceso.PID)
 		//Enviar al módulo IO (usando los datos del mensaje recibido)
-		comunicacion.EnviarContextoIO(msg.Nombre, msg.PCB.PID, msg.Duracion)
+		comunicacion.EnviarContextoIO(msg.Nombre, msg.PID, msg.Duracion)
 	}
+}
+
+func FinDeIO() {
+
 }

@@ -185,7 +185,7 @@ func Io(w http.ResponseWriter, r *http.Request) {
 
 	//SIGNAL A Planif. CORTO PLAZO QUE LLEGO I/O
 	Utils.NotificarComienzoIO <- Utils.MensajeIOChannel{
-		PCB:      pcb,
+		PID:      pcb.PID,
 		Nombre:   ioData.Nombre,
 		Duracion: mensajeRecibido.Duracion,
 	}
