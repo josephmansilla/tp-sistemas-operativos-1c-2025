@@ -57,6 +57,9 @@ var (
 	InitProcess             chan struct{}
 	SemProcessCreateOK      chan struct{}
 	ChannelFinishProcess2   chan bool
+
+	//AVISAR CUANDO UN PROCESO LLEGA A READY
+	NotificarProcesoReady chan int
 )
 
 // InicializarMutexes deja listas las variables de mutex.
@@ -74,4 +77,6 @@ func InicializarCanales() {
 	InitProcess = make(chan struct{})           // sin buffer para sincronización exacta
 	SemProcessCreateOK = make(chan struct{}, 1) // semáforo de 1 slot
 	ChannelFinishProcess2 = make(chan bool, 5)
+
+	NotificarProcesoReady = make(chan int, 10) // buffer 10 procesos listos
 }

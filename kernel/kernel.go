@@ -82,17 +82,21 @@ func main() {
 	algoritmos.ColaBloqueadoSuspendido = algoritmos.Cola[*pcb.PCB]{}
 	algoritmos.ColaSuspendidoReady = algoritmos.Cola[*pcb.PCB]{}
 
+	// Inicializar recursos compartidos
+	Utils.InicializarMutexes()
+	Utils.InicializarCanales()
+
 	// ----------------------------------------------------
 	// ---------- ENVIAR PSEUDOCODIGO A MEMORIA -----------
 	// ----------------------------------------------------
 	//1. Crear primer proceso desde los argumentos del main
 	planificadores.CrearPrimerProceso(archivoPseudocodigo, tamanioProceso)
-	//planificadores.PlanificadorMedianoPlazo()
-	//go planificadores.PlanificarCortoPlazo()//TODO NO FUNCIONA
 
-	// Inicializar recursos compartidos
-	Utils.InicializarMutexes()
-	Utils.InicializarCanales()
+	// ----------------------------------------------------
+	// ---------- INICAR CORTO Y MEDIANO PLAZO ------------
+	// ----------------------------------------------------
+	//go planificadores.PlanificadorMedianoPlazo()
+	go planificadores.PlanificarCortoPlazo()
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU E IO (Puertos) ----
@@ -115,7 +119,6 @@ func main() {
 	// ------------------------------------------------------
 	// ---------- INICIAR PLANIFICADOR DE LARGO PLAZO  ------
 	// ------------------------------------------------------
-
 	// Esperar que el usuario presione Enter
 	go iniciarLargoPlazo()
 

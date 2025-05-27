@@ -1,6 +1,7 @@
 package planificadores
 
 import (
+	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
 	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
@@ -9,12 +10,18 @@ import (
 )
 
 func PlanificarCortoPlazo() {
+	logger.Info("Iniciando el planificador de Corto Plazo")
 	for {
+		// WAIT hasta que llegue un proceso a READY
+		pid := <-Utils.NotificarProcesoReady
+		logger.Info("## (<%d>) Llega a Corto Plazo", pid)
+
 		var proceso *pcb.PCB
 
 		switch globals.KConfig.SchedulerAlgorithm {
 		case "FIFO":
 			proceso = algoritmos.ColaReady.First()
+			algoritmos.ColaReady.Remove(proceso)
 		case "SJF":
 			proceso = algoritmos.SeleccionarSJF()
 		case "SRT":
@@ -26,10 +33,10 @@ func PlanificarCortoPlazo() {
 
 		if proceso == nil {
 			logger.Info("No hay proceso listo para planificar")
-			return
+			continue
 		}
 
-		// Buscar CPU disponible (simplificadamente, agarramos la primera)
+		// Buscar CPU disponible
 		var cpuID string
 		for id, cpu := range globals.CPUs {
 			if !cpu.Ocupada {
@@ -42,17 +49,18 @@ func PlanificarCortoPlazo() {
 
 		if cpuID == "" {
 			logger.Info("No hay CPU disponible para ejecutar el proceso <%d>", proceso.PID)
-			return
+			continue
 		}
 
-		comunicacion.EnviarContextoCPU(cpuID, proceso)
+		logger.Info("Proceso <%d> -> EXECUTE en CPU <%s>", proceso.PID, cpuID)
 		proceso.ME[pcb.EstadoExecute]++
 		proceso.Estado = pcb.EstadoExecute
+		algoritmos.ColaEjecutando.Add(proceso)
 
-		cpu := globals.CPUs[cpuID] // Paso 1: obtener copia
-		cpu.Ocupada = true         // Paso 2: modificar la copia
-		globals.CPUs[cpuID] = cpu  // Paso 3: volver a guardar la copia modificada
+		cpu := globals.CPUs[cpuID]
+		cpu.Ocupada = true
+		globals.CPUs[cpuID] = cpu
 
-		logger.Info("Proceso <%d> -> EXECUTE en CPU <%s>", proceso.PID, cpuID)
+		comunicacion.EnviarContextoCPU(cpuID, proceso)
 	}
 }

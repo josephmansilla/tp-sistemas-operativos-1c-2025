@@ -21,23 +21,31 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 		MT:  make(map[string]int),
 	}
 
-	logger.Info("## (<%d>) Se crea el Primer proceso - Estado: NEW", pid)
-
-	// Paso 2: Agregar a la cola  READY
+	// Paso 2: Agregar a la cola NEW
 	algoritmos.ColaNuevo.Add(&pcbNuevo)
+	pcbNuevo.ME[pcb.EstadoNew]++
+	pcbNuevo.Estado = pcb.EstadoNew
+	logger.Info("## (<%d>) Se crea el Primer proceso - Estado: NEW", pcbNuevo.PID)
 
-	//PASO 3: Mandar archivo a Memoria
+	//PASO 3: Mandar archivo pseudocodigo a Memoria
 	comunicacion.EnviarArchivoMemoria(fileName, tamanio)
 }
 
 func PlanificadorLargoPlazo() {
 	logger.Info("Iniciando el planificador de largo plazo")
+
+	//1. Obtener primer proceso de Cola NEW
 	var primerProceso *pcb.PCB
 	primerProceso = algoritmos.ColaNuevo.First()
 	algoritmos.ColaNuevo.Remove(primerProceso)
+
+	//2. Mandar a Ready
+	primerProceso.ME[pcb.EstadoReady]++
+	primerProceso.Estado = pcb.EstadoReady
 	algoritmos.ColaReady.Add(primerProceso)
+	Utils.NotificarProcesoReady <- primerProceso.PID //SIGNAL QUE PASO A READY. MANDO PID
 	logger.Info("## (<%d>) Pasa de estado NEW a estado READY", primerProceso.PID)
-	go PlanificarCortoPlazo() //SOLO PARA TESTEO
+
 	go ManejadorCreacionProcesos()
 	go ManejadorFinalizacionProcesos()
 }
@@ -122,15 +130,19 @@ func agregarProcesoAReady(pid int) {
 	}
 
 	// 2) Agregar a READY
+	pcbPtr.ME[pcb.EstadoReady]++
+	pcbPtr.Estado = pcb.EstadoReady
+
 	Utils.MutexReady.Lock()
 	algoritmos.ColaReady.Add(pcbPtr)
 	Utils.MutexReady.Unlock()
 
+	logger.Info("## (<%d>) Pasa de estado NEW a estado READY", pcbPtr.PID)
+	Utils.NotificarProcesoReady <- pcbPtr.PID //SIGNAL QUE PASO A READY. MANDO PID
+
 	// 3) Remover de NEW
 	algoritmos.ColaNuevo.Remove(pcbPtr)
 	Utils.MutexNuevo.Unlock()
-
-	logger.Info("PCB pid=%d movido de NEW a READY", pid)
 
 	// 4) Señal al planificador para continuar
 	Utils.SemProcessCreateOK <- struct{}{}
@@ -227,6 +239,7 @@ func intentarInicializarDesdeNew() {
 	Utils.MutexReady.Lock()
 	algoritmos.ColaReady.Add(pcb)
 	Utils.MutexReady.Unlock()
+	Utils.NotificarProcesoReady <- pcb.PID
 
 	logger.Info("PID <%d> pasó de NEW a READY", pcb.PID)
 }
