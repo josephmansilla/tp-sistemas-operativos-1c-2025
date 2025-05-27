@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
@@ -65,6 +64,7 @@ func ContextoInterrumpido(w http.ResponseWriter, r *http.Request) {
 
 }
 */
+
 func InitProcess(w http.ResponseWriter, r *http.Request) {
 	// 1) Leer y parsear el JSON entrante (sin usar PID desde la CPU)
 	var msg MensajeInit
@@ -183,5 +183,12 @@ func Io(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("Nombre IO: %s Duracion: %d", ioData.Nombre, mensajeRecibido.Duracion)
 
-	comunicacion.EnviarContextoIO(ioData.Nombre, pcb.PID, mensajeRecibido.Duracion)
+	//SIGNAL A Planif. CORTO PLAZO QUE LLEGO I/O
+	Utils.NotificarComienzoIO <- Utils.MensajeIOChannel{
+		PCB:      pcb,
+		Nombre:   ioData.Nombre,
+		Duracion: mensajeRecibido.Duracion,
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

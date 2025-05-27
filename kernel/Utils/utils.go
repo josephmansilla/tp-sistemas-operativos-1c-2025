@@ -1,6 +1,9 @@
 package Utils
 
-import "sync"
+import (
+	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
+	"sync"
+)
 
 // //VARIABLES PARA PLANIFICACION NOOO ELIMINAR NADA TODAVIA
 /*
@@ -60,6 +63,7 @@ var (
 
 	//AVISAR CUANDO UN PROCESO LLEGA A READY
 	NotificarProcesoReady chan int
+	NotificarComienzoIO   chan MensajeIOChannel
 )
 
 // InicializarMutexes deja listas las variables de mutex.
@@ -79,4 +83,11 @@ func InicializarCanales() {
 	ChannelFinishProcess2 = make(chan bool, 5)
 
 	NotificarProcesoReady = make(chan int, 10) // buffer 10 procesos listos
+	NotificarComienzoIO = make(chan MensajeIOChannel, 10)
+}
+
+type MensajeIOChannel struct {
+	PCB      *pcb.PCB
+	Nombre   string
+	Duracion int
 }

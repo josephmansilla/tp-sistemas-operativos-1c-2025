@@ -10,7 +10,12 @@ import (
 )
 
 func PlanificarCortoPlazo() {
-	logger.Info("Iniciando el planificador de Corto Plazo")
+	logger.Info("Iniciando el Planificador de Corto Plazo")
+	go DespacharProceso()
+	//go BloquearProceso()
+}
+
+func DespacharProceso() {
 	for {
 		// WAIT hasta que llegue un proceso a READY
 		pid := <-Utils.NotificarProcesoReady
@@ -75,28 +80,25 @@ func DesalojarProceso() {
 
 }
 
-func TerminarEjecucion() {
-	logger.Info("Iniciando el planificador de Corto Plazo")
+func BloquearProceso() {
 	for {
-		// WAIT hasta que CPU finaliza
-		//cpuID := <-Utils.ChannelFinishprocess
+		//WAIT mensaje de IO (bloqueante)
+		msg := <-Utils.NotificarComienzoIO
 
-		var proceso *pcb.PCB
-
-		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado READY", proceso.PID)
+		var proceso = msg.PCB
 
 		Utils.MutexEjecutando.Lock()
 		algoritmos.ColaEjecutando.Remove(proceso)
 		Utils.MutexEjecutando.Unlock()
 
-		Utils.MutexReady.Lock()
-		algoritmos.ColaReady.Add(proceso)
-		Utils.MutexReady.Unlock()
+		proceso.ME[pcb.EstadoBlocked]++
+		proceso.Estado = pcb.EstadoBlocked
+		Utils.MutexBloqueado.Lock()
+		algoritmos.ColaBloqueado.Add(proceso)
+		Utils.MutexBloqueado.Unlock()
 
-		/*
-			//liberar cpu
-			cpu := globals.CPUs[cpuID]
-			cpu.Ocupada = false
-			globals.CPUs[cpuID] = cpu*/
+		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado BLOCKED", proceso.PID)
+		//Enviar al módulo IO (usando los datos del mensaje recibido)
+		comunicacion.EnviarContextoIO(msg.Nombre, msg.PCB.PID, msg.Duracion)
 	}
 }

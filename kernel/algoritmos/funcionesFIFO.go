@@ -86,6 +86,7 @@ func (c *Cola[T]) First() T {
 	}
 	return c.elements[0]
 }
+
 func (q *Cola[T]) Values() []T {
 	return q.elements
 }
