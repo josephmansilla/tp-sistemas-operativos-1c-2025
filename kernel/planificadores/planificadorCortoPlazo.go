@@ -88,27 +88,27 @@ func BloquearProceso() {
 
 		var pid = msg.PID
 
-		//BUSCAR EN PCB EXECUTE
+		//BUSCAR EN PCB y SACAR DE EXECUTE
 		var proceso *pcb.PCB
+		Utils.MutexEjecutando.Lock()
 		for _, p := range algoritmos.ColaEjecutando.Values() {
 			if p.PID == pid {
 				proceso = p
+				algoritmos.ColaEjecutando.Remove(proceso)
 			}
 		}
-
-		Utils.MutexEjecutando.Lock()
-		algoritmos.ColaEjecutando.Remove(proceso)
 		Utils.MutexEjecutando.Unlock()
 
 		//TODO LIBERAR CPU
 
+		//ENVIAR A BLOCKED
+		Utils.MutexBloqueado.Lock()
 		proceso.ME[pcb.EstadoBlocked]++
 		proceso.Estado = pcb.EstadoBlocked
-		Utils.MutexBloqueado.Lock()
 		algoritmos.ColaBloqueado.Add(proceso)
+		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado BLOCKED", proceso.PID)
 		Utils.MutexBloqueado.Unlock()
 
-		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado BLOCKED", proceso.PID)
 		//Enviar al módulo IO (usando los datos del mensaje recibido)
 		comunicacion.EnviarContextoIO(msg.Nombre, msg.PID, msg.Duracion)
 	}
@@ -121,28 +121,23 @@ func FinDeIO() {
 
 		//BUSCAR EN PCB BLOCKED
 		var proceso *pcb.PCB
+		Utils.MutexBloqueado.Lock()
 		for _, p := range algoritmos.ColaBloqueado.Values() {
 			if p.PID == pid {
 				proceso = p
+				algoritmos.ColaBloqueado.Remove(proceso)
 			}
 		}
-
-		Utils.MutexBloqueado.Lock()
-		algoritmos.ColaBloqueado.Remove(proceso)
 		Utils.MutexBloqueado.Unlock()
 
+		Utils.MutexReady.Lock()
 		proceso.ME[pcb.EstadoReady]++
 		proceso.Estado = pcb.EstadoReady
-		Utils.MutexReady.Lock()
 		algoritmos.ColaReady.Add(proceso)
+		logger.Info("## (%d) finalizó IO y pasa a READY", pid)
 		Utils.MutexReady.Unlock()
 
-		logger.Info("## (%d) finalizó IO y pasa a READY", pid)
-
-		// Notificar al despachador lo intente
-		go func(pid int) {
-			Utils.NotificarDespachador <- pid
-		}(proceso.PID)
-
+		//Notificar al despachador llegada a READY
+		Utils.NotificarDespachador <- pid
 	}
 }

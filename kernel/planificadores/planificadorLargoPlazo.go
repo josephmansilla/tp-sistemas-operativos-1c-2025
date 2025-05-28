@@ -91,7 +91,7 @@ func ManejadorCreacionProcesos() {
 					logger.Error("Reintento falló para pid=%d, abortando", p)
 					return
 				}
-			}*/ //CUANDO PEPE HAGA ESO YA SE PUEDE DESCOMENTAR
+			}*///CUANDO PEPE HAGA ESO YA SE PUEDE DESCOMENTAR
 
 			//DICE QUE NO
 			//MANDAR NEW
@@ -162,28 +162,36 @@ func ManejadorFinalizacionProcesos() {
 		if err != nil {
 			logger.Error("Error avisando fin proceso pid=%d: %v", pid, err)
 			continue
-		}*/ //MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
+		}*///MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
 
 		// Remover de EXECUTING
+		var pcbFinalizado *pcb.PCB = nil
+
 		Utils.MutexEjecutando.Lock()
 		for _, p := range algoritmos.ColaEjecutando.Values() {
 			if p.PID == pid {
 				algoritmos.ColaEjecutando.Remove(p)
+				pcbFinalizado = p
 				break
 			}
 		}
 		Utils.MutexEjecutando.Unlock()
 
+		if pcbFinalizado == nil {
+			logger.Warn("No se encontró PCB para PID=%d al mover a EXIT", pid)
+			continue
+		}
+
 		// Agregar a EXIT
 		Utils.MutexSalida.Lock()
-		pcbPtr := BuscarPCBPorPID(pid)
-		if pcbPtr != nil {
-			algoritmos.ColaSalida.Add(pcbPtr)
-			logger.Info("PCB pid=%d movido a EXIT", pid)
-		} else {
-			logger.Warn("No se encontró PCB para PID=%d al mover a EXIT", pid)
-		}
+		pcbFinalizado.ME[pcb.EstadoExit]++
+		pcbFinalizado.Estado = pcb.EstadoExit
+		algoritmos.ColaSalida.Add(pcbFinalizado)
+		logger.Info("## (<%d>) Pasa de estado EXECUTE a estado EXIT", pcbFinalizado.PID)
 		Utils.MutexSalida.Unlock()
+
+		logger.Info("## (<%d>) - Finaliza el proceso", pcbFinalizado.PID)
+		logger.Info(pcbFinalizado.ImprimirMetricas())
 
 		// Señal para reintentos de creación pendientes
 		Utils.InitProcess <- struct{}{}
