@@ -1,6 +1,7 @@
 package Utils
 
 import (
+	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"sync"
 )
 
@@ -55,7 +56,7 @@ var (
 
 	// Canales de señalización
 	ChannelProcessArguments chan []string
-	ChannelFinishprocess    chan int
+	ChannelFinishprocess    chan FinishProcess
 	InitProcess             chan struct{}
 	SemProcessCreateOK      chan struct{}
 	ChannelFinishProcess2   chan bool
@@ -77,7 +78,7 @@ func InicializarMutexes() {
 // InicializarCanales crea y configura los canales con buffers adecuados.
 func InicializarCanales() {
 	ChannelProcessArguments = make(chan []string, 10) // buffer para hasta 10 peticiones
-	ChannelFinishprocess = make(chan int, 5)
+	ChannelFinishprocess = make(chan FinishProcess, 5)
 	InitProcess = make(chan struct{})           // sin buffer para sincronización exacta
 	SemProcessCreateOK = make(chan struct{}, 1) // semáforo de 1 slot
 	ChannelFinishProcess2 = make(chan bool, 5)
@@ -91,4 +92,8 @@ type MensajeIOChannel struct {
 	PID      int
 	Nombre   string
 	Duracion int
+}
+type FinishProcess struct {
+	PCB   *pcb.PCB
+	CpuID string
 }

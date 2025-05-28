@@ -28,10 +28,12 @@ type MensajeIo struct {
 	PCB      *pcb.PCB `json:"pcb"`
 	Duracion int      `json:"tiempo"`
 	Nombre   string   `json:"nombre"`
+	ID       string   `json:"id"`
 }
 
 type MensajeSyscall struct {
 	PCB *pcb.PCB `json:"pcb"`
+	ID  string   `json:"id"`
 }
 
 type MensajeDUMP struct {
@@ -40,30 +42,8 @@ type MensajeDUMP struct {
 }
 
 func ContextoInterrumpido(w http.ResponseWriter, r *http.Request) {
-	// tu código...
+	//TODO
 }
-
-/*
-	func InitProcess(w http.ResponseWriter, r *http.Request) {
-		var mensajeRecibido MensajeInit
-		if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
-			return
-		}
-
-		pid := mensajeRecibido.PID //
-		pc := mensajeRecibido.PC   //
-		filename := mensajeRecibido.Filename
-		tamanio := mensajeRecibido.Tamanio
-
-		logger.Info("## (<%d>) - Solicitó syscall: <INIT_PROC>", pid)
-		logger.Info("Se ha recibido: PID: %d PC: %d Filename: %s Tamaño Memoria: %d", pid, pc, filename, tamanio)
-
-		//LO QUE BUSCO ACA ES SOLAMENTE CREAR EL PCB Y PONERLO EN LA COLA DE NEW
-		planificadores.CrearProceso(filename, tamanio)
-		//cuando un proceso Inicia entonces tambien debe inciarse el planificador de largo PLAZO, osea debe intentar pasarse de NEW A READY
-
-}
-*/
 
 func InitProcess(w http.ResponseWriter, r *http.Request) {
 	// 1) Leer y parsear el JSON entrante (sin usar PID desde la CPU)
@@ -85,12 +65,14 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		// Construir el PCB con el PID generado
 		pcbNuevo := pcb.PCB{
-			PID:         pid,
-			PC:          0,
-			FileName:    fileName,
-			ProcessSize: tamanio,
-			ME:          make(map[string]int),
-			MT:          make(map[string]int),
+			PID:            pid,
+			PC:             0,
+			FileName:       fileName,
+			ProcessSize:    tamanio,
+			ME:             make(map[string]int),
+			MT:             make(map[string]int),
+			EstimadoRafaga: globals.Config.InitialEstimate,
+			RafagaRestante: 0,
 		}
 		logger.Info("## (<%d>) Se crea el proceso - Estado: NEW", pid)
 
@@ -122,13 +104,17 @@ func Exit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pcb := msg.PCB
+	cpuid := msg.ID
 	logger.Info("## (<%d>) - Solicitó syscall: <EXIT>", pcb.PID)
 
 	// Despachamos la señal en segundo plano para no bloquear el handler HTTP
 	go func(p int) {
-		Utils.ChannelFinishprocess <- p
+		Utils.ChannelFinishprocess <- Utils.FinishProcess{
+			PCB:   pcb,
+			CpuID: cpuid,
+		}
 	}(pcb.PID)
-	// TODO desalojar
+
 	// Respondemos de inmediato
 	w.WriteHeader(http.StatusOK)
 }
@@ -169,6 +155,7 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	}
 	pcb := mensajeRecibido.PCB
 	nombre := mensajeRecibido.Nombre
+	id := mensajeRecibido.ID
 
 	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pcb.PID)
 

@@ -13,14 +13,16 @@ import (
 type Instruccion func(pcb *globals.PCB, arguments []string) error
 
 type MensajeDump struct {
-	PID int `json:"pid"`
-	PC  int `json:"pc"`
+	PID int    `json:"pid"`
+	PC  int    `json:"pc"`
+	ID  string `json:"id"`
 }
 
 type MensajeIO struct {
 	PCB    globals.PCB `json:"pcb"`
 	Tiempo int         `json:"tiempo"`
 	Nombre string      `json:"nombre"`
+	ID     string      `json:"id"`
 }
 
 type MensajeInitProc struct {
@@ -28,10 +30,12 @@ type MensajeInitProc struct {
 	PC       int    `json:"pc"`
 	Filename string `json:"filename"` //filename
 	Tamanio  int    `json:"tamanio_memoria"`
+	ID       string `json:"id"`
 }
 
 type MensajeExit struct {
 	PCB globals.PCB `json:"pcb"`
+	ID  string      `json:"id"`
 }
 
 // Una instruccion es una funcion que recibe un puntero a una struct con el contexto de ejecucion del proceso que se esta
@@ -141,7 +145,7 @@ func dumpMemoryInstruccion(pcb *globals.PCB, arguments []string) error {
 
 	mensaje := MensajeDump{
 		PID: pcb.PID,
-		PC:  pcb.PC,
+		PC:  pcb.PC
 	}
 
 	url := fmt.Sprintf("http://%s:%d/kernel/dump_memory", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
@@ -172,6 +176,7 @@ func ioInstruccion(pcb *globals.PCB, arguments []string) error {
 		PCB:    *pcb,
 		Tiempo: tiempoIO,
 		Nombre: nombreIO,
+		ID:     globals.ID,
 	}
 
 	url := fmt.Sprintf("http://%s:%d/kernel/syscallIO", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
@@ -193,6 +198,7 @@ func exitInstruccion(pcb *globals.PCB, arguments []string) error {
 
 	mensaje := MensajeExit{
 		PCB: *pcb,
+		ID:  globals.ID,
 	}
 
 	url := fmt.Sprintf("http://%s:%d/kernel/exit", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)

@@ -21,6 +21,8 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 		MT:             make(map[string]int),
 		EstimadoRafaga: globals.Config.InitialEstimate,
 		RafagaRestante: 0,
+		FileName:       fileName,
+		ProcessSize:    tamanio,
 	}
 
 	// Paso 2: Agregar a la cola NEW
@@ -156,7 +158,9 @@ func agregarProcesoAReady(pid int) {
 
 func ManejadorFinalizacionProcesos() {
 	for {
-		pid := <-Utils.ChannelFinishprocess
+		msg := <-Utils.ChannelFinishprocess
+		pid := msg.PCB.PID
+		cpuID := msg.CpuID
 		logger.Info("ManejadorFinalizacionProcesos: recibida finalización pid=%d", pid)
 
 		// Avisar a Memoria para liberar recursos
@@ -167,6 +171,9 @@ func ManejadorFinalizacionProcesos() {
 		}*///MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
 
 		// Remover de EXECUTING
+
+		//ACA PONER UN WAIT/TUBERIA que espere a que memoria libere el proceso, ES PARA TENER UN ORDEN
+
 		var pcbFinalizado *pcb.PCB = nil
 
 		Utils.MutexEjecutando.Lock()
@@ -193,6 +200,12 @@ func ManejadorFinalizacionProcesos() {
 		Utils.MutexSalida.Unlock()
 
 		logger.Info("## (<%d>) - Finaliza el proceso", pcbFinalizado.PID)
+
+		//LIBERAR
+		cpu := globals.CPUs[cpuID]
+		cpu.Ocupada = false
+		globals.CPUs[cpuID] = cpu
+
 		logger.Info(pcbFinalizado.ImprimirMetricas())
 
 		// Señal para reintentos de creación pendientes

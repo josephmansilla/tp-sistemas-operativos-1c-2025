@@ -15,12 +15,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	ID := os.Args[1]
+	globals.ID := os.Args[1]
 
-	logFileName := fmt.Sprintf("logs/cpu_%s.log", ID)
+	logFileName := fmt.Sprintf("logs/cpu_%s.log", globals.ID)
 	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
-		fmt.Printf("Error al crear archivo de log para CPU %s: %v\n", ID, err)
+		fmt.Printf("Error al crear archivo de log para CPU %s: %v\n", globals.ID, err)
 		os.Exit(1)
 	}
 	log.SetOutput(logFile)
@@ -32,11 +32,11 @@ func main() {
 	}*/
 
 	log.Printf("=========================================================")
-	log.Printf("======== Comenzo la ejecucion del CPU con ID: %s ========", ID)
+	log.Printf("======== Comenzo la ejecucion del CPU con ID: %s ========", globals.ID)
 	log.Printf("=========================================================\n")
 
 	//CPU CLIENTE
-	configpath := fmt.Sprintf("configs/cpu_%sconfig.json", ID)
+	configpath := fmt.Sprintf("configs/cpu_%sconfig.json", globals.ID)
 	globals.ClientConfig = utils.Config(configpath)
 
 	if globals.ClientConfig == nil {

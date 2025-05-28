@@ -18,7 +18,7 @@ func PlanificarCortoPlazo() {
 
 func DespacharProceso() {
 	for {
-		// WAIT hasta que llegue un proceso a READY o nueva CPU
+		// WAIT hasta que llegue un proceso a READY o nueva CPU por SYSCALL DE EXTI O I/O
 		<-Utils.NotificarDespachador
 		logger.Info("Arranca Corto Plazo")
 

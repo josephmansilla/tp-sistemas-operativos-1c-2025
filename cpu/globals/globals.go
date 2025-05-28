@@ -39,3 +39,4 @@ var MutexInterrupcion sync.Mutex
 var TamPag int
 var ErrSyscallBloqueante = errors.New("proceso bloqueado por syscall IO")
 var SaltarIncrementoPC bool
+var ID string
