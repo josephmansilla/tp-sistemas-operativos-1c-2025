@@ -72,35 +72,30 @@ func EnviarIpPuertoIDAKernel(ipDestino string, puertoDestino int, ipPropia strin
 
 // Recibo PCB de Kernel
 func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
-	var pcbRecibido globals.PCB
+	var msg MensajeDeKernel
 
 	// Intentar decodificar el JSON del request
-	if err := data.LeerJson(w, r, &pcbRecibido); err != nil {
+	if err := data.LeerJson(w, r, &msg); err != nil {
 		log.Printf("Error al recibir JSON: %v", err)
 		http.Error(w, "Error procesando datos del Kernel", http.StatusInternalServerError)
 		return
 	}
 
-	// Verificar que CurrentContext esté inicializado
-	if globals.Pcb == nil {
-		globals.Pcb = &globals.PCB{}
-		log.Println("Inicializando PCB.")
-	}
+	// Actualizar solo PID y PC del PCB global
+	globals.PIDActual = msg.PID
+	globals.PCActual = msg.PC
 
-	// Asignar el PCB
-	*globals.Pcb = pcbRecibido
+	log.Printf("Me llegó el contexto con PID: %d, PC: %d", globals.PIDActual, globals.PCActual)
 
-	log.Printf("Me llegó el PCB con PID:%d, PC:%d", pcbRecibido.PID, pcbRecibido.PC)
-
-	// Verificar que ClientConfig esté inicializado
+	// Validar que ClientConfig esté inicializado
 	if globals.ClientConfig == nil {
 		log.Printf("ClientConfig no está inicializado.")
 		http.Error(w, "Configuración del cliente no inicializada", http.StatusInternalServerError)
 		return
 	}
 
-	// Con el PID y PC le pido a Memoria las instrucciones
-	instrucciones.FaseFetch(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory, pcbRecibido.PID, pcbRecibido.PC)
+	// Pedir a Memoria las instrucciones usando PID y PC
+	instrucciones.FaseFetch(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))

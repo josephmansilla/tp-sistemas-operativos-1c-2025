@@ -14,12 +14,13 @@ import (
 func CrearPrimerProceso(fileName string, tamanio int) {
 	// Paso 1: Crear el PCB
 	pid := globals.GenerarNuevoPID()
+	estimado := globals.Config.InitialEstimate
 	pcbNuevo := pcb.PCB{
 		PID:            pid,
 		PC:             0,
 		ME:             make(map[string]int),
 		MT:             make(map[string]int),
-		EstimadoRafaga: globals.Config.InitialEstimate,
+		EstimadoRafaga: estimado,
 		RafagaRestante: 0,
 		FileName:       fileName,
 		ProcessSize:    tamanio,
@@ -159,7 +160,8 @@ func agregarProcesoAReady(pid int) {
 func ManejadorFinalizacionProcesos() {
 	for {
 		msg := <-Utils.ChannelFinishprocess
-		pid := msg.PCB.PID
+		pid := msg.PID
+		pc := msg.PC
 		cpuID := msg.CpuID
 		logger.Info("ManejadorFinalizacionProcesos: recibida finalización pid=%d", pid)
 
@@ -178,6 +180,7 @@ func ManejadorFinalizacionProcesos() {
 		for _, p := range algoritmos.ColaEjecutando.Values() {
 			if p.PID == pid {
 				algoritmos.ColaEjecutando.Remove(p)
+				p.PC = pc //SOBREESCRIBIR NUEVO PC PROVENINIENTE DE CPU
 				pcbFinalizado = p
 				break
 			}

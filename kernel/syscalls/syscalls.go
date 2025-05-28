@@ -25,15 +25,17 @@ type MensajeInit struct {
 }
 
 type MensajeIo struct {
-	PCB      *pcb.PCB `json:"pcb"`
-	Duracion int      `json:"tiempo"`
-	Nombre   string   `json:"nombre"`
-	ID       string   `json:"id"`
+	PID      int    `json:"pid"`
+	PC       int    `json:"pc"`
+	Duracion int    `json:"tiempo"`
+	Nombre   string `json:"nombre"`
+	ID       string `json:"id"`
 }
 
 type MensajeSyscall struct {
-	PCB *pcb.PCB `json:"pcb"`
-	ID  string   `json:"id"`
+	PID int    `json:"pid"`
+	PC  int    `json:"pc"`
+	ID  string `json:"id"`
 }
 
 type MensajeDUMP struct {
@@ -58,6 +60,8 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 	fileName := msg.Filename
 	tamanio := msg.Tamanio
 
+	estimado := globals.Config.InitialEstimate
+
 	logger.Info("## (<%d>) - Solicitó syscall: <INIT_PROC>", pid)
 	logger.Info("Se ha recibido: Filename: %s Tamaño Memoria: %d", fileName, tamanio)
 
@@ -71,7 +75,7 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 			ProcessSize:    tamanio,
 			ME:             make(map[string]int),
 			MT:             make(map[string]int),
-			EstimadoRafaga: globals.Config.InitialEstimate,
+			EstimadoRafaga: estimado,
 			RafagaRestante: 0,
 		}
 		logger.Info("## (<%d>) Se crea el proceso - Estado: NEW", pid)
@@ -103,17 +107,19 @@ func Exit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "JSON inválido", http.StatusBadRequest)
 		return
 	}
-	pcb := msg.PCB
+	pid := msg.PID
+	pc := msg.PC
 	cpuid := msg.ID
-	logger.Info("## (<%d>) - Solicitó syscall: <EXIT>", pcb.PID)
+	logger.Info("## (<%d>) - Solicitó syscall: <EXIT>", pid)
 
 	// Despachamos la señal en segundo plano para no bloquear el handler HTTP
 	go func(p int) {
 		Utils.ChannelFinishprocess <- Utils.FinishProcess{
-			PCB:   pcb,
+			PID:   pid,
+			PC:    pc,
 			CpuID: cpuid,
 		}
-	}(pcb.PID)
+	}(pid)
 
 	// Respondemos de inmediato
 	w.WriteHeader(http.StatusOK)
@@ -153,10 +159,11 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
 		return
 	}
-	pcb := mensajeRecibido.PCB
+	pid := mensajeRecibido.PID
+	pc := mensajeRecibido.PC
 	nombre := mensajeRecibido.Nombre
 
-	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pcb.PID)
+	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
 
 	// Aquí bloqueas el mutex mientras esperas a que el IO se registre
 	globals.IOMu.Lock()
@@ -172,12 +179,13 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	//SIGNAL A Planif. CORTO PLAZO QUE LLEGO I/O
 	go func(p int) {
 		Utils.NotificarComienzoIO <- Utils.MensajeIOChannel{
-			PID:      pcb.PID,
+			PID:      pid,
+			PC:       pc,
 			Nombre:   ioData.Nombre,
 			Duracion: mensajeRecibido.Duracion,
 			CpuID:    mensajeRecibido.ID,
 		}
-	}(pcb.PID)
+	}(pid)
 
 	w.WriteHeader(http.StatusOK)
 }

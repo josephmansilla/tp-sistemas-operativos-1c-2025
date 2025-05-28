@@ -16,10 +16,9 @@ type MensajeDeCPU struct {
 	Puerto int    `json:"puerto"`
 	ID     string `json:"id"`
 }
-
 type MensajeACPU struct {
-	Pid int `json:"pid"`
-	Pc  int `json:"pc"`
+	PID int `json:"pid"`
+	PC  int `json:"pc"`
 }
 
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
@@ -65,8 +64,8 @@ func EnviarContextoCPU(id string, pcb *pcb.PCB) {
 	url := fmt.Sprintf("http://%s:%d/cpu/kernel", cpuData.Ip, cpuData.Puerto)
 
 	mensaje := MensajeACPU{
-		Pid: pcb.PID, // PID real
-		Pc:  pcb.PC,  // PC real
+		PID: pcb.PID,
+		PC:  pcb.PC,
 	}
 
 	err := data.EnviarDatos(url, mensaje)
@@ -74,5 +73,5 @@ func EnviarContextoCPU(id string, pcb *pcb.PCB) {
 		logger.Info("Error enviando PID y PC a CPU: %s", err.Error())
 		return
 	}
-	logger.Info("PID: %d y PC: %d enviados exitosamente a CPU", mensaje.Pid, mensaje.Pc)
+	logger.Info("PID: %d y PC: %d enviados exitosamente a CPU", pcb.PID, pcb.PC)
 }

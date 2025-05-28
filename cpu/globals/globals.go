@@ -19,19 +19,8 @@ type Config struct {
 	LogLevel       string `json:"log_level"`
 }
 
-type PCB struct {
-	PID            int
-	PC             int
-	ME             map[string]int //asocia cada estado con la cantidad de veces que el proceso estuvo en ese estado.
-	MT             map[string]int //asocia cada estado con el tiempo total que el proceso pasó en ese estado.
-	FileName       string         // nombre de archivo de pseudoCodigo
-	ProcessSize    int
-	EstimadoRafaga float64 // Para SJF/SRT
-	RafagaRestante int     // Para SRT
-	Estado         string
-}
-
-var Pcb *PCB
+var PIDActual int
+var PCActual int
 var ClientConfig *Config
 var InterrupcionPendiente bool
 var PIDInterrumpido int

@@ -95,8 +95,8 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- INICAR CORTO Y MEDIANO PLAZO ------------
 	// ----------------------------------------------------
-	//go planificadores.PlanificadorMedianoPlazo()
 	go planificadores.PlanificarCortoPlazo()
+	//go planificadores.PlanificadorMedianoPlazo()
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU E IO (Puertos) ----

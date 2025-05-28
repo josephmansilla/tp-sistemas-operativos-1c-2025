@@ -14,7 +14,7 @@ type MensajeAMemoria struct {
 	CantidadEntradasTP int `json:"cantidadEntradasTP"`
 }
 
-func Traducir(pid int, dirLogica int) int {
+func Traducir(dirLogica int) int {
 	nroPagina := dirLogica / globals.TamPag
 	desplazamiento := dirLogica % globals.TamPag
 
@@ -22,7 +22,7 @@ func Traducir(pid int, dirLogica int) int {
 
 	marco, ok := tlb.Buscar(nroPagina)
 	if !ok {
-		marco = ObtenerMarco(pid, nroPagina)
+		marco = ObtenerMarco(nroPagina)
 		if marco == -1 {
 			log.Printf("Error al obtener el marco de memoria para la página %d", nroPagina)
 			return -1 // Indicar que ocurrió un error
@@ -33,9 +33,9 @@ func Traducir(pid int, dirLogica int) int {
 	return marco*globals.TamPag + desplazamiento
 }
 
-func ObtenerMarco(pid int, nroPagina int) int {
+func ObtenerMarco(nroPagina int) int {
 	mensaje := MensajeAMemoria{
-		PID:       pid,
+		PID:       globals.PIDActual,
 		NroPagina: nroPagina,
 	}
 
@@ -60,6 +60,6 @@ func ObtenerMarco(pid int, nroPagina int) int {
 		return -1
 	}
 
-	log.Printf("PID: %s - OBTENER MARCO - Página: %s - Marco: %s", globals.Pcb.PID, nroPagina, respuesta.Marco)
+	log.Printf("PID: %s - OBTENER MARCO - Página: %s - Marco: %s", globals.PIDActual, nroPagina, respuesta.Marco)
 	return respuesta.Marco
 }

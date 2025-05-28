@@ -24,16 +24,13 @@ type Interrupcion struct {
 	PC  int `json:"pc"`
 }
 
-func FaseFetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int) {
-	globals.Pcb.PC = pcInicial
-	globals.Pcb.PID = pidPropio
-
+func FaseFetch(ipDestino string, puertoDestino int) {
 	for {
-		log.Printf("## PID: %d - FETCH - Program Counter: %d", globals.Pcb.PID, globals.Pcb.PC)
+		log.Printf("## PID: %d - FETCH - Program Counter: %d", globals.PIDActual, globals.PCActual)
 
 		mensaje := MensajeInstruccion{
-			PID: globals.Pcb.PID,
-			PC:  globals.Pcb.PC,
+			PID: globals.PIDActual,
+			PC:  globals.PCActual,
 		}
 
 		jsonData, err := json.Marshal(mensaje)
@@ -58,11 +55,11 @@ func FaseFetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int
 		}
 
 		if respuesta.Instruccion == "" {
-			log.Printf("No hay instrucción para PID %d (PC %d)", pidPropio, globals.Pcb.PC)
+			log.Printf("No hay instrucción para PID %d (PC %d)", globals.PIDActual, globals.PCActual)
 			break
 		}
 
-		log.Printf("Instrucción recibida (PC %d): %s", globals.Pcb.PC, respuesta.Instruccion)
+		log.Printf("Instrucción recibida (PC %d): %s", globals.PCActual, respuesta.Instruccion)
 
 		// Parsear y ejecutar instrucción
 		if seguir := FaseDecode(respuesta.Instruccion); !seguir {
@@ -71,7 +68,7 @@ func FaseFetch(ipDestino string, puertoDestino int, pidPropio int, pcInicial int
 		}
 
 		if !globals.SaltarIncrementoPC {
-			globals.Pcb.PC++
+			globals.PCActual++
 		} else {
 			globals.SaltarIncrementoPC = false // reset para la próxima instrucción
 		}
@@ -98,11 +95,11 @@ func FaseExecute(nombre string, args []string) bool {
 		return true
 	}
 
-	err := instrucFunc(globals.Pcb, args)
+	err := instrucFunc(args)
 
 	if err != nil {
 		if err == globals.ErrSyscallBloqueante {
-			log.Printf("Proceso %d bloqueado por syscall IO", globals.Pcb.PID)
+			log.Printf("Proceso %d bloqueado por syscall IO", globals.PIDActual)
 			return false // Detener ejecución por syscall IO
 		}
 
@@ -125,20 +122,14 @@ func FaseCheckInterrupt() bool {
 		return false
 	}
 
-	if globals.Pcb == nil {
-		log.Println("Interrupción recibida pero no hay PCB.")
-		globals.InterrupcionPendiente = false
-		return false
-	}
-
-	if globals.PIDInterrumpido != globals.Pcb.PID {
+	if globals.PIDInterrumpido != globals.PIDActual {
 		log.Printf("Interrupción recibida para PID %d, pero estoy ejecutando PID %d. Ignorando.",
-			globals.PIDInterrumpido, globals.Pcb.PID)
+			globals.PIDInterrumpido, globals.PIDActual)
 		return false
 	}
 
-	pid := globals.Pcb.PID
-	pc := globals.Pcb.PC
+	pid := globals.PIDActual
+	pc := globals.PCActual
 
 	// Preparar JSON
 	body := Interrupcion{

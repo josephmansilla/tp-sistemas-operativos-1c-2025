@@ -96,17 +96,19 @@ func BloquearProceso() {
 	for {
 		//WAIT mensaje de IO (bloqueante)
 		msg := <-Utils.NotificarComienzoIO
+		pid := msg.PID
+		pc := msg.PC
+		cpuID := msg.CpuID
 
-		var pid = msg.PID
-		var cpuID = msg.CpuID
-
-		//BUSCAR EN PCB y SACAR DE EXECUTE
+		//BUSCAR en EXECUTE y actualizar PC proveniente de CPU
 		var proceso *pcb.PCB
 		Utils.MutexEjecutando.Lock()
 		for _, p := range algoritmos.ColaEjecutando.Values() {
 			if p.PID == pid {
+				algoritmos.ColaEjecutando.Remove(p)
+				p.PC = pc
 				proceso = p
-				algoritmos.ColaEjecutando.Remove(proceso)
+				break
 			}
 		}
 		Utils.MutexEjecutando.Unlock()
@@ -122,7 +124,7 @@ func BloquearProceso() {
 		Utils.MutexBloqueado.Unlock()
 
 		//Enviar al módulo IO (usando los datos del mensaje recibido)
-		comunicacion.EnviarContextoIO(msg.Nombre, msg.PID, msg.Duracion)
+		comunicacion.EnviarContextoIO(msg.Nombre, proceso.PID, msg.Duracion)
 	}
 }
 

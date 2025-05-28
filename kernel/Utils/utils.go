@@ -1,7 +1,6 @@
 package Utils
 
 import (
-	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"sync"
 )
 
@@ -90,11 +89,13 @@ func InicializarCanales() {
 
 type MensajeIOChannel struct {
 	PID      int
+	PC       int
 	Nombre   string
 	Duracion int
 	CpuID    string
 }
 type FinishProcess struct {
-	PCB   *pcb.PCB
+	PID   int
+	PC    int
 	CpuID string
 }

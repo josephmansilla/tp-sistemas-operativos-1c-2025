@@ -14,8 +14,7 @@ func main() {
 		fmt.Println("Falta el parametro: identificador de CPU")
 		os.Exit(1)
 	}
-
-	globals.ID := os.Args[1]
+	globals.ID = os.Args[1]
 
 	logFileName := fmt.Sprintf("logs/cpu_%s.log", globals.ID)
 	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
@@ -67,7 +66,7 @@ func main() {
 
 	//Las CPUs deberán conectarse al Kernel (destino)
 	//3. Envi0 su IP, su PUERTO y su ID. (self)
-	utils.EnviarIpPuertoIDAKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf, ID)
+	utils.EnviarIpPuertoIDAKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf, globals.ID)
 
 	//4. Evito que el modulo termine
 	select {}

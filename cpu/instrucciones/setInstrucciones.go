@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-type Instruccion func(pcb *globals.PCB, arguments []string) error
+type Instruccion func(arguments []string) error
 
 type MensajeDump struct {
 	PID int    `json:"pid"`
@@ -19,10 +19,11 @@ type MensajeDump struct {
 }
 
 type MensajeIO struct {
-	PCB    globals.PCB `json:"pcb"`
-	Tiempo int         `json:"tiempo"`
-	Nombre string      `json:"nombre"`
-	ID     string      `json:"id"`
+	PID    int    `json:"pid"`
+	PC     int    `json:"pc"`
+	Tiempo int    `json:"tiempo"`
+	Nombre string `json:"nombre"`
+	ID     string `json:"id"`
 }
 
 type MensajeInitProc struct {
@@ -34,8 +35,9 @@ type MensajeInitProc struct {
 }
 
 type MensajeExit struct {
-	PCB globals.PCB `json:"pcb"`
-	ID  string      `json:"id"`
+	PID int    `json:"pid"`
+	PC  int    `json:"pc"`
+	ID  string `json:"id"`
 }
 
 // Una instruccion es una funcion que recibe un puntero a una struct con el contexto de ejecucion del proceso que se esta
@@ -55,16 +57,16 @@ var InstruccionSet = map[string]Instruccion{
 }
 
 // INSTRUCCIONES DE CPU
-func noopInstruccion(pcb *globals.PCB, arguments []string) error {
+func noopInstruccion(arguments []string) error {
 	if err := checkArguments(arguments, 0); err != nil {
 		log.Printf("Error en los argumentos de la instrucción: %s", err)
 		return err
 	}
-	log.Printf("## PID: %d - Instrucción NOOP ejecutada. No se realizó ninguna acción.", pcb.PID)
+	log.Printf("## PID: %d - Instrucción NOOP ejecutada. No se realizó ninguna acción.", globals.PIDActual)
 	return nil
 }
 
-func gotoInstruccion(pcb *globals.PCB, arguments []string) error {
+func gotoInstruccion(arguments []string) error {
 	if err := checkArguments(arguments, 1); err != nil {
 		log.Printf("Error en los argumentos de la instrucción: %s", err)
 		return err
@@ -76,14 +78,14 @@ func gotoInstruccion(pcb *globals.PCB, arguments []string) error {
 		return err
 	}
 
-	pcb.PC = nuevoPC
+	globals.PCActual = nuevoPC
 	globals.SaltarIncrementoPC = true
 
-	log.Printf("## PID: %d - Instrucción GOTO ejecutada. Nuevo PC: %d", pcb.PID, pcb.PC)
+	log.Printf("## PID: %d - Instrucción GOTO ejecutada. Nuevo PC: %d", globals.PIDActual, globals.PCActual)
 	return nil
 }
 
-func writeMemInstruccion(pcb *globals.PCB, arguments []string) error {
+func writeMemInstruccion(arguments []string) error {
 	if err := checkArguments(arguments, 2); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
@@ -95,19 +97,19 @@ func writeMemInstruccion(pcb *globals.PCB, arguments []string) error {
 		return err
 	}
 	datos := arguments[1]
-	dirFisica := traducciones.Traducir(pcb.PID, dirLogica)
+	dirFisica := traducciones.Traducir(dirLogica)
 
 	if err := traducciones.Escribir(dirFisica, datos); err != nil {
 		log.Printf("Error escribiendo en Memoria: %s", err)
 		return err
 	}
 
-	log.Printf("PID: %s - Acción: LEER - Dirección Física: %s - Valor: %s", pcb.PID, dirFisica, datos)
+	log.Printf("PID: %s - Acción: LEER - Dirección Física: %s - Valor: %s", globals.PIDActual, dirFisica, datos)
 
 	return nil
 }
 
-func readMemInstruccion(pcb *globals.PCB, arguments []string) error {
+func readMemInstruccion(arguments []string) error {
 	if err := checkArguments(arguments, 2); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
@@ -123,7 +125,7 @@ func readMemInstruccion(pcb *globals.PCB, arguments []string) error {
 		log.Printf("Error al convertir el tamanio: %s", err)
 		return err
 	}
-	dirFisica := traducciones.Traducir(pcb.PID, dirLogica)
+	dirFisica := traducciones.Traducir(dirLogica)
 
 	valorLeido, err := traducciones.Leer(dirFisica, tamanio)
 	if err != nil {
@@ -131,21 +133,21 @@ func readMemInstruccion(pcb *globals.PCB, arguments []string) error {
 		return err
 	}
 
-	log.Printf("PID: %s - Acción: LEER - Dirección Física: %s - Valor: %s", pcb.PID, dirFisica, valorLeido)
+	log.Printf("PID: %s - Acción: LEER - Dirección Física: %s - Valor: %s", globals.PIDActual, dirFisica, valorLeido)
 
 	return nil
 }
 
 // SYSCALLS
-func dumpMemoryInstruccion(pcb *globals.PCB, arguments []string) error {
+func dumpMemoryInstruccion(arguments []string) error {
 	if err := checkArguments(arguments, 0); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
 	}
 
 	mensaje := MensajeDump{
-		PID: pcb.PID,
-		PC:  pcb.PC
+		PID: globals.PIDActual,
+		PC:  globals.PCActual,
 	}
 
 	url := fmt.Sprintf("http://%s:%d/kernel/dump_memory", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
@@ -159,7 +161,7 @@ func dumpMemoryInstruccion(pcb *globals.PCB, arguments []string) error {
 	return nil
 }
 
-func ioInstruccion(pcb *globals.PCB, arguments []string) error {
+func ioInstruccion(arguments []string) error {
 	if err := checkArguments(arguments, 2); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
@@ -173,7 +175,8 @@ func ioInstruccion(pcb *globals.PCB, arguments []string) error {
 	}
 
 	mensaje := MensajeIO{
-		PCB:    *pcb,
+		PID:    globals.PIDActual,
+		PC:     globals.PCActual,
 		Tiempo: tiempoIO,
 		Nombre: nombreIO,
 		ID:     globals.ID,
@@ -190,14 +193,15 @@ func ioInstruccion(pcb *globals.PCB, arguments []string) error {
 	return globals.ErrSyscallBloqueante
 }
 
-func exitInstruccion(pcb *globals.PCB, arguments []string) error {
+func exitInstruccion(arguments []string) error {
 	if err := checkArguments(arguments, 0); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
 	}
 
 	mensaje := MensajeExit{
-		PCB: *pcb,
+		PID: globals.PIDActual,
+		PC:  globals.PCActual,
 		ID:  globals.ID,
 	}
 
@@ -212,7 +216,7 @@ func exitInstruccion(pcb *globals.PCB, arguments []string) error {
 	return nil
 }
 
-func iniciarProcesoInstruccion(pcb *globals.PCB, arguments []string) error {
+func iniciarProcesoInstruccion(arguments []string) error {
 	if err := checkArguments(arguments, 2); err != nil {
 		log.Printf("Error en los argumentos de la Instruccion: %s", err)
 		return err
@@ -226,8 +230,8 @@ func iniciarProcesoInstruccion(pcb *globals.PCB, arguments []string) error {
 	}
 
 	mensaje := MensajeInitProc{
-		PID:      pcb.PID,
-		PC:       pcb.PC,
+		PID:      globals.PIDActual,
+		PC:       globals.PCActual,
 		Filename: filename,
 		Tamanio:  tamanio,
 	}
