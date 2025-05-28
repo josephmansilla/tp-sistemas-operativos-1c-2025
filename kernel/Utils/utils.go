@@ -92,6 +92,7 @@ type MensajeIOChannel struct {
 	PID      int
 	Nombre   string
 	Duracion int
+	CpuID    string
 }
 type FinishProcess struct {
 	PCB   *pcb.PCB

@@ -20,7 +20,7 @@ func DespacharProceso() {
 	for {
 		// WAIT hasta que llegue un proceso a READY o nueva CPU por SYSCALL DE EXTI O I/O
 		<-Utils.NotificarDespachador
-		logger.Info("Arranca Corto Plazo")
+		logger.Info("Arranca Despachador")
 
 		var proceso *pcb.PCB
 
@@ -78,9 +78,12 @@ func DespacharProceso() {
 }
 
 func liberarCPU(cpuID string) {
+
 	cpu := globals.CPUs[cpuID]
 	cpu.Ocupada = false
 	globals.CPUs[cpuID] = cpu
+
+	logger.Info("CPU <%s> libre", cpuID)
 
 	Utils.NotificarDespachador <- 1
 }
@@ -95,6 +98,7 @@ func BloquearProceso() {
 		msg := <-Utils.NotificarComienzoIO
 
 		var pid = msg.PID
+		var cpuID = msg.CpuID
 
 		//BUSCAR EN PCB y SACAR DE EXECUTE
 		var proceso *pcb.PCB
@@ -107,8 +111,7 @@ func BloquearProceso() {
 		}
 		Utils.MutexEjecutando.Unlock()
 
-		//TODO LIBERAR CPU
-		//liberarCPU(cpuID) como consigo cpuID?
+		liberarCPU(cpuID)
 
 		//ENVIAR A BLOCKED
 		Utils.MutexBloqueado.Lock()

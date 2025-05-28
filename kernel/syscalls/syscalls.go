@@ -155,7 +155,6 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	}
 	pcb := mensajeRecibido.PCB
 	nombre := mensajeRecibido.Nombre
-	id := mensajeRecibido.ID
 
 	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pcb.PID)
 
@@ -176,6 +175,7 @@ func Io(w http.ResponseWriter, r *http.Request) {
 			PID:      pcb.PID,
 			Nombre:   ioData.Nombre,
 			Duracion: mensajeRecibido.Duracion,
+			CpuID:    mensajeRecibido.ID,
 		}
 	}(pcb.PID)
 

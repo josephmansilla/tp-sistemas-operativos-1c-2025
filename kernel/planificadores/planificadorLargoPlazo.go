@@ -95,7 +95,7 @@ func ManejadorCreacionProcesos() {
 					logger.Error("Reintento falló para pid=%d, abortando", p)
 					return
 				}
-			}*///CUANDO PEPE HAGA ESO YA SE PUEDE DESCOMENTAR
+			}*/ //CUANDO PEPE HAGA ESO YA SE PUEDE DESCOMENTAR
 
 			//DICE QUE NO
 			//MANDAR NEW
@@ -168,14 +168,12 @@ func ManejadorFinalizacionProcesos() {
 		if err != nil {
 			logger.Error("Error avisando fin proceso pid=%d: %v", pid, err)
 			continue
-		}*///MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
-
-		// Remover de EXECUTING
+		}*/ //MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
 
 		//ACA PONER UN WAIT/TUBERIA que espere a que memoria libere el proceso, ES PARA TENER UN ORDEN
 
+		// Remover de EXECUTING
 		var pcbFinalizado *pcb.PCB = nil
-
 		Utils.MutexEjecutando.Lock()
 		for _, p := range algoritmos.ColaEjecutando.Values() {
 			if p.PID == pid {
@@ -201,10 +199,8 @@ func ManejadorFinalizacionProcesos() {
 
 		logger.Info("## (<%d>) - Finaliza el proceso", pcbFinalizado.PID)
 
-		//LIBERAR
-		cpu := globals.CPUs[cpuID]
-		cpu.Ocupada = false
-		globals.CPUs[cpuID] = cpu
+		//LIBERAR CPU
+		liberarCPU(cpuID)
 
 		logger.Info(pcbFinalizado.ImprimirMetricas())
 
