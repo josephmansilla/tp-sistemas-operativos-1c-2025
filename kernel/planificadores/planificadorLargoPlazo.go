@@ -15,10 +15,12 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 	// Paso 1: Crear el PCB
 	pid := globals.GenerarNuevoPID()
 	pcbNuevo := pcb.PCB{
-		PID: pid,
-		PC:  0,
-		ME:  make(map[string]int),
-		MT:  make(map[string]int),
+		PID:            pid,
+		PC:             0,
+		ME:             make(map[string]int),
+		MT:             make(map[string]int),
+		EstimadoRafaga: globals.Config.InitialEstimate,
+		RafagaRestante: 0,
 	}
 
 	// Paso 2: Agregar a la cola NEW

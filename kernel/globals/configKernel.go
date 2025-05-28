@@ -8,7 +8,7 @@ type KernelConfig struct {
 	SchedulerAlgorithm    string  `json:"scheduler_algorithm"`
 	ReadyIngressAlgorithm string  `json:"ready_ingress_algorithm"`
 	Alpha                 float64 `json:"alpha"`
-	InitialEstimate       int     `json:"initial_estimate"`
+	InitialEstimate       float64 `json:"initial_estimate"`
 	SuspensionTime        int     `json:"suspension_time"`
 	LogLevel              string  `json:"log_level"`
 	KernelPort            int     `json:"port_kernel"`
