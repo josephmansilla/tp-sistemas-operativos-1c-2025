@@ -13,6 +13,7 @@ func PlanificarCortoPlazo() {
 	logger.Info("Iniciando el Planificador de Corto Plazo")
 	go DespacharProceso()
 	go BloquearProceso()
+	go FinDeIO()
 }
 
 func DespacharProceso() {
@@ -112,5 +113,28 @@ func BloquearProceso() {
 }
 
 func FinDeIO() {
+	for {
+		//WAIT mensaje fin de IO (bloqueante)
+		pid := <-Utils.NotificarFinIO
 
+		//BUSCAR EN PCB BLOCKED
+		var proceso *pcb.PCB
+		for _, p := range algoritmos.ColaBloqueado.Values() {
+			if p.PID == pid {
+				proceso = p
+			}
+		}
+
+		Utils.MutexBloqueado.Lock()
+		algoritmos.ColaBloqueado.Remove(proceso)
+		Utils.MutexBloqueado.Unlock()
+
+		proceso.ME[pcb.EstadoReady]++
+		proceso.Estado = pcb.EstadoReady
+		Utils.MutexReady.Lock()
+		algoritmos.ColaReady.Add(proceso)
+		Utils.MutexReady.Unlock()
+
+		logger.Info("## (%d) finalizó IO y pasa a READY", pid)
+	}
 }

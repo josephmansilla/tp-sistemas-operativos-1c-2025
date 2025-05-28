@@ -2,6 +2,7 @@ package comunicacion
 
 import (
 	"fmt"
+	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"io"
 	"net/http"
 
@@ -83,6 +84,5 @@ func EnviarContextoIO(nombreIO string, pid int, duracion int) {
 		return
 	}
 	logger.Info("Respuesta del módulo IO: %s", string(body))
-	//TODO Pasar proceso de bloqueado a ready
-	logger.Info("## (%d) finalizó IO y pasa a READY", mensaje.Pid)
+	Utils.NotificarFinIO <- mensaje.Pid
 }

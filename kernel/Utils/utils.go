@@ -63,6 +63,7 @@ var (
 	//AVISAR CUANDO UN PROCESO LLEGA A READY
 	NotificarProcesoReady chan int
 	NotificarComienzoIO   chan MensajeIOChannel
+	NotificarFinIO        chan int
 )
 
 // InicializarMutexes deja listas las variables de mutex.
@@ -83,6 +84,7 @@ func InicializarCanales() {
 
 	NotificarProcesoReady = make(chan int, 10) // buffer 10 procesos listos
 	NotificarComienzoIO = make(chan MensajeIOChannel, 10)
+	NotificarFinIO = make(chan int, 10)
 }
 
 type MensajeIOChannel struct {
