@@ -43,7 +43,7 @@ func PlanificadorLargoPlazo() {
 	primerProceso.ME[pcb.EstadoReady]++
 	primerProceso.Estado = pcb.EstadoReady
 	algoritmos.ColaReady.Add(primerProceso)
-	Utils.NotificarProcesoReady <- primerProceso.PID //SIGNAL QUE PASO A READY. MANDO PID
+	Utils.NotificarDespachador <- primerProceso.PID //SIGNAL QUE PASO A READY. MANDO PID
 	logger.Info("## (<%d>) Pasa de estado NEW a estado READY", primerProceso.PID)
 
 	go ManejadorCreacionProcesos()
@@ -138,7 +138,7 @@ func agregarProcesoAReady(pid int) {
 	Utils.MutexReady.Unlock()
 
 	logger.Info("## (<%d>) Pasa de estado NEW a estado READY", pcbPtr.PID)
-	Utils.NotificarProcesoReady <- pcbPtr.PID //SIGNAL QUE PASO A READY. MANDO PID
+	Utils.NotificarDespachador <- pcbPtr.PID //SIGNAL QUE PASO A READY. MANDO PID
 
 	// 3) Remover de NEW
 	algoritmos.ColaNuevo.Remove(pcbPtr)
@@ -239,7 +239,7 @@ func intentarInicializarDesdeNew() {
 	Utils.MutexReady.Lock()
 	algoritmos.ColaReady.Add(pcb)
 	Utils.MutexReady.Unlock()
-	Utils.NotificarProcesoReady <- pcb.PID
+	Utils.NotificarDespachador <- pcb.PID
 
 	logger.Info("PID <%d> pasó de NEW a READY", pcb.PID)
 }

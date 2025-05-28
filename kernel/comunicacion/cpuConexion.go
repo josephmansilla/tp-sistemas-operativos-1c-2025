@@ -2,6 +2,7 @@ package comunicacion
 
 import (
 	"fmt"
+	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
@@ -42,6 +43,11 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("Se ha recibido CPU: Ip: %s Puerto: %d ID: %s",
 		globals.CPUs[id].Ip, globals.CPUs[id].Puerto, globals.CPUs[id].ID)
+
+	//Notificar para que el despachador lo intente
+	go func() {
+		Utils.NotificarDespachador <- 1
+	}()
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))

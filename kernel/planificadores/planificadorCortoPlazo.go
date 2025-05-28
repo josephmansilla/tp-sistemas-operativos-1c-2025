@@ -18,9 +18,9 @@ func PlanificarCortoPlazo() {
 
 func DespacharProceso() {
 	for {
-		// WAIT hasta que llegue un proceso a READY
-		pid := <-Utils.NotificarProcesoReady
-		logger.Info("## (<%d>) Llega a Corto Plazo", pid)
+		// WAIT hasta que llegue un proceso a READY o nueva CPU
+		<-Utils.NotificarDespachador
+		logger.Info("Arranca Corto Plazo")
 
 		var proceso *pcb.PCB
 
@@ -100,6 +100,8 @@ func BloquearProceso() {
 		algoritmos.ColaEjecutando.Remove(proceso)
 		Utils.MutexEjecutando.Unlock()
 
+		//TODO LIBERAR CPU
+
 		proceso.ME[pcb.EstadoBlocked]++
 		proceso.Estado = pcb.EstadoBlocked
 		Utils.MutexBloqueado.Lock()
@@ -136,5 +138,11 @@ func FinDeIO() {
 		Utils.MutexReady.Unlock()
 
 		logger.Info("## (%d) finalizó IO y pasa a READY", pid)
+
+		// Notificar al despachador lo intente
+		go func(pid int) {
+			Utils.NotificarDespachador <- pid
+		}(proceso.PID)
+
 	}
 }

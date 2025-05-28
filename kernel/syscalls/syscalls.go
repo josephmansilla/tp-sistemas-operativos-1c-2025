@@ -184,11 +184,13 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Nombre IO: %s Duracion: %d", ioData.Nombre, mensajeRecibido.Duracion)
 
 	//SIGNAL A Planif. CORTO PLAZO QUE LLEGO I/O
-	Utils.NotificarComienzoIO <- Utils.MensajeIOChannel{
-		PID:      pcb.PID,
-		Nombre:   ioData.Nombre,
-		Duracion: mensajeRecibido.Duracion,
-	}
+	go func(p int) {
+		Utils.NotificarComienzoIO <- Utils.MensajeIOChannel{
+			PID:      pcb.PID,
+			Nombre:   ioData.Nombre,
+			Duracion: mensajeRecibido.Duracion,
+		}
+	}(pcb.PID)
 
 	w.WriteHeader(http.StatusOK)
 }
