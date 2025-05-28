@@ -77,6 +77,14 @@ func DespacharProceso() {
 	}
 }
 
+func liberarCPU(cpuID string) {
+	cpu := globals.CPUs[cpuID]
+	cpu.Ocupada = false
+	globals.CPUs[cpuID] = cpu
+
+	Utils.NotificarDespachador <- 1
+}
+
 func DesalojarProceso() {
 
 }
@@ -100,6 +108,7 @@ func BloquearProceso() {
 		Utils.MutexEjecutando.Unlock()
 
 		//TODO LIBERAR CPU
+		//liberarCPU(cpuID) como consigo cpuID?
 
 		//ENVIAR A BLOCKED
 		Utils.MutexBloqueado.Lock()
