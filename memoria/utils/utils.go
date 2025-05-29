@@ -13,7 +13,19 @@ func CargarListaDeInstrucciones(str string) {
 	logger.Info("Se cargó una instrucción al Slice")
 }
 
-func InfomarMetricasProceso(metricasDelProceso globals.MetricaProceso) {
+func InfomarMetricasProceso(metricasDelProceso globals.MetricasProceso) {
 
-	logger.Info("## Final proceso: %d", metricasDelProceso.CantAccesosTablasPaginas)
+	logger.Info("## Final proceso: %d", metricasDelProceso.AccesosTablasPaginas)
+}
+
+// MANEJO DE PAGINAS
+
+func cambiarEstadoPresentePagina(pagina globals.EntradaPagina) {
+	pagina.EstaPresente = !pagina.EstaPresente
+}
+func cambiarEstadoUsoPagina(pagina globals.EntradaPagina) {
+	pagina.EstaEnUso = !pagina.EstaEnUso
+}
+func cambiarEstadoModificacionPagina(pagina globals.EntradaPagina) {
+	pagina.FueModificado = !pagina.FueModificado
 }

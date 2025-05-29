@@ -16,30 +16,37 @@ func ConfigCheck(filepath string) *Config {
 	jsonParser := json.NewDecoder(configFile)
 	jsonParser.Decode(&configCheck)
 	return configCheck
-}
+} // err handling
 
 var MemoryConfig *Config
 
-// Tipo de datos recibidos de1 Kernel
-type EntradaDePagina struct {
-	EstaPresente  bool `json:"esta_presente"`
+type EntradaPagina struct {
 	NumeroFrame   int  `json:"numero_frame"`
+	EstaPresente  bool `json:"esta_presente"`
 	EstaEnUso     bool `json:"esta_en_uso"`
 	FueModificado bool `json:"fue_modificado"`
 }
 
+type TablaPagina struct {
+	Subtabla *TablaPagina           `json:"subtabla"`
+	Paginas  map[int]*EntradaPagina `json:"paginas"`
+}
+
+type TablaPaginas map[int]*TablaPagina
+
+type Proceso struct {
+	PID       int             `json:"pid"`
+	TablaRaiz TablaPaginas    `json:"tabla_paginas"`
+	Metricas  MetricasProceso `json:"metricas_proceso"`
+}
+
 type MetricasProceso struct {
-	AccesoATablasPaginas     int `json:"acceso_a_tablas_paginas"`
+	AccesosTablasPaginas     int `json:"acceso_tablas_paginas"`
 	InstruccionesSolicitadas int `json:"instrucciones_solicitadas"`
 	BajadasSwap              int `json:"bajadas_swap"`
 	SubidasMP                int `json:"subidas_mp"`
 	LecturasDeMemoria        int `json:"lecturas_de_memoria"`
 	EscriturasDeMemoria      int `json:"escrituras_de_memoria"`
-}
-type Proceso struct {
-	PID        int             `json:"pid"`
-	TablaNivel map[int]*int    `json:"tabla_nivel"`
-	Metricas   MetricasProceso `json:"metricas_proceso"`
 }
 
 type DatosParaDump struct {

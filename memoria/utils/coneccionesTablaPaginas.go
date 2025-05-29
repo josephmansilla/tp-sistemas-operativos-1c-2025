@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 )
@@ -18,6 +19,21 @@ func LiberarFrame(frameALiberar int) {}
 
 func AsignarProceso(PID int, cantidadPaginas int) {
 
+}
+
+func BuscarPagina(proceso *globals.Proceso, indices []int) *globals.EntradaPagina {
+	posActual := proceso.TablaRaiz[indices[0]]
+
+	for i := 0; i < len(indices); i++ {
+		if posActual == nil {
+			return nil
+		}
+		if i == len(indices)-1 {
+			return posActual.Paginas[indices[i]]
+		}
+		posActual = posActual.Subtabla
+	}
+	return nil
 }
 
 // -.-.--...

@@ -38,19 +38,19 @@ func MemoriaDump(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error al recibir JSON: %v", err)
 		http.Error(w, "Error procesando datos del Kernel", http.StatusInternalServerError)
 		return
-	}
+	} // err handling
 
-	dumpFileName := fmt.Sprintf(globals.MemoryConfig.DumpPath+"<%d>-<%s>.dmp", dump.PID, dump.TimeStamp)
+	dumpFileName := fmt.Sprintf("%s/<%d>-<%s>.dmp", globals.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
 	logger.Info("EL NOMBRE DEL DUMPFILE ES: " + dumpFileName)
 	dumpFile, err := os.OpenFile(dumpFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		fmt.Printf("Error al crear archivo de log para <%d-%s>: %v\n", dump.PID, dump.TimeStamp, err)
 		os.Exit(1)
-	}
+	} // err handling y se asigna el nombre del dumpfile
 	log.SetOutput(dumpFile)
+	defer dumpFile.Close()
 
-	// Llamado: "<PID>-<TIMESTAMP>.dmp" dentro del path definido por el archivo de configuración
-	logger.Info("## PID: <%d>  - Memory Dump solicitado", dump.PID)
+	logger.Info("## PID: <%d>  - Memory Dump solicitado", dump.PID) // se logea
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Dump Realizado"))
