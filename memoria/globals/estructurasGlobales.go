@@ -55,11 +55,8 @@ type DatosParaDump struct {
 } // HABRIA QUE VER QUE TIPO DE DATOS ES EL TIMESTAMP
 
 var MemoriaPrincipal [][]byte // MP simulada
-// TODO: LA INICIALIZAR LA MEMORIA SE CALCULA LA CANTIDAD DE FRAMES HACIENDO
-// TODO: MEMORYSIZE / PAGSIZE SACADOS DEL CONFIG
-var FramesLibres []bool //los frames van a estar en True si están libres
-
-// EspacioDeUsuario => make([]byte, TamMemoria)
+var FramesLibres []bool       //los frames van a estar en True si están libres
+var TablaDePaginas TablaPaginas
 
 // SUPER PENDIENTES
 type ArgmentosCreacionProceso struct {

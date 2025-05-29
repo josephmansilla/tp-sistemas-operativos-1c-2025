@@ -1,10 +1,40 @@
 package utils
 
 import (
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	globalData "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 )
+
+func InicializarTablas() {
+	nivelMaximo := globalData.MemoryConfig.NumberOfLevels
+	globalData.TablaDePaginas = make(map[int]*globalData.TablaPagina, nivelMaximo)
+	globalData.TablaDePaginas[0] = CrearTabla(nivelMaximo - 1)
+}
+
+func CrearTabla(nivelActual int) *globalData.TablaPagina {
+	if nivelActual == 1 {
+		return &globalData.TablaPagina{
+			Subtabla: nil,
+			Paginas:  make(map[int]*globalData.EntradaPagina),
+		}
+	}
+	return &globalData.TablaPagina{
+		Subtabla: CrearTabla(nivelActual - 1),
+		Paginas:  nil,
+	}
+}
+
+func CalcularFrames(tamanioMemoriaPrincipal int, tamanioPagina int) int {
+	return tamanioMemoriaPrincipal / tamanioPagina
+}
+
+func SerializarPagina(pagina globalData.EntradaPagina, numeroAsignado int) {
+	pagina.NumeroFrame = numeroAsignado
+	pagina.EstaPresente = true
+	pagina.EstaEnUso = false
+	pagina.FueModificado = false
+}
 
 // --------------------------------------------------------------------
 // ---------- FORMA PARTE DEL ACCESO A LAS TABLAS DE PÁGINAS ----------
@@ -21,7 +51,7 @@ func AsignarProceso(PID int, cantidadPaginas int) {
 
 }
 
-func BuscarPagina(proceso *globals.Proceso, indices []int) *globals.EntradaPagina {
+func BuscarPagina(proceso *globalData.Proceso, indices []int) *globalData.EntradaPagina {
 	posActual := proceso.TablaRaiz[indices[0]]
 
 	for i := 0; i < len(indices); i++ {

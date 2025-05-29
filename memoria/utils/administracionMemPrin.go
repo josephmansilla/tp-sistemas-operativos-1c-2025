@@ -29,16 +29,6 @@ func InicializarMemoriaPrincipal() {
 	logger.Info("Memoria Principal Inicializada con %d frames de %d cada una.", cantidadFrames, tamanioPagina)
 }
 
-func CalcularFrames(tamanioMemoriaPrincipal int, tamanioPagina int) int {
-	return tamanioMemoriaPrincipal / tamanioPagina
-}
-func InicializarPagina(pagina globalData.EntradaPagina, numeroAsignado int) {
-	pagina.NumeroFrame = numeroAsignado
-	pagina.EstaPresente = true
-	pagina.EstaEnUso = false
-	pagina.FueModificado = false
-}
-
 // ------------------------------------------------------------------
 // ---------- FORMA PARTE DEL ACCESO A ESPACIO DE USUARIO ----------
 // ------------------------------------------------------------------
