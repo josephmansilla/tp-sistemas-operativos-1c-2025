@@ -28,7 +28,7 @@ func BuscarPagina(proceso *globals.Proceso, indices []int) *globals.EntradaPagin
 		if posActual == nil {
 			return nil
 		}
-		if i == len(indices)-1 {
+		if i == (len(indices) - 1) {
 			return posActual.Paginas[indices[i]]
 		}
 		posActual = posActual.Subtabla
