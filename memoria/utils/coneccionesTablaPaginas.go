@@ -9,6 +9,19 @@ import (
 // ---------- FORMA PARTE DEL ACCESO A LAS TABLAS DE PÁGINAS ----------
 // --------------------------------------------------------------------
 
+func AsignarFrame() int {
+	indiceLibre := -1
+	return indiceLibre
+}
+
+func LiberarFrame(frameALiberar int) {}
+
+func AsignarProceso(PID int, cantidadPaginas int) {
+
+}
+
+// -.-.--...
+
 func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) int {
 
 	//TODO

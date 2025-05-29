@@ -17,6 +17,3 @@ func InfomarMetricasProceso(metricasDelProceso globals.MetricaProceso) {
 
 	logger.Info("## Final proceso: %d", metricasDelProceso.CantAccesosTablasPaginas)
 }
-
-func IncrementarEscrituraMemoria() {}
-func IncrementarLecturaMemoria()   {}

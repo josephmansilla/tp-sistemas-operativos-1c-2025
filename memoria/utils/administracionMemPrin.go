@@ -16,15 +16,12 @@ import (
 // ---------- FORMA PARTE DEL ACCESO A ESPACIO DE USUARIO ----------
 // ------------------------------------------------------------------
 
-func EscrituraEspacio(w http.ResponseWriter, r *http.Request) int {
+func EscrituraEspacio(w http.ResponseWriter, r *http.Request) {
 	// TODO: ESCRIBIR LO INDICADO EN LA DIRECCION PEDIDA
-
-	var valorQueSeEncuentraLaDireccionPedida int = 0
 
 	logger.Info("## PID: <PID>  - <Escritura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")
 
 	// TODO: RESPONDER CON OK
-	return valorQueSeEncuentraLaDireccionPedida
 }
 
 func LecturaEspacio(w http.ResponseWriter, r *http.Request) {
@@ -47,13 +44,13 @@ func MemoriaDump(w http.ResponseWriter, r *http.Request) {
 	logger.Info("EL NOMBRE DEL DUMPFILE ES: " + dumpFileName)
 	dumpFile, err := os.OpenFile(dumpFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
-		fmt.Printf("Error al crear archivo de log para <%d-%s>: %v\n", globals.DatosDump.PID, globals.DatosDump.TimeStamp, err)
+		fmt.Printf("Error al crear archivo de log para <%d-%s>: %v\n", dump.PID, dump.TimeStamp, err)
 		os.Exit(1)
 	}
 	log.SetOutput(dumpFile)
 
 	// Llamado: "<PID>-<TIMESTAMP>.dmp" dentro del path definido por el archivo de configuración
-	logger.Info("## PID: <%d>  - Memory Dump solicitado", globals.DatosDump.PID)
+	logger.Info("## PID: <%d>  - Memory Dump solicitado", dump.PID)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Dump Realizado"))

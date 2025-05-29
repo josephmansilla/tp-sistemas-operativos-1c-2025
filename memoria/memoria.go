@@ -57,8 +57,22 @@ func main() {
 	mux.HandleFunc("/memoria/cpu", utils.RecibirMensajeDeCPU)
 	mux.HandleFunc("/memoria/kernel", utils.RecibirMensajeDeKernel)
 	mux.HandleFunc("/memoria/instruccion", utils.ObtenerInstruccion)
+	// TODO: deberia devoler la instruccion que piden
+
 	mux.HandleFunc("/memoria/espaciolibre", utils.ObtenerEspacioLibreMock)
+	// TODO: cambiar la funcion a la que escucha ,, debería devolver la cantidad de frames libres y su tamaño total
+
+	mux.HandleFunc("/memoria/lectura", utils.LecturaEspacio)
+	// TODO: debe responder a CPU el valor de una dirección física con el delay indicado en Memory Delay
+	mux.HandleFunc("/memoria/escritura", utils.EscrituraEspacio)
+	// TODO: recibe PID y tamaño, se crea escructuras, asigna frames y logear.
+	// TODO: debe indicarle al CPU que fue éxitoso con el delay indicado en Memory Delay
+	mux.HandleFunc("/memoria/suspencion", utils.SuspenderProceso)
+	mux.HandleFunc("/memoria/desuspencion", utils.DesuspenderProceso)
+
 	mux.HandleFunc("/memoria/dump", utils.MemoriaDump)
+	// TODO: debe liberar recursos y escructuras y logear metricas
+
 	//mux.HandleFunc("/memoria/frame", utils.algo)
 	//mux.HandleFunc("memoria/pagina", utils.algo)
 	//mux.HandleFunc("memoria/configuracion", utils.algo)

@@ -19,3 +19,5 @@ type ContextoDeCPU struct {
 type InstruccionCPU struct {
 	Instruccion string `json:"instruccion"`
 }
+
+var CPU DatosDeCPU
