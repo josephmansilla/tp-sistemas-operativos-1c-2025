@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	globalData "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"log"
@@ -11,6 +11,23 @@ import (
 )
 
 // TODO: EU = ESPACIO DE USUARIO
+
+// TODO: mutex para crear la MP
+func InicializarMemoriaPrincipal() {
+	tamanioMemPrin := globalData.MemoryConfig.MemorySize
+	tamanioPagina := globalData.MemoryConfig.PagSize
+	cantidadFrames := CalcularFrames(tamanioMemPrin, tamanioPagina)
+
+	globalData.MemoriaPrincipal = make([][]byte, cantidadFrames)
+	globalData.FramesLibres = make([]bool, cantidadFrames)
+
+	for i := 0; i <= cantidadFrames; i++ {
+		globalData.MemoriaPrincipal[i] = make([]byte, tamanioPagina)
+		globalData.FramesLibres[i] = true
+	}
+	logger.Info("Tamanio Memoria Principal de %d", tamanioMemPrin)
+	logger.Info("Memoria Principal Inicializada con %d frames de %d cada una.", cantidadFrames, tamanioPagina)
+}
 
 // ------------------------------------------------------------------
 // ---------- FORMA PARTE DEL ACCESO A ESPACIO DE USUARIO ----------
@@ -32,7 +49,7 @@ func LecturaEspacio(w http.ResponseWriter, r *http.Request) {
 }
 
 func MemoriaDump(w http.ResponseWriter, r *http.Request) {
-	var dump globals.DatosParaDump
+	var dump globalData.DatosParaDump
 
 	if err := data.LeerJson(w, r, &dump); err != nil {
 		logger.Error("Error al recibir JSON: %v", err)
@@ -40,7 +57,7 @@ func MemoriaDump(w http.ResponseWriter, r *http.Request) {
 		return
 	} // err handling
 
-	dumpFileName := fmt.Sprintf("%s/<%d>-<%s>.dmp", globals.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
+	dumpFileName := fmt.Sprintf("%s/<%d>-<%s>.dmp", globalData.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
 	logger.Info("EL NOMBRE DEL DUMPFILE ES: " + dumpFileName)
 	dumpFile, err := os.OpenFile(dumpFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
