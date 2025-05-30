@@ -12,6 +12,11 @@ func InicializarTablas() { // TODO: REVER
 	globalData.TablaDePaginas[0] = CrearTabla(nivelMaximo - 1)
 }
 
+func InicializarFrames() {
+	tamanio := globalData.MemoryConfig.MemorySize / globalData.MemoryConfig.PagSize
+	globalData.FramesLibres = make([]bool, tamanio)
+}
+
 func CrearTabla(nivelActual int) *globalData.TablaPagina {
 	if nivelActual == 1 {
 		return &globalData.TablaPagina{
@@ -111,13 +116,23 @@ func ObtenerMarco(pid int, numeroPagina int) int {
 // ---------- FORMA PARTE DEL ACCESO A LAS TABLAS DE PÁGINAS ----------
 // --------------------------------------------------------------------
 
-func AsignarFrame() (int, error) {
+func AsignarFrame() int {
 	indiceLibre := -1
-
-	return indiceLibre, nil
+	tamanioMaximo := globalData.MemoryConfig.MemorySize
+	framesMemoriaPrincipal := globalData.FramesLibres
+	for i := 0; i < tamanioMaximo; i++ {
+		if framesMemoriaPrincipal[i] == true {
+			indiceLibre = i
+			return indiceLibre
+		}
+	}
+	return indiceLibre
 }
 
-func LiberarFrame(frameALiberar int) {}
+func LiberarFrame(frameALiberar int) {
+	framesMemoriaPrincipal := globalData.FramesLibres
+	framesMemoriaPrincipal[frameALiberar] = true
+}
 
 func AsignarProceso(PID int, cantidadPaginas int) {
 
