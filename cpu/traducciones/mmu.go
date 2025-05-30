@@ -8,58 +8,92 @@ import (
 	"log"
 )
 
-type MensajeAMemoria struct {
-	PID                int `json:"pid"`
-	NroPagina          int `json:"nroPagina"`
-	CantidadEntradasTP int `json:"cantidadEntradasTP"`
+// Estructura del mensaje hacia Memoria
+type MensajeTabla struct {
+	PID           int `json:"pid"`
+	NumeroTabla   int `json:"numeroTabla"`
+	EntradaIndice int `json:"entrada"`
 }
 
+// Respuesta de Memoria
+type RespuestaTabla struct {
+	EsUltimoNivel bool `json:"esUltimoNivel"`
+	NumeroTabla   int  `json:"numeroTabla"`
+	NumeroMarco   int  `json:"marco"`
+}
+
+// Función principal de traducción
 func Traducir(dirLogica int) int {
-	nroPagina := dirLogica / globals.TamPag
-	desplazamiento := dirLogica % globals.TamPag
+	tamPagina := globals.TamPag
+	entradasPorNivel := globals.EntradasPorNivel
+	niveles := globals.CantidadNiveles
+	nroPagina := dirLogica / tamPagina
+	desplazamiento := dirLogica % tamPagina
 
-	var tlb = NuevaTLB(globals.ClientConfig.TlbEntries, globals.ClientConfig.TlbReplacement)
+	entradas := descomponerPagina(nroPagina, niveles, entradasPorNivel)
 
-	marco, ok := tlb.Buscar(nroPagina)
-	if !ok {
-		marco = ObtenerMarco(nroPagina)
-		if marco == -1 {
-			log.Printf("Error al obtener el marco de memoria para la página %d", nroPagina)
-			return -1 // Indicar que ocurrió un error
+	var tablaActual = 0
+	var marco int = -1
+
+	for nivel := 0; nivel < niveles; nivel++ {
+		resp, err := accederTabla(globals.PIDActual, tablaActual, entradas[nivel])
+		if err != nil {
+			log.Printf("Error accediendo a nivel %d de la tabla: %s", nivel, err.Error())
+			return -1
 		}
-		tlb.AgregarEntrada(nroPagina, marco)
+
+		if resp.EsUltimoNivel {
+			marco = resp.NumeroMarco
+			break
+		} else {
+			tablaActual = resp.NumeroTabla
+		}
 	}
 
-	return marco*globals.TamPag + desplazamiento
+	if marco == -1 {
+		log.Printf("No se pudo traducir la dirección lógica %d", dirLogica)
+		return -1
+	}
+
+	return marco*tamPagina + desplazamiento
 }
 
-func ObtenerMarco(nroPagina int) int {
-	mensaje := MensajeAMemoria{
-		PID:       globals.PIDActual,
-		NroPagina: nroPagina,
+// Descompone el número de página en los índices para cada nivel
+func descomponerPagina(nroPagina, niveles, entradasPorNivel int) []int {
+	entradas := make([]int, niveles)
+	divisor := 1
+
+	for i := niveles - 1; i >= 0; i-- {
+		entradas[i] = (nroPagina / divisor) % entradasPorNivel
+		divisor *= entradasPorNivel
 	}
 
-	url := fmt.Sprintf("http://%s:%d/memoria/marco",
+	return entradas
+}
+
+// Hace una petición HTTP a Memoria para resolver una entrada de tabla
+func accederTabla(pid, nroTabla, entrada int) (RespuestaTabla, error) {
+	url := fmt.Sprintf("http://%s:%d/memoria/tabla",
 		globals.ClientConfig.IpMemory,
 		globals.ClientConfig.PortMemory,
 	)
 
+	mensaje := MensajeTabla{
+		PID:           pid,
+		NumeroTabla:   nroTabla,
+		EntradaIndice: entrada,
+	}
+
 	resp, err := data.EnviarDatosConRespuesta(url, mensaje)
 	if err != nil {
-		log.Printf("Error enviando PID, NroPagina y CantidadEntradasTP a Memoria: %s", err.Error())
-		return -1
+		return RespuestaTabla{}, err
 	}
 	defer resp.Body.Close()
 
-	var respuesta struct {
-		Marco int `json:"marco"`
-	}
-
+	var respuesta RespuestaTabla
 	if err := json.NewDecoder(resp.Body).Decode(&respuesta); err != nil {
-		log.Printf("Error al decodificar la respuesta de Memoria: %s", err.Error())
-		return -1
+		return RespuestaTabla{}, err
 	}
 
-	log.Printf("PID: %s - OBTENER MARCO - Página: %s - Marco: %s", globals.PIDActual, nroPagina, respuesta.Marco)
-	return respuesta.Marco
+	return respuesta, nil
 }

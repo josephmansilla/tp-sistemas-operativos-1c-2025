@@ -25,7 +25,9 @@ var ClientConfig *Config
 var InterrupcionPendiente bool
 var PIDInterrumpido int
 var MutexInterrupcion sync.Mutex
-var TamPag int
 var ErrSyscallBloqueante = errors.New("proceso bloqueado por syscall IO")
 var SaltarIncrementoPC bool
 var ID string
+var TamPag int
+var EntradasPorNivel int
+var CantidadNiveles int

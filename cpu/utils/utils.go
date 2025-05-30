@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/cpu/instrucciones"
-	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"log"
 	"net/http"
@@ -23,6 +22,12 @@ type MensajeAKernel struct {
 type MensajeDeKernel struct {
 	PID int `json:"pid"`
 	PC  int `json:"pc"`
+}
+
+type MensajeAMemoria struct {
+	TamPag           int `json:"tamPag"`
+	EntradasPorNivel int `json:"entradasPorNivel"`
+	CantidadNiveles  int `json:"cantidadNiveles"`
 }
 
 func Config(filepath string) *globals.Config {
@@ -129,43 +134,22 @@ func ConsultarConfiguracionMemoria(ipDestino string, puertoDestino int) error {
 	url := fmt.Sprintf("http://%s:%d/memoria/configuracion", ipDestino, puertoDestino)
 
 	// Enviamos la solicitud GET a memoria.
-	var respuesta struct {
-		PageSize int `json:"page_size"` // Tamaño de la página
-	}
+	var msg MensajeAMemoria
 
-	// Usamos la función RecibirDatos del paquete `data` para obtener los datos de configuración
-	err := data.RecibirDatos(url, &respuesta)
+	// Usamos la función RecibirDatos del paquete data para obtener los datos de configuración
+	err := data.RecibirDatos(url, &msg)
 	if err != nil {
 		log.Printf("Error al consultar la configuración de memoria: %s", err.Error())
 		return err
 	}
 
 	// Almacenamos los valores en las variables globales
-	globals.TamPag = respuesta.PageSize
+	globals.TamPag = msg.TamPag
+	globals.EntradasPorNivel = msg.EntradasPorNivel
+	globals.CantidadNiveles = msg.CantidadNiveles
 
 	// Log de la configuración obtenida
 	log.Printf("Configuración de Memoria: Tamaño de Página: %d, Entradas por Página: %d", globals.TamPag)
 
 	return nil
-}
-func SimularSyscallInitProcess(ipDestino string, puertoDestino int, pid int, pc int, filename string, tamanio int) {
-	// Armar el mensaje a enviar al Kernel
-	mensaje := pcb.PCB{
-		PID:         pid,
-		PC:          pc,
-		FileName:    filename,
-		ProcessSize: tamanio,
-	}
-
-	// Construir la URL del endpoint del Kernel
-	url := fmt.Sprintf("http://%s:%d/kernel/init_proceso", ipDestino, puertoDestino)
-
-	// Enviar los datos como POST en formato JSON
-	err := data.EnviarDatos(url, mensaje)
-	if err != nil {
-		log.Printf("Error al enviar syscall INIT_PROCESS al Kernel: %s", err.Error())
-		return
-	}
-
-	log.Printf("Syscall INIT_PROCESS enviada correctamente: PID=%d, PC=%d, Archivo=%s, Tamaño=%d", pid, pc, filename, tamanio)
 }
