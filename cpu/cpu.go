@@ -43,10 +43,10 @@ func main() {
 	}
 
 	//Solicito la configuracion de memoria
-	/*err = utils.ConsultarConfiguracionMemoria(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
+	err = utils.ConsultarConfiguracionMemoria(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
 	if err != nil {
 		log.Fatalf("Error al obtener la configuración de memoria: %v", err)
-	}*/
+	}
 	//Solicito PID y PC para ejecutar Instrucciones
 	//1. Creo el handler
 	mux := http.NewServeMux()
