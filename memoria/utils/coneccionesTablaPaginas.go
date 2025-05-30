@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func InicializarTablas() {
+func InicializarTablas() { // TODO: REVER
 	nivelMaximo := globalData.MemoryConfig.NumberOfLevels
 	globalData.TablaDePaginas = make(map[int]*globalData.TablaPagina, nivelMaximo)
 	globalData.TablaDePaginas[0] = CrearTabla(nivelMaximo - 1)
@@ -20,7 +20,7 @@ func CrearTabla(nivelActual int) *globalData.TablaPagina {
 		}
 	}
 	return &globalData.TablaPagina{
-		Subtabla: CrearTabla(nivelActual - 1),
+		Subtabla: make(map[int]*globalData.TablaPagina),
 		Paginas:  nil,
 	}
 }
@@ -32,38 +32,75 @@ func CalcularFrames(tamanioMemoriaPrincipal int, tamanioPagina int) int {
 func SerializarPagina(pagina globalData.EntradaPagina, numeroAsignado int) {
 	pagina.NumeroFrame = numeroAsignado
 	pagina.EstaPresente = true
-	pagina.EstaEnUso = false
+	pagina.EstaEnUso = true
 	pagina.FueModificado = false
+}
+
+func DesomponerPagina(numeroFrame int) []int {
+	cantidadNiveles := globalData.MemoryConfig.NumberOfLevels
+	entradasPorPagina := globalData.MemoryConfig.EntriesPerPage
+
+	indice := make([]int, cantidadNiveles)
+	divisor := 1
+
+	for i := cantidadNiveles - 1; i >= 0; i-- {
+		indice[i] = (numeroFrame / divisor) % entradasPorPagina
+		divisor *= entradasPorPagina
+	}
+
+	return indice
+}
+
+func BuscarEntradaPagina(tablaRaiz globalData.TablaRaizPaginas, indices []int) *globalData.EntradaPagina {
+	// err handling
+	tamanioIndices := len(indices)
+	tablaApuntada := tablaRaiz[indices[0]]
+	if tamanioIndices == 0 {
+		logger.Error("Índice vacío")
+		return nil
+	}
+
+	for i := 1; i <= tamanioIndices-1; i++ {
+		if tablaApuntada == nil {
+			logger.Error("Segment Fault, la tabla no existe")
+			return nil
+		}
+		if tablaApuntada.Subtabla == nil {
+			logger.Error("Segment Fault, la subtabla no existe")
+			return nil
+		}
+		tablaApuntada = tablaApuntada.Subtabla[indices[i]]
+	}
+	if tablaApuntada.Paginas == nil {
+		logger.Error("Segment Fault, la entrada no existe")
+		return nil
+	}
+
+	entradaDeseada := tablaApuntada.Paginas[indices[tamanioIndices-1]]
+	logger.Info("Se encontró la entrada de número: %d", entradaDeseada.NumeroFrame)
+
+	if entradaDeseada.EstaPresente == false {
+		logger.Error("No se encuentra presente en memoria el frame")
+		return nil
+	}
+
+	return entradaDeseada
 }
 
 // --------------------------------------------------------------------
 // ---------- FORMA PARTE DEL ACCESO A LAS TABLAS DE PÁGINAS ----------
 // --------------------------------------------------------------------
 
-func AsignarFrame() int {
+func AsignarFrame() (int, error) {
 	indiceLibre := -1
-	return indiceLibre
+
+	return indiceLibre, nil
 }
 
 func LiberarFrame(frameALiberar int) {}
 
 func AsignarProceso(PID int, cantidadPaginas int) {
 
-}
-
-func BuscarPagina(proceso *globalData.Proceso, indices []int) *globalData.EntradaPagina {
-	posActual := proceso.TablaRaiz[indices[0]]
-
-	for i := 0; i < len(indices); i++ {
-		if posActual == nil {
-			return nil
-		}
-		if i == (len(indices) - 1) {
-			return posActual.Paginas[indices[i]]
-		}
-		posActual = posActual.Subtabla
-	}
-	return nil
 }
 
 // -.-.--...

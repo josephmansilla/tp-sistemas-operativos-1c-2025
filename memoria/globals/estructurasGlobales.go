@@ -28,16 +28,16 @@ type EntradaPagina struct {
 }
 
 type TablaPagina struct {
-	Subtabla *TablaPagina           `json:"subtabla"`
+	Subtabla map[int]*TablaPagina   `json:"subtabla"`
 	Paginas  map[int]*EntradaPagina `json:"paginas"`
 }
 
-type TablaPaginas map[int]*TablaPagina
+type TablaRaizPaginas map[int]*TablaPagina
 
 type Proceso struct {
-	PID       int             `json:"pid"`
-	TablaRaiz TablaPaginas    `json:"tabla_paginas"`
-	Metricas  MetricasProceso `json:"metricas_proceso"`
+	PID       int              `json:"pid"`
+	TablaRaiz TablaRaizPaginas `json:"tabla_paginas"`
+	Metricas  MetricasProceso  `json:"metricas_proceso"`
 }
 
 type MetricasProceso struct {
@@ -56,7 +56,7 @@ type DatosParaDump struct {
 
 var MemoriaPrincipal [][]byte // MP simulada
 var FramesLibres []bool       //los frames van a estar en True si están libres
-var TablaDePaginas TablaPaginas
+var TablaDePaginas TablaRaizPaginas
 
 // SUPER PENDIENTES
 type ArgmentosCreacionProceso struct {
