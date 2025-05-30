@@ -40,6 +40,8 @@ type Proceso struct {
 	Metricas  MetricasProceso  `json:"metricas_proceso"`
 }
 
+type Procesos map[int]*Proceso
+
 type MetricasProceso struct {
 	AccesosTablasPaginas     int `json:"acceso_tablas_paginas"`
 	InstruccionesSolicitadas int `json:"instrucciones_solicitadas"`
@@ -57,6 +59,7 @@ type DatosParaDump struct {
 var MemoriaPrincipal [][]byte // MP simulada
 var FramesLibres []bool       //los frames van a estar en True si están libres
 var TablaDePaginas TablaRaizPaginas
+var ProcesosMapeable Procesos
 
 // SUPER PENDIENTES
 type ArgmentosCreacionProceso struct {

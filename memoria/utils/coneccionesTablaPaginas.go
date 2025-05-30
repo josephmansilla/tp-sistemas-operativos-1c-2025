@@ -36,7 +36,7 @@ func SerializarPagina(pagina globalData.EntradaPagina, numeroAsignado int) {
 	pagina.FueModificado = false
 }
 
-func DesomponerPagina(numeroFrame int) []int {
+func DescomponerPagina(numeroFrame int) []int {
 	cantidadNiveles := globalData.MemoryConfig.NumberOfLevels
 	entradasPorPagina := globalData.MemoryConfig.EntriesPerPage
 
@@ -49,7 +49,7 @@ func DesomponerPagina(numeroFrame int) []int {
 	}
 
 	return indice
-}
+} // lo usa cpu al final
 
 func BuscarEntradaPagina(tablaRaiz globalData.TablaRaizPaginas, indices []int) *globalData.EntradaPagina {
 	// err handling
@@ -85,6 +85,26 @@ func BuscarEntradaPagina(tablaRaiz globalData.TablaRaizPaginas, indices []int) *
 	}
 
 	return entradaDeseada
+}
+
+func ObtenerMarco(pid int, numeroPagina int) int {
+	procesoBuscado, err := globalData.ProcesosMapeable[pid]
+	if !err {
+		logger.Error("Processo Buscado no existe")
+		return -1
+	}
+	indices := DescomponerPagina(numeroPagina)
+	entradaPagina := BuscarEntradaPagina(procesoBuscado.TablaRaiz, indices)
+	if entradaPagina == nil {
+		logger.Error("No se encontró la entrada de página para el PID: %d", pid)
+		return -1
+	}
+	if !entradaPagina.EstaPresente {
+		logger.Error("La entrada de página de número %d y de PID: %d no se encuentra presente ", entradaPagina.NumeroFrame, pid)
+		return -1
+		// aca podemos deberiamos sacarlo de swap
+	}
+	return entradaPagina.NumeroFrame
 }
 
 // --------------------------------------------------------------------
