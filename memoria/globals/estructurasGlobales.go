@@ -32,11 +32,11 @@ type TablaPagina struct {
 	Paginas  map[int]*EntradaPagina `json:"paginas"`
 }
 
-type TablaRaizPaginas map[int]*TablaPagina
+type TablaPaginasMain map[int]*TablaPagina
 
 type Proceso struct {
 	PID       int              `json:"pid"`
-	TablaRaiz TablaRaizPaginas `json:"tabla_paginas"`
+	TablaRaiz TablaPaginasMain `json:"tabla_paginas"`
 	Metricas  MetricasProceso  `json:"metricas_proceso"`
 }
 
@@ -58,7 +58,6 @@ type DatosParaDump struct {
 
 var MemoriaPrincipal [][]byte // MP simulada
 var FramesLibres []bool       //los frames van a estar en True si están libres
-var TablaDePaginas TablaRaizPaginas
 var ProcesosMapeable Procesos
 
 // SUPER PENDIENTES

@@ -16,7 +16,7 @@ import (
 func InicializarMemoriaPrincipal() {
 	tamanioMemPrin := globalData.MemoryConfig.MemorySize
 	tamanioPagina := globalData.MemoryConfig.PagSize
-	cantidadFrames := CalcularFrames(tamanioMemPrin, tamanioPagina)
+	cantidadFrames := CalcularCantidadFrames(tamanioMemPrin, tamanioPagina)
 
 	globalData.MemoriaPrincipal = make([][]byte, cantidadFrames)
 	globalData.FramesLibres = make([]bool, cantidadFrames)
@@ -27,6 +27,19 @@ func InicializarMemoriaPrincipal() {
 	}
 	logger.Info("Tamanio Memoria Principal de %d", tamanioMemPrin)
 	logger.Info("Memoria Principal Inicializada con %d frames de %d cada una.", cantidadFrames, tamanioPagina)
+}
+
+func CalcularCantidadFrames(tamanioMemoriaPrincipal int, tamanioPagina int) int {
+	return tamanioMemoriaPrincipal / tamanioPagina
+}
+
+func InicializarFrames() {
+	tamanio := globalData.MemoryConfig.MemorySize / globalData.MemoryConfig.PagSize
+	globalData.FramesLibres = make([]bool, tamanio)
+}
+
+func AsignarProceso(PID int, cantidadPaginas int) {
+
 }
 
 // ------------------------------------------------------------------

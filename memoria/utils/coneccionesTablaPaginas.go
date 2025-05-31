@@ -6,18 +6,11 @@ import (
 	"net/http"
 )
 
-func InicializarTablas() { // TODO: REVER
-	nivelMaximo := globalData.MemoryConfig.NumberOfLevels
-	globalData.TablaDePaginas = make(map[int]*globalData.TablaPagina, nivelMaximo)
-	globalData.TablaDePaginas[0] = CrearTabla(nivelMaximo - 1)
+func InicializarTablas(tablaRaiz globalData.TablaPaginasMain) {
+	make(globalData.TablaPagina)
 }
 
-func InicializarFrames() {
-	tamanio := globalData.MemoryConfig.MemorySize / globalData.MemoryConfig.PagSize
-	globalData.FramesLibres = make([]bool, tamanio)
-}
-
-func CrearTabla(nivelActual int) *globalData.TablaPagina {
+func CrearTablas(tabla globalData.TablaPaginasMain, nivelActual int) *globalData.TablaPagina {
 	if nivelActual == 1 {
 		return &globalData.TablaPagina{
 			Subtabla: nil,
@@ -25,13 +18,11 @@ func CrearTabla(nivelActual int) *globalData.TablaPagina {
 		}
 	}
 	return &globalData.TablaPagina{
-		Subtabla: make(map[int]*globalData.TablaPagina),
-		Paginas:  nil,
+		Subtabla: map[int]*globalData.TablaPagina{
+			0: CrearTablas(tabla[0].Subtabla, nivelActual-1),
+		},
+		Paginas: nil,
 	}
-}
-
-func CalcularFrames(tamanioMemoriaPrincipal int, tamanioPagina int) int {
-	return tamanioMemoriaPrincipal / tamanioPagina
 }
 
 func SerializarPagina(pagina globalData.EntradaPagina, numeroAsignado int) {
@@ -56,7 +47,7 @@ func DescomponerPagina(numeroFrame int) []int {
 	return indice
 } // lo usa cpu al final
 
-func BuscarEntradaPagina(tablaRaiz globalData.TablaRaizPaginas, indices []int) *globalData.EntradaPagina {
+func BuscarEntradaPagina(tablaRaiz globalData.TablaPaginasMain, indices []int) *globalData.EntradaPagina {
 	// err handling
 	tamanioIndices := len(indices)
 	tablaApuntada := tablaRaiz[indices[0]]
@@ -112,10 +103,6 @@ func ObtenerMarco(pid int, numeroPagina int) int {
 	return entradaPagina.NumeroFrame
 }
 
-// --------------------------------------------------------------------
-// ---------- FORMA PARTE DEL ACCESO A LAS TABLAS DE PÁGINAS ----------
-// --------------------------------------------------------------------
-
 func AsignarFrame() int {
 	indiceLibre := -1
 	tamanioMaximo := globalData.MemoryConfig.MemorySize
@@ -132,10 +119,6 @@ func AsignarFrame() int {
 func LiberarFrame(frameALiberar int) {
 	framesMemoriaPrincipal := globalData.FramesLibres
 	framesMemoriaPrincipal[frameALiberar] = true
-}
-
-func AsignarProceso(PID int, cantidadPaginas int) {
-
 }
 
 // -.-.--...
