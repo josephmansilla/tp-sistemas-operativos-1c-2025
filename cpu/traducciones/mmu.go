@@ -23,13 +23,19 @@ type RespuestaTabla struct {
 }
 
 // Función principal de traducción
-func Traducir(dirLogica int) int {
+func Traducir(dirLogica int, tlb *TLB) int {
 	tamPagina := globals.TamPag
 	entradasPorNivel := globals.EntradasPorNivel
 	niveles := globals.CantidadNiveles
 	nroPagina := dirLogica / tamPagina
 	desplazamiento := dirLogica % tamPagina
 
+	// Consulto la tlb
+	if marco, ok := tlb.Buscar(nroPagina); ok {
+		return marco*tamPagina + desplazamiento
+	}
+
+	// La pagina no esta en la tlb, tengo que ir a memoria
 	entradas := descomponerPagina(nroPagina, niveles, entradasPorNivel)
 
 	var tablaActual = 0
@@ -46,7 +52,7 @@ func Traducir(dirLogica int) int {
 			marco = resp.NumeroMarco
 			break
 		} else {
-			tablaActual = resp.NumeroTabla
+			tablaActual = resp.NumeroTabla //vuelvo a ejecutar hasta llegar a la ult tabla
 		}
 	}
 
@@ -54,6 +60,9 @@ func Traducir(dirLogica int) int {
 		log.Printf("No se pudo traducir la dirección lógica %d", dirLogica)
 		return -1
 	}
+
+	// Agrego la entrada a la tlb
+	tlb.AgregarEntrada(nroPagina, marco)
 
 	return marco*tamPagina + desplazamiento
 }

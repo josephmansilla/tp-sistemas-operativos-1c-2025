@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
+	"github.com/sisoputnfrba/tp-golang/cpu/traducciones"
 	"github.com/sisoputnfrba/tp-golang/cpu/utils"
 	"log"
 	"net/http"
@@ -41,6 +42,10 @@ func main() {
 	if globals.ClientConfig == nil {
 		log.Fatal("No se pudo cargar el archivo de configuracion")
 	}
+	//Inicializo la TLB
+	var tlb = traducciones.NuevaTLB(globals.ClientConfig.TlbEntries, globals.ClientConfig.TlbReplacement)
+	tlb.AgregarEntrada(10, 3)
+	tlb.AgregarEntrada(1, 10)
 
 	//Solicito la configuracion de memoria
 	err = utils.ConsultarConfiguracionMemoria(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
