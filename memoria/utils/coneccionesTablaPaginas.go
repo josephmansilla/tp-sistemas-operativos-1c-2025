@@ -14,7 +14,7 @@ func InicializarTablaRaiz() map[int]*globalData.TablaPaginasMain {
 // TODO: SE PIDE ASIGNAR X PROCESO EN LA MEMORIA.
 
 func CrearTablas() {
-	// TODO:
+	// TODO: DEBE CREARSE A MEDIDA QUE SE ASIGNA MEMORIA A UN PROCESO
 }
 
 func SerializarPagina(pagina globalData.EntradaPagina, numeroAsignado int) {
@@ -39,10 +39,10 @@ func DescomponerPagina(numeroFrame int) []int {
 	return indice
 } // lo usa cpu al final
 
-func BuscarEntradaPagina(tablaRaiz globalData.TablaPaginasMain, indices []int) *globalData.EntradaPagina {
-	// err handling
+func BuscarEntradaPagina(procesoBuscado *globalData.Proceso, indices []int) *globalData.EntradaPagina {
+
 	tamanioIndices := len(indices)
-	tablaApuntada := tablaRaiz[indices[0]]
+	tablaApuntada := procesoBuscado.TablaRaiz[indices[0]]
 	if tamanioIndices == 0 {
 		logger.Error("Índice vacío")
 		return nil
@@ -75,14 +75,14 @@ func BuscarEntradaPagina(tablaRaiz globalData.TablaPaginasMain, indices []int) *
 	return entradaDeseada
 }
 
-func ObtenerMarco(pid int, numeroPagina int) int {
+func ObtenerEntradaPagina(pid int, numeroPagina int) int {
 	procesoBuscado, err := globalData.ProcesosMapeable[pid]
 	if !err {
 		logger.Error("Processo Buscado no existe")
 		return -1
 	}
 	indices := DescomponerPagina(numeroPagina)
-	entradaPagina := BuscarEntradaPagina(procesoBuscado.TablaRaiz, indices)
+	entradaPagina := BuscarEntradaPagina(procesoBuscado, indices)
 	if entradaPagina == nil {
 		logger.Error("No se encontró la entrada de página para el PID: %d", pid)
 		return -1
@@ -95,7 +95,7 @@ func ObtenerMarco(pid int, numeroPagina int) int {
 	return entradaPagina.NumeroFrame
 }
 
-func AsignarFrame() int {
+func AsignarEntradaPagina() int {
 	indiceLibre := -1
 	tamanioMaximo := globalData.MemoryConfig.MemorySize
 	framesMemoriaPrincipal := globalData.FramesLibres
@@ -108,7 +108,7 @@ func AsignarFrame() int {
 	return indiceLibre
 }
 
-func LiberarFrame(frameALiberar int) {
+func LiberarEntradaPagina(frameALiberar int) {
 	framesMemoriaPrincipal := globalData.FramesLibres
 	framesMemoriaPrincipal[frameALiberar] = true
 }

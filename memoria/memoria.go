@@ -48,6 +48,12 @@ func main() {
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
 
+	// ----------------------------------------------------------
+	// --------- INICIALIZO LAS ESTRUCTURAS NECESARIAS  ---------
+	// ----------------------------------------------------------
+
+	utils.InicializarMemoriaPrincipal()
+
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU Y KERNEL ----------
 	// ------------------------------------------------------

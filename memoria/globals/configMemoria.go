@@ -7,11 +7,11 @@ type Config struct {
 	IpMemory       string `json:"ip_memory"`
 	MemorySize     int    `json:"memory_size"`
 	PagSize        int    `json:"pag_size"`
-	EntriesPerPage int    `json:"entries_per_page"`
-	NumberOfLevels int    `json:"number_of_levels"`
-	MemoryDelay    int    `json:"memory_delay"`
-	SwapfilePath   string `json:"swapfile_path"`
-	SwapDelay      int    `json:"swap_delay"`
+	EntriesPerPage int    `json:"entries_per_page"` //per paged table
+	NumberOfLevels int    `json:"number_of_levels"` //max number of levels
+	MemoryDelay    int    `json:"memory_delay"`     // r/w response delay
+	SwapfilePath   string `json:"swapfile_path"`    // virtual memory directory
+	SwapDelay      int    `json:"swap_delay"`       // virtual memory r/w response dalay
 	LogLevel       string `json:"log_level"`
 	DumpPath       string `json:"dump_path"`
 	ScriptsPath    string `json:"scripts_path"`

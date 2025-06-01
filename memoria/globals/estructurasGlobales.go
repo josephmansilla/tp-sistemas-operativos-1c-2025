@@ -40,7 +40,7 @@ type Proceso struct {
 	Metricas  MetricasProceso  `json:"metricas_proceso"`
 }
 
-type Procesos map[int]*Proceso
+type ProcesosMap map[int]*Proceso
 
 type MetricasProceso struct {
 	AccesosTablasPaginas     int `json:"acceso_tablas_paginas"`
@@ -56,9 +56,9 @@ type DatosParaDump struct {
 	TimeStamp string `json:"timeStamp"`
 } // HABRIA QUE VER QUE TIPO DE DATOS ES EL TIMESTAMP
 
-var MemoriaPrincipal [][]byte // MP simulada
-var FramesLibres []bool       //los frames van a estar en True si están libres
-var ProcesosMapeable Procesos
+var MemoriaPrincipal []byte // MP simulada
+var FramesLibres []bool     //los frames van a estar en True si están libres
+var ProcesosMapeable ProcesosMap
 
 // SUPER PENDIENTES
 type ArgmentosCreacionProceso struct {
