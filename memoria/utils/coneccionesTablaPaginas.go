@@ -6,8 +6,17 @@ import (
 	"net/http"
 )
 
-func InicializarTablas(tablaRaiz globalData.TablaPaginasMain) {
-	make(globalData.TablaPagina)
+func InicializarTablas() globalData.TablaPaginasMain {
+	cantidadNiveles := globalData.MemoryConfig.NumberOfLevels
+
+	tablaRaiz = make(map[int]*globalData.TablaPaginasMain)
+
+	tablaRaiz[0] = &globalData.TablaPaginasMain{
+		Subtabla: crearSubTablas(cantidadNiveles),
+		Paginas:  nil,
+	}
+
+	return tablaRaiz
 }
 
 func CrearTablas(tabla globalData.TablaPaginasMain, nivelActual int) *globalData.TablaPagina {
