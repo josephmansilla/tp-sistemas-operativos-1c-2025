@@ -6,32 +6,15 @@ import (
 	"net/http"
 )
 
-func InicializarTablas() globalData.TablaPaginasMain {
-	cantidadNiveles := globalData.MemoryConfig.NumberOfLevels
-
-	tablaRaiz = make(map[int]*globalData.TablaPaginasMain)
-
-	tablaRaiz[0] = &globalData.TablaPaginasMain{
-		Subtabla: crearSubTablas(cantidadNiveles),
-		Paginas:  nil,
-	}
-
+func InicializarTablaRaiz() map[int]*globalData.TablaPaginasMain {
+	cantidadEntradasPorTabla := globalData.MemoryConfig.EntriesPerPage
+	tablaRaiz := make(map[int]*globalData.TablaPaginasMain, cantidadEntradasPorTabla)
 	return tablaRaiz
-}
+} //TODO: EL RESTO DE TABLAS Y ENTRADAS DE PAGINA SE VAN INSTANCIANDO A MEDIDA QUE
+// TODO: SE PIDE ASIGNAR X PROCESO EN LA MEMORIA.
 
-func CrearTablas(tabla globalData.TablaPaginasMain, nivelActual int) *globalData.TablaPagina {
-	if nivelActual == 1 {
-		return &globalData.TablaPagina{
-			Subtabla: nil,
-			Paginas:  make(map[int]*globalData.EntradaPagina),
-		}
-	}
-	return &globalData.TablaPagina{
-		Subtabla: map[int]*globalData.TablaPagina{
-			0: CrearTablas(tabla[0].Subtabla, nivelActual-1),
-		},
-		Paginas: nil,
-	}
+func CrearTablas() {
+	// TODO:
 }
 
 func SerializarPagina(pagina globalData.EntradaPagina, numeroAsignado int) {
