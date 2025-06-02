@@ -1,4 +1,4 @@
-package utils
+package administracion
 
 import (
 	data "github.com/sisoputnfrba/tp-golang/memoria/globals"
@@ -117,6 +117,16 @@ func AsignarEntradaPagina() int {
 func LiberarEntradaPagina(frameALiberar int) {
 	framesMemoriaPrincipal := data.FramesLibres
 	framesMemoriaPrincipal[frameALiberar] = true
+}
+
+func cambiarEstadoPresentePagina(pagina data.EntradaPagina) {
+	pagina.EstaPresente = !pagina.EstaPresente
+}
+func cambiarEstadoUsoPagina(pagina data.EntradaPagina) {
+	pagina.EstaEnUso = !pagina.EstaEnUso
+}
+func cambiarEstadoModificacionPagina(pagina data.EntradaPagina) {
+	pagina.FueModificado = !pagina.FueModificado
 }
 
 // -.-.--...

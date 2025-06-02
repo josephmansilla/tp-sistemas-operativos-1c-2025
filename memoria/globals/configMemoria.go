@@ -11,7 +11,7 @@ type Config struct {
 	NumberOfLevels int    `json:"number_of_levels"` //max number of levels
 	MemoryDelay    int    `json:"memory_delay"`     // r/w response delay
 	SwapfilePath   string `json:"swapfile_path"`    // virtual memory directory
-	SwapDelay      int    `json:"swap_delay"`       // virtual memory r/w response dalay
+	SwapDelay      int    `json:"swap_delay"`       // virtual memory r/w response delay
 	LogLevel       string `json:"log_level"`
 	DumpPath       string `json:"dump_path"`
 	ScriptsPath    string `json:"scripts_path"`

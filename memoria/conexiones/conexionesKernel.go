@@ -1,4 +1,4 @@
-package utils
+package conexiones
 
 import (
 	"encoding/json"
@@ -7,16 +7,6 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 )
-
-// --------------------------------------------------------
-// --------------- FUNCIONALIDAD DE KERNEL ----------------
-// --------------------------------------------------------
-
-// RESPONDE AL KERNEL
-type RespuestaMemoria struct {
-	Exito   bool   `json:"exito"`
-	Mensaje string `json:"mensaje"`
-}
 
 // FUNCION PARA RECIBIR LOS MENSAJES PROVENIENTES DEL KERNEL
 func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +25,7 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Tamanio de Memoria Pedido: %d\n", mensaje.TamanioMemoria)
 
 	// RESPUESTA AL KERNEL
-	respuesta := RespuestaMemoria{
+	respuesta := globals.RespuestaMemoria{
 		Exito:   true,
 		Mensaje: "Proceso creado correctamente en memoria",
 	}

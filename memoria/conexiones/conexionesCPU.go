@@ -1,10 +1,11 @@
-package utils
+package conexiones
 
 import (
 	"bufio"
 	"encoding/json"
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	"github.com/sisoputnfrba/tp-golang/memoria/utils"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
@@ -57,7 +58,7 @@ func CargarInstrucciones(nombreArchivo string) {
 	for scanner.Scan() {
 		lineaPseudocodigo := scanner.Text()
 		logger.Info("Línea leída:%s", lineaPseudocodigo)
-		CargarListaDeInstrucciones(lineaPseudocodigo)
+		utils.CargarListaDeInstrucciones(lineaPseudocodigo)
 		if strings.TrimSpace(lineaPseudocodigo) == "EOF" {
 			break
 		}
@@ -66,7 +67,7 @@ func CargarInstrucciones(nombreArchivo string) {
 	if err := scanner.Err(); err != nil {
 		logger.Error("Error al leer el archivo:%s", err)
 	}
-	logger.Info("Total de instrucciones cargadas: %d", len(Instrucciones))
+	logger.Info("Total de instrucciones cargadas: %d", len(utils.Instrucciones))
 }
 
 func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
@@ -79,8 +80,8 @@ func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 
 	pc := mensaje.PC
 	var instruccion string
-	if pc >= 0 && pc < len(Instrucciones) {
-		instruccion = Instrucciones[pc]
+	if pc >= 0 && pc < len(utils.Instrucciones) {
+		instruccion = utils.Instrucciones[pc]
 	} else {
 		instruccion = "" // Esto indica fin del archivo o error de PC
 	}

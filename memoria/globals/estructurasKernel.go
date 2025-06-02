@@ -11,6 +11,11 @@ type DatosRespuestaDeKernel struct {
 	TamanioMemoria int    `json:"tamanio_memoria"`
 }
 
+type RespuestaMemoria struct {
+	Exito   bool   `json:"exito"`
+	Mensaje string `json:"mensaje"`
+}
+
 type EspacioLibreRTA struct {
 	EspacioLibre int `json:"espacio_libre"`
 }

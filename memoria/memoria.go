@@ -3,8 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sisoputnfrba/tp-golang/memoria/administracion"
+	"github.com/sisoputnfrba/tp-golang/memoria/conexiones"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
-	"github.com/sisoputnfrba/tp-golang/memoria/utils"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 	"os"
@@ -49,21 +50,21 @@ func main() {
 	// --------- INICIALIZO LAS ESTRUCTURAS NECESARIAS  ---------
 	// ----------------------------------------------------------
 
-	utils.InicializarMemoriaPrincipal()
+	administracion.InicializarMemoriaPrincipal()
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU Y KERNEL ----------
 	// ------------------------------------------------------
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("memoria/configuracion", utils.EnviarConfiguracionMemoria)
+	mux.HandleFunc("memoria/configuracion", conexiones.EnviarConfiguracionMemoria)
 	// ESTÁ ESPERANDO LOS MENSAJES DE LOS OTROS MODULOS
-	mux.HandleFunc("/memoria/cpu", utils.RecibirMensajeDeCPU)
-	mux.HandleFunc("/memoria/kernel", utils.RecibirMensajeDeKernel)
-	mux.HandleFunc("/memoria/instruccion", utils.ObtenerInstruccion)
+	mux.HandleFunc("/memoria/cpu", conexiones.RecibirMensajeDeCPU)
+	mux.HandleFunc("/memoria/kernel", conexiones.RecibirMensajeDeKernel)
+	mux.HandleFunc("/memoria/instruccion", conexiones.ObtenerInstruccion)
 	// TODO: deberia devoler la instruccion que piden
 
-	mux.HandleFunc("/memoria/espaciolibre", utils.ObtenerEspacioLibreMock)
+	mux.HandleFunc("/memoria/espaciolibre", conexiones.ObtenerEspacioLibreMock)
 	// TODO: cambiar la funcion a la que escucha ,, debería devolver la cantidad de frames libres y su tamaño total
 
 	//mux.HandleFunc("/memoria/lectura", utils.LecturaEspacio)
