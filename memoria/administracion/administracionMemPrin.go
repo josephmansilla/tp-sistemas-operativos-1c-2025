@@ -10,7 +10,6 @@ import (
 	"os"
 )
 
-// TODO: mutex para crear la MP
 func InicializarMemoriaPrincipal() {
 	cantidadFrames := CalcularCantidadFrames()
 

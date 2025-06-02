@@ -1,6 +1,11 @@
 package globals
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"os"
+)
 
 type Config struct {
 	PortMemory     int    `json:"port_memory"`
@@ -56,3 +61,15 @@ func (cfg Config) Validate() error {
 	}
 	return nil
 }
+
+func ConfigCheck(filepath string) *Config {
+	var configCheck *Config
+	configFile, err := os.Open(filepath)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	defer configFile.Close()
+	jsonParser := json.NewDecoder(configFile)
+	jsonParser.Decode(&configCheck)
+	return configCheck
+} // err handling

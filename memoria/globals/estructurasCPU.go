@@ -1,6 +1,6 @@
 package globals
 
-// Tipo de datos recibidos de la CPU
+var CPU DatosDeCPU
 
 type DatosDeCPU struct {
 	PID int `json:"pid"`
@@ -26,4 +26,15 @@ type ConsultaConfigMemoria struct {
 	CantidadNiveles  int `json:"cantidadNiveles"`
 }
 
-var CPU DatosDeCPU
+// TODO: conexiones con cpu
+type MensajeTabla struct {
+	PID           int `json:"pid"`
+	NumeroTabla   int `json:"numeroTabla"`
+	EntradaIndice int `json:"entrada"`
+}
+
+type RespuestaTabla struct {
+	EsUltimoNivel bool `json:"esUltimoNivel"`
+	NumeroTabla   int  `json:"numeroTabla"`
+	NumeroMarco   int  `json:"marco"`
+}

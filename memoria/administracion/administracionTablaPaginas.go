@@ -13,13 +13,6 @@ func InicializarTablaRaiz() data.TablaPaginas {
 } //TODO: EL RESTO DE TABLAS Y ENTRADAS DE PAGINA SE VAN INSTANCIANDO A MEDIDA QUE
 // TODO: SE PIDE ASIGNAR X PROCESO EN LA MEMORIA.
 
-func SerializarPagina(pagina data.EntradaPagina, numeroAsignado int) {
-	pagina.NumeroFrame = numeroAsignado // Se le asigna para testear
-	pagina.EstaPresente = true
-	pagina.EstaEnUso = true
-	pagina.FueModificado = false
-}
-
 func UbicarPagina(numeroFrame int) []int {
 	cantidadNiveles := data.MemoryConfig.NumberOfLevels
 	entradasPorPagina := data.MemoryConfig.EntriesPerPage
@@ -102,21 +95,29 @@ func ObtenerEntradaPagina(pid int, numeroPagina int) int {
 }
 
 func AsignarEntradaPagina() int {
-	indiceLibre := -1
+	entradaLibre := -1
 	tamanioMaximo := data.MemoryConfig.MemorySize
 	framesMemoriaPrincipal := data.FramesLibres
 	for i := 0; i < tamanioMaximo; i++ {
 		if framesMemoriaPrincipal[i] == true {
-			indiceLibre = i
-			return indiceLibre
+			entradaLibre = i
+			return entradaLibre
 		}
 	}
-	return indiceLibre
+	return entradaLibre
+	// retorna la entrada libre
 }
 
 func LiberarEntradaPagina(frameALiberar int) {
 	framesMemoriaPrincipal := data.FramesLibres
 	framesMemoriaPrincipal[frameALiberar] = true
+}
+
+func SerializarPagina(pagina data.EntradaPagina, numeroAsignado int) {
+	pagina.NumeroFrame = numeroAsignado // Se le asigna para testear
+	pagina.EstaPresente = true
+	pagina.EstaEnUso = true
+	pagina.FueModificado = false
 }
 
 func cambiarEstadoPresentePagina(pagina data.EntradaPagina) {
