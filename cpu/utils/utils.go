@@ -24,8 +24,8 @@ type MensajeDeKernel struct {
 	PC  int `json:"pc"`
 }
 
-type MensajeAMemoria struct {
-	TamPag           int `json:"tamPag"`
+type ConsultaConfigMemoria struct {
+	TamanioPagina    int `json:"tamanioPagina"`
 	EntradasPorNivel int `json:"entradasPorNivel"`
 	CantidadNiveles  int `json:"cantidadNiveles"`
 }
@@ -128,28 +128,31 @@ func RecibirInterrupcion(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Interrupción registrada"))
 }
 
-// TODO: PP
-func ConsultarConfiguracionMemoria(ipDestino string, puertoDestino int) error {
-	// Construimos la URL del endpoint donde la memoria debe proporcionar estos datos.
+func RecibirConfiguracionMemoria(ipDestino string, puertoDestino int) error {
 	url := fmt.Sprintf("http://%s:%d/memoria/configuracion", ipDestino, puertoDestino)
 
-	// Enviamos la solicitud GET a memoria.
-	var msg MensajeAMemoria
+	// Mensaje que CPU envía
+	mensaje := struct {
+		PID int `json:"pid"`
+	}{
+		PID: globals.PIDActual,
+	}
 
-	// Usamos la función RecibirDatos del paquete data para obtener los datos de configuración
-	err := data.RecibirDatos(url, &msg)
+	// Recibiremos esto
+	var msg ConsultaConfigMemoria
+
+	err := data.EnviarDatosYRecibirRespuesta(url, mensaje, &msg)
 	if err != nil {
 		log.Printf("Error al consultar la configuración de memoria: %s", err.Error())
 		return err
 	}
 
-	// Almacenamos los valores en las variables globales
-	globals.TamPag = msg.TamPag
+	globals.TamanioPagina = msg.TamanioPagina
 	globals.EntradasPorNivel = msg.EntradasPorNivel
 	globals.CantidadNiveles = msg.CantidadNiveles
 
-	// Log de la configuración obtenida
-	log.Printf("Configuración de Memoria: Tamaño de Página: %d, Entradas por Página: %d", globals.TamPag)
+	log.Printf("Configuración de Memoria: Tamaño de Página: %d, Entradas por Página: %d, Niveles: %d",
+		msg.TamanioPagina, msg.EntradasPorNivel, msg.CantidadNiveles)
 
 	return nil
 }

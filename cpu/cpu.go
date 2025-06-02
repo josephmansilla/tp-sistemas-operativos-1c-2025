@@ -43,7 +43,7 @@ func main() {
 	}
 
 	//Solicito la configuracion de memoria
-	err = utils.ConsultarConfiguracionMemoria(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
+	err = utils.RecibirConfiguracionMemoria(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
 	if err != nil {
 		log.Fatalf("Error al obtener la configuración de memoria: %v", err)
 	}

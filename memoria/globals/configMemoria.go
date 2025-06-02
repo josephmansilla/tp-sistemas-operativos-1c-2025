@@ -1,17 +1,21 @@
 package globals
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+	"os"
+)
 
 type Config struct {
 	PortMemory     int    `json:"port_memory"`
 	IpMemory       string `json:"ip_memory"`
 	MemorySize     int    `json:"memory_size"`
 	PagSize        int    `json:"pag_size"`
-	EntriesPerPage int    `json:"entries_per_page"`
-	NumberOfLevels int    `json:"number_of_levels"`
-	MemoryDelay    int    `json:"memory_delay"`
-	SwapfilePath   string `json:"swapfile_path"`
-	SwapDelay      int    `json:"swap_delay"`
+	EntriesPerPage int    `json:"entries_per_page"` //per paged table
+	NumberOfLevels int    `json:"number_of_levels"` //max number of levels
+	MemoryDelay    int    `json:"memory_delay"`     // r/w response delay
+	SwapfilePath   string `json:"swapfile_path"`    // virtual memory directory
+	SwapDelay      int    `json:"swap_delay"`       // virtual memory r/w response delay
 	LogLevel       string `json:"log_level"`
 	DumpPath       string `json:"dump_path"`
 	ScriptsPath    string `json:"scripts_path"`
@@ -55,4 +59,21 @@ func (cfg Config) Validate() error {
 		return errors.New("falta el campo 'ScriptsPath'")
 	}
 	return nil
+}
+
+func ConfigCheck(filepath string) (*Config, error) {
+	var configCheck *Config
+	configFile, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+	defer configFile.Close()
+
+	decoder := json.NewDecoder(configFile)
+	err = decoder.Decode(&configCheck)
+	if err != nil {
+		return nil, err
+	}
+
+	return configCheck, nil
 }

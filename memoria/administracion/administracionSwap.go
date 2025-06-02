@@ -1,4 +1,4 @@
-package utils
+package administracion
 
 import (
 	"github.com/sisoputnfrba/tp-golang/utils/logger"

@@ -1,4 +1,4 @@
-package utils
+package administracion
 
 import (
 	"fmt"
@@ -10,23 +10,33 @@ import (
 	"os"
 )
 
-// TODO: EU = ESPACIO DE USUARIO
-
-// TODO: mutex para crear la MP
 func InicializarMemoriaPrincipal() {
-	tamanioMemPrin := globalData.MemoryConfig.MemorySize
-	tamanioPagina := globalData.MemoryConfig.PagSize
-	cantidadFrames := CalcularFrames(tamanioMemPrin, tamanioPagina)
+	cantidadFrames := CalcularCantidadFrames()
 
-	globalData.MemoriaPrincipal = make([][]byte, cantidadFrames)
+	globalData.MemoriaPrincipal = make([]byte, cantidadFrames)
 	globalData.FramesLibres = make([]bool, cantidadFrames)
+	ConfigurarFrames(cantidadFrames)
 
-	for i := 0; i <= cantidadFrames; i++ {
-		globalData.MemoriaPrincipal[i] = make([]byte, tamanioPagina)
+	logger.Info("Tamanio Memoria Principal de %d", globalData.MemoryConfig.MemorySize)
+	logger.Info("Memoria Principal Inicializada con %d frames de %d cada una.", cantidadFrames, globalData.MemoryConfig.PagSize)
+}
+
+func CalcularCantidadFrames() int {
+	tamanioMemoriaPrincipal := globalData.MemoryConfig.MemorySize
+	tamanioPagina := globalData.MemoryConfig.PagSize
+
+	return tamanioMemoriaPrincipal / tamanioPagina
+}
+
+func ConfigurarFrames(cantidadFrames int) {
+	for i := 0; i < cantidadFrames; i++ {
 		globalData.FramesLibres[i] = true
 	}
-	logger.Info("Tamanio Memoria Principal de %d", tamanioMemPrin)
-	logger.Info("Memoria Principal Inicializada con %d frames de %d cada una.", cantidadFrames, tamanioPagina)
+	logger.Info("Todos los frames están libres.")
+}
+
+func AsignarProceso(PID int, cantidadPaginas int) {
+
 }
 
 // ------------------------------------------------------------------

@@ -1,5 +1,9 @@
 package globals
 
+var RespuestaKernel DatosRespuestaDeKernel
+
+// var Kernel DatosConsultaDeKernel
+
 type DatosConsultaDeKernel struct {
 	PID            int `json:"pid"`
 	TamanioMemoria int `json:"tamanio_memoria"`
@@ -11,9 +15,16 @@ type DatosRespuestaDeKernel struct {
 	TamanioMemoria int    `json:"tamanio_memoria"`
 }
 
+type RespuestaMemoria struct {
+	Exito   bool   `json:"exito"`
+	Mensaje string `json:"mensaje"`
+}
+
 type EspacioLibreRTA struct {
 	EspacioLibre int `json:"espacio_libre"`
 }
 
-var RespuestaKernel DatosRespuestaDeKernel
-var Kernel DatosConsultaDeKernel
+type RespuestaEspacioLibre struct {
+	MemoriaDisponible int `json:"memoria_disponible"`
+	FramesLibres      int `json:"frames_libres"`
+} //TODO: calcular memDisp con la cantidad de frames libres * su tamaño
