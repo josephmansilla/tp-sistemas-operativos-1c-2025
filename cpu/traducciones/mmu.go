@@ -24,7 +24,7 @@ type RespuestaTabla struct {
 
 // Función principal de traducción
 func Traducir(dirLogica int, tlb *TLB) int {
-	tamPagina := globals.TamPag
+	tamPagina := globals.TamanioPagina
 	entradasPorNivel := globals.EntradasPorNivel
 	niveles := globals.CantidadNiveles
 	nroPagina := dirLogica / tamPagina

@@ -3,6 +3,7 @@ package utils
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
@@ -11,7 +12,6 @@ import (
 	"strings"
 )
 
-// FUNCION PARA RECIBIR LOS MENSAJES PROVENIENTES DE LA CPU
 func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.DatosDeCPU
 	data.LeerJson(w, r, &mensaje)
@@ -25,8 +25,6 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 	logger.Info("PC Pedido: %d", mensaje.PC)
 }
 
-// FUNCION PARA DEVOLVER/RETORNAR LOS MENSAJES PROVENIENTES DE LA CPU
-// DONDE LA DE ARRIBA NO RETORNA NADA
 func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosDeCPU {
 	var mensaje globals.DatosDeCPU
 	data.LeerJson(w, r, &mensaje)
@@ -95,4 +93,19 @@ func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(respuesta)
+}
+
+func EnviarConfiguracionMemoria(w http.ResponseWriter, r *http.Request) {
+	config := globals.Config{}
+	mensaje := globals.ConsultaConfigMemoria{
+		TamanioPagina:    config.PagSize,
+		EntradasPorNivel: config.EntriesPerPage,
+		CantidadNiveles:  config.NumberOfLevels,
+	}
+	url := fmt.Sprintf("http://%s:%d/memoria/configuracion", globals.MemoryConfig.IpMemory, globals.MemoryConfig.PortMemory)
+	err := data.EnviarDatos(url, mensaje)
+	if err != nil {
+		logger.Error("Error enviando Config a CPU: %s", err.Error())
+		return
+	}
 }

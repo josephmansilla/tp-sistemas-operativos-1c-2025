@@ -28,16 +28,13 @@ func main() {
 	if err != nil {
 		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
 	}
-
 	err = json.Unmarshal(configData, &globals.MemoryConfig)
 	if err != nil {
 		logger.Fatal("No se pudo parsear el archivo de configuración - %v", err.Error())
 	}
-
 	if err = globals.MemoryConfig.Validate(); err != nil {
 		logger.Fatal("La configuración no es válida - %v", err.Error())
 	}
-
 	err = logger.SetLevel(globals.MemoryConfig.LogLevel)
 	if err != nil {
 		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
@@ -59,6 +56,7 @@ func main() {
 	// ------------------------------------------------------
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("memoria/configuracion", utils.EnviarConfiguracionMemoria)
 	// ESTÁ ESPERANDO LOS MENSAJES DE LOS OTROS MODULOS
 	mux.HandleFunc("/memoria/cpu", utils.RecibirMensajeDeCPU)
 	mux.HandleFunc("/memoria/kernel", utils.RecibirMensajeDeKernel)
@@ -68,20 +66,19 @@ func main() {
 	mux.HandleFunc("/memoria/espaciolibre", utils.ObtenerEspacioLibreMock)
 	// TODO: cambiar la funcion a la que escucha ,, debería devolver la cantidad de frames libres y su tamaño total
 
-	mux.HandleFunc("/memoria/lectura", utils.LecturaEspacio)
+	//mux.HandleFunc("/memoria/lectura", utils.LecturaEspacio)
 	// TODO: debe responder a CPU el valor de una dirección física con el delay indicado en Memory Delay
-	mux.HandleFunc("/memoria/escritura", utils.EscrituraEspacio)
+	//mux.HandleFunc("/memoria/escritura", utils.EscrituraEspacio)
 	// TODO: recibe PID y tamaño, se crea escructuras, asigna frames y logear.
 	// TODO: debe indicarle al CPU que fue éxitoso con el delay indicado en Memory Delay
-	mux.HandleFunc("/memoria/suspencion", utils.SuspenderProceso)
-	mux.HandleFunc("/memoria/desuspencion", utils.DesuspenderProceso)
+	//mux.HandleFunc("/memoria/suspension", utils.SuspenderProceso)
+	//mux.HandleFunc("/memoria/desuspension", utils.DesuspenderProceso)
 
-	mux.HandleFunc("/memoria/dump", utils.MemoriaDump)
+	//mux.HandleFunc("/memoria/dump", utils.MemoriaDump)
 	// TODO: debe liberar recursos y escructuras y logear metricas
 
 	//mux.HandleFunc("/memoria/frame", utils.algo)
 	//mux.HandleFunc("memoria/pagina", utils.algo)
-	//mux.HandleFunc("memoria/configuracion", utils.algo)
 
 	//mux.HandleFunc("/memoria/cpu", utils.CreacionProceso)
 

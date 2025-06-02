@@ -20,4 +20,10 @@ type InstruccionCPU struct {
 	Instruccion string `json:"instruccion"`
 }
 
+type ConsultaConfigMemoria struct {
+	TamanioPagina    int `json:"tamanioPagina"`
+	EntradasPorNivel int `json:"entradasPorNivel"`
+	CantidadNiveles  int `json:"cantidadNiveles"`
+}
+
 var CPU DatosDeCPU
