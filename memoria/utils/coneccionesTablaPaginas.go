@@ -13,12 +13,17 @@ func InicializarTablaRaiz() map[int]*globalData.TablaPaginasMain {
 } //TODO: EL RESTO DE TABLAS Y ENTRADAS DE PAGINA SE VAN INSTANCIANDO A MEDIDA QUE
 // TODO: SE PIDE ASIGNAR X PROCESO EN LA MEMORIA.
 
-func CrearTablas() {
-	// TODO: DEBE CREARSE A MEDIDA QUE SE ASIGNA MEMORIA A UN PROCESO
+func CrearTablaIntermedia() globalData.TablaPagina {
+
+	globalData.TablaPagina{
+		Subtabla:      nil,
+		EntradaPagina: nil,
+	}
+	return tablaPagina
 }
 
 func SerializarPagina(pagina globalData.EntradaPagina, numeroAsignado int) {
-	pagina.NumeroFrame = numeroAsignado
+	pagina.NumeroFrame = numeroAsignado // Se le asigna para testear
 	pagina.EstaPresente = true
 	pagina.EstaEnUso = true
 	pagina.FueModificado = false
@@ -37,7 +42,7 @@ func DescomponerPagina(numeroFrame int) []int {
 	}
 
 	return indice
-} // lo usa cpu al final
+}
 
 func BuscarEntradaPagina(procesoBuscado *globalData.Proceso, indices []int) *globalData.EntradaPagina {
 
@@ -50,17 +55,23 @@ func BuscarEntradaPagina(procesoBuscado *globalData.Proceso, indices []int) *glo
 
 	for i := 1; i <= tamanioIndices-1; i++ {
 		if tablaApuntada == nil {
-			logger.Error("Segment Fault, la tabla no existe")
+			logger.Error("La tabla no existe")
+			// debería ser un error fatal al acceder una locacion
+			// de memoria a la que no tiene acceso
 			return nil
 		}
 		if tablaApuntada.Subtabla == nil {
-			logger.Error("Segment Fault, la subtabla no existe")
+			logger.Error("La subtabla no existe")
+			// debería ser un error fatal al acceder una locacion
+			// de memoria a la que no tiene acceso
 			return nil
 		}
 		tablaApuntada = tablaApuntada.Subtabla[indices[i]]
 	}
 	if tablaApuntada.Paginas == nil {
-		logger.Error("Segment Fault, la entrada no existe")
+		logger.Error("La entrada no existe")
+		// debería ser un error fatal al acceder una locacion
+		// de memoria a la que no tiene acceso
 		return nil
 	}
 
@@ -69,6 +80,7 @@ func BuscarEntradaPagina(procesoBuscado *globalData.Proceso, indices []int) *glo
 
 	if entradaDeseada.EstaPresente == false {
 		logger.Error("No se encuentra presente en memoria el frame")
+		// Debería sacarse de SWAP
 		return nil
 	}
 

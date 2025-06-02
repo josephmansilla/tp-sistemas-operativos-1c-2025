@@ -28,8 +28,17 @@ type EntradaPagina struct {
 }
 
 type TablaPagina struct {
-	Subtabla map[int]*TablaPagina   `json:"subtabla"`
-	Paginas  map[int]*EntradaPagina `json:"paginas"`
+	Subtabla      map[int]*TablaPagina `json:"subtabla"`
+	EntradaPagina EntradaPagina        `json:"entrada_pagina"`
+}
+
+type TablaPaginaIntermedia struct {
+	Subtabla map[int]*TablaPagina `json:"subtabla"`
+	Paginas  TablaPaginaHoja
+}
+
+type TablaPaginaHoja struct {
+	EntradasPaginas map[int]*EntradaPagina `json:"entradas_pagina"`
 }
 
 type TablaPaginasMain map[int]*TablaPagina
