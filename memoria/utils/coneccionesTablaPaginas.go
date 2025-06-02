@@ -1,37 +1,28 @@
 package utils
 
 import (
-	globalData "github.com/sisoputnfrba/tp-golang/memoria/globals"
+	data "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 )
 
-func InicializarTablaRaiz() map[int]*globalData.TablaPaginasMain {
-	cantidadEntradasPorTabla := globalData.MemoryConfig.EntriesPerPage
-	tablaRaiz := make(map[int]*globalData.TablaPaginasMain, cantidadEntradasPorTabla)
+func InicializarTablaRaiz() data.TablaPaginas {
+	cantidadEntradasPorTabla := data.MemoryConfig.EntriesPerPage
+	tablaRaiz := make(data.TablaPaginas, cantidadEntradasPorTabla)
 	return tablaRaiz
 } //TODO: EL RESTO DE TABLAS Y ENTRADAS DE PAGINA SE VAN INSTANCIANDO A MEDIDA QUE
 // TODO: SE PIDE ASIGNAR X PROCESO EN LA MEMORIA.
 
-func CrearTablaIntermedia() globalData.TablaPagina {
-
-	globalData.TablaPagina{
-		Subtabla:      nil,
-		EntradaPagina: nil,
-	}
-	return tablaPagina
-}
-
-func SerializarPagina(pagina globalData.EntradaPagina, numeroAsignado int) {
+func SerializarPagina(pagina data.EntradaPagina, numeroAsignado int) {
 	pagina.NumeroFrame = numeroAsignado // Se le asigna para testear
 	pagina.EstaPresente = true
 	pagina.EstaEnUso = true
 	pagina.FueModificado = false
 }
 
-func DescomponerPagina(numeroFrame int) []int {
-	cantidadNiveles := globalData.MemoryConfig.NumberOfLevels
-	entradasPorPagina := globalData.MemoryConfig.EntriesPerPage
+func UbicarPagina(numeroFrame int) []int {
+	cantidadNiveles := data.MemoryConfig.NumberOfLevels
+	entradasPorPagina := data.MemoryConfig.EntriesPerPage
 
 	indice := make([]int, cantidadNiveles)
 	divisor := 1
@@ -44,22 +35,21 @@ func DescomponerPagina(numeroFrame int) []int {
 	return indice
 }
 
-func BuscarEntradaPagina(procesoBuscado *globalData.Proceso, indices []int) *globalData.EntradaPagina {
-
+func BuscarEntradaPagina(procesoBuscado *data.Proceso, indices []int) *data.EntradaPagina {
+	//	cantidadNiveles := data.MemoryConfig.NumberOfLevels TODO: DEBERIA SER LO MISMO LA LONG DE INDICES Y LA CANT DE NIVELES
 	tamanioIndices := len(indices)
-	tablaApuntada := procesoBuscado.TablaRaiz[indices[0]]
 	if tamanioIndices == 0 {
 		logger.Error("Índice vacío")
 		return nil
 	}
 
+	tablaApuntada := procesoBuscado.TablaRaiz[indices[0]]
+	if tablaApuntada == nil {
+		logger.Error("La tabla no existe")
+		return nil
+	}
+	// TODO: optaria por dejar cantidad niveles
 	for i := 1; i <= tamanioIndices-1; i++ {
-		if tablaApuntada == nil {
-			logger.Error("La tabla no existe")
-			// debería ser un error fatal al acceder una locacion
-			// de memoria a la que no tiene acceso
-			return nil
-		}
 		if tablaApuntada.Subtabla == nil {
 			logger.Error("La subtabla no existe")
 			// debería ser un error fatal al acceder una locacion
@@ -68,14 +58,18 @@ func BuscarEntradaPagina(procesoBuscado *globalData.Proceso, indices []int) *glo
 		}
 		tablaApuntada = tablaApuntada.Subtabla[indices[i]]
 	}
-	if tablaApuntada.Paginas == nil {
+	if tablaApuntada == nil {
+		logger.Error("La tabla no existe")
+		return nil
+	}
+	if tablaApuntada.EntradasPaginas == nil {
 		logger.Error("La entrada no existe")
 		// debería ser un error fatal al acceder una locacion
 		// de memoria a la que no tiene acceso
 		return nil
 	}
 
-	entradaDeseada := tablaApuntada.Paginas[indices[tamanioIndices-1]]
+	entradaDeseada := tablaApuntada.EntradasPaginas[indices[tamanioIndices-1]]
 	logger.Info("Se encontró la entrada de número: %d", entradaDeseada.NumeroFrame)
 
 	if entradaDeseada.EstaPresente == false {
@@ -88,12 +82,12 @@ func BuscarEntradaPagina(procesoBuscado *globalData.Proceso, indices []int) *glo
 }
 
 func ObtenerEntradaPagina(pid int, numeroPagina int) int {
-	procesoBuscado, err := globalData.ProcesosMapeable[pid]
+	procesoBuscado, err := data.ProcesosMapeable[pid]
 	if !err {
 		logger.Error("Processo Buscado no existe")
 		return -1
 	}
-	indices := DescomponerPagina(numeroPagina)
+	indices := UbicarPagina(numeroPagina)
 	entradaPagina := BuscarEntradaPagina(procesoBuscado, indices)
 	if entradaPagina == nil {
 		logger.Error("No se encontró la entrada de página para el PID: %d", pid)
@@ -109,8 +103,8 @@ func ObtenerEntradaPagina(pid int, numeroPagina int) int {
 
 func AsignarEntradaPagina() int {
 	indiceLibre := -1
-	tamanioMaximo := globalData.MemoryConfig.MemorySize
-	framesMemoriaPrincipal := globalData.FramesLibres
+	tamanioMaximo := data.MemoryConfig.MemorySize
+	framesMemoriaPrincipal := data.FramesLibres
 	for i := 0; i < tamanioMaximo; i++ {
 		if framesMemoriaPrincipal[i] == true {
 			indiceLibre = i
@@ -121,7 +115,7 @@ func AsignarEntradaPagina() int {
 }
 
 func LiberarEntradaPagina(frameALiberar int) {
-	framesMemoriaPrincipal := globalData.FramesLibres
+	framesMemoriaPrincipal := data.FramesLibres
 	framesMemoriaPrincipal[frameALiberar] = true
 }
 

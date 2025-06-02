@@ -28,25 +28,16 @@ type EntradaPagina struct {
 }
 
 type TablaPagina struct {
-	Subtabla      map[int]*TablaPagina `json:"subtabla"`
-	EntradaPagina EntradaPagina        `json:"entrada_pagina"`
-}
-
-type TablaPaginaIntermedia struct {
-	Subtabla map[int]*TablaPagina `json:"subtabla"`
-	Paginas  TablaPaginaHoja
-}
-
-type TablaPaginaHoja struct {
+	Subtabla        map[int]*TablaPagina   `json:"subtabla"`
 	EntradasPaginas map[int]*EntradaPagina `json:"entradas_pagina"`
-}
+} // las entradasPaginas se instancian en nil hasta el último nivel
 
-type TablaPaginasMain map[int]*TablaPagina
+type TablaPaginas map[int]*TablaPagina
 
 type Proceso struct {
-	PID       int              `json:"pid"`
-	TablaRaiz TablaPaginasMain `json:"tabla_paginas"`
-	Metricas  MetricasProceso  `json:"metricas_proceso"`
+	PID       int             `json:"pid"`
+	TablaRaiz TablaPaginas    `json:"tabla_paginas"`
+	Metricas  MetricasProceso `json:"metricas_proceso"`
 }
 
 type ProcesosMap map[int]*Proceso
