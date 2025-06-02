@@ -57,7 +57,7 @@ func main() {
 	// ------------------------------------------------------
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("memoria/configuracion", conexiones.EnviarConfiguracionMemoria)
+	mux.HandleFunc("/memoria/configuracion", conexiones.EnviarConfiguracionMemoria)
 	// ESTÁ ESPERANDO LOS MENSAJES DE LOS OTROS MODULOS
 	mux.HandleFunc("/memoria/cpu", conexiones.RecibirMensajeDeCPU)
 	mux.HandleFunc("/memoria/kernel", conexiones.RecibirMensajeDeKernel)

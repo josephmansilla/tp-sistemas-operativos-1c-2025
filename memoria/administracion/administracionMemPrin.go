@@ -29,7 +29,7 @@ func CalcularCantidadFrames() int {
 }
 
 func ConfigurarFrames(cantidadFrames int) {
-	for i := 0; i <= cantidadFrames; i++ {
+	for i := 0; i < cantidadFrames; i++ {
 		globalData.FramesLibres[i] = true
 	}
 	logger.Info("Todos los frames están libres.")

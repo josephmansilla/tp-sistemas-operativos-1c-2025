@@ -3,7 +3,6 @@ package conexiones
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/memoria/utils"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
@@ -97,16 +96,28 @@ func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 }
 
 func EnviarConfiguracionMemoria(w http.ResponseWriter, r *http.Request) {
-	config := globals.Config{}
-	mensaje := globals.ConsultaConfigMemoria{
-		TamanioPagina:    config.PagSize,
-		EntradasPorNivel: config.EntriesPerPage,
-		CantidadNiveles:  config.NumberOfLevels,
+	// Leer el PID desde el cuerpo del request
+	var pidData struct {
+		PID int `json:"pid"`
 	}
-	url := fmt.Sprintf("http://%s:%d/memoria/configuracion", globals.MemoryConfig.IpMemory, globals.MemoryConfig.PortMemory)
-	err := data.EnviarDatos(url, mensaje)
+
+	err := data.LeerJson(w, r, &pidData)
 	if err != nil {
-		logger.Error("Error enviando Config a CPU: %s", err.Error())
+		// El error ya está logueado por LeerJson
 		return
 	}
+	logger.Info("Recibí petición de configuración desde PID: %d", pidData.PID)
+
+	mensaje := globals.ConsultaConfigMemoria{
+		TamanioPagina:    globals.MemoryConfig.PagSize,
+		EntradasPorNivel: globals.MemoryConfig.EntriesPerPage,
+		CantidadNiveles:  globals.MemoryConfig.NumberOfLevels,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(mensaje); err != nil {
+		logger.Error("Error al codificar la respuesta JSON: %v", err)
+		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
+	}
+
 }

@@ -23,12 +23,17 @@ type RespuestaTabla struct {
 }
 
 // Función principal de traducción
-func Traducir(dirLogica int, tlb *TLB) int {
+func Traducir(dirLogica int) int {
 	tamPagina := globals.TamanioPagina
 	entradasPorNivel := globals.EntradasPorNivel
 	niveles := globals.CantidadNiveles
 	nroPagina := dirLogica / tamPagina
 	desplazamiento := dirLogica % tamPagina
+
+	//Inicializo la TLB
+	var tlb = NuevaTLB(globals.ClientConfig.TlbEntries, globals.ClientConfig.TlbReplacement)
+	tlb.AgregarEntrada(10, 3)
+	tlb.AgregarEntrada(1, 10)
 
 	// Consulto la tlb
 	if marco, ok := tlb.Buscar(nroPagina); ok {

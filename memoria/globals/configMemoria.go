@@ -3,7 +3,6 @@ package globals
 import (
 	"encoding/json"
 	"errors"
-	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"os"
 )
 
@@ -62,14 +61,19 @@ func (cfg Config) Validate() error {
 	return nil
 }
 
-func ConfigCheck(filepath string) *Config {
+func ConfigCheck(filepath string) (*Config, error) {
 	var configCheck *Config
 	configFile, err := os.Open(filepath)
 	if err != nil {
-		logger.Fatal(err.Error())
+		return nil, err
 	}
 	defer configFile.Close()
-	jsonParser := json.NewDecoder(configFile)
-	jsonParser.Decode(&configCheck)
-	return configCheck
-} // err handling
+
+	decoder := json.NewDecoder(configFile)
+	err = decoder.Decode(&configCheck)
+	if err != nil {
+		return nil, err
+	}
+
+	return configCheck, nil
+}

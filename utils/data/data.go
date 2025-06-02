@@ -86,3 +86,30 @@ func EnviarDatosConRespuesta(url string, data any) (*http.Response, error) {
 
 	return resp, nil // importante: quien la use debe hacer defer resp.Body.Close()
 }
+
+func EnviarDatosYRecibirRespuesta(url string, dataEnviar any, dataRecibir any) error {
+	jsonData, err := json.Marshal(dataEnviar)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Respuesta: %s", string(body)) // útil para debug
+
+	err = json.Unmarshal(body, dataRecibir)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
