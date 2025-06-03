@@ -38,7 +38,7 @@ func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosD
 	return globals.CPU
 }
 
-func CargarInstrucciones(nombreArchivo string) {
+/*func CargarInstrucciones(nombreArchivo string) {
 
 	ruta := "../pruebas/" + nombreArchivo
 	// con el (..) vuelve para atras en los directorios
@@ -67,7 +67,7 @@ func CargarInstrucciones(nombreArchivo string) {
 		logger.Error("Error al leer el archivo:%s", err)
 	}
 	logger.Info("Total de instrucciones cargadas: %d", len(utils.Instrucciones))
-}
+}*/
 
 func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.ContextoDeCPU
@@ -120,4 +120,32 @@ func EnviarConfiguracionMemoria(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 	}
 
+}
+func CargarInstrucciones(pid int, nombreArchivo string) {
+	ruta := "../pruebas/" + nombreArchivo
+
+	file, err := os.Open(ruta)
+	if err != nil {
+		logger.Error("Error al abrir el archivo: %s\n", err)
+		return
+	}
+	defer file.Close()
+
+	logger.Info("Se leyó el archivo")
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		linea := scanner.Text()
+		logger.Info("Línea leída: %s", linea)
+		utils.CargarInstruccionParaPID(pid, linea)
+		if strings.TrimSpace(linea) == "EOF" {
+			break
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		logger.Error("Error al leer el archivo: %s", err)
+	}
+
+	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", pid, len(utils.InstruccionesPorPID[pid]))
 }
