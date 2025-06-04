@@ -33,7 +33,7 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 	logger.Info("## (<%d>) Se crea el Primer proceso - Estado: NEW", pcbNuevo.PID)
 
 	//PASO 3: Mandar archivo pseudocodigo a Memoria
-	comunicacion.EnviarArchivoMemoria(fileName, tamanio)
+	comunicacion.EnviarArchivoMemoria(fileName, tamanio, pid)
 }
 
 func PlanificadorLargoPlazo() {
@@ -96,7 +96,7 @@ func ManejadorCreacionProcesos() {
 					logger.Error("Reintento falló para pid=%d, abortando", p)
 					return
 				}
-			}*/ //CUANDO PEPE HAGA ESO YA SE PUEDE DESCOMENTAR
+			}*///CUANDO PEPE HAGA ESO YA SE PUEDE DESCOMENTAR
 
 			//DICE QUE NO
 			//MANDAR NEW
@@ -106,6 +106,8 @@ func ManejadorCreacionProcesos() {
 
 			// Pasar de NEW a READY
 			agregarProcesoAReady(p)
+			comunicacion.EnviarArchivoMemoria(fileName, size, pid)
+
 			return //este return hay que sacarlo cuando pepe complete lo suyo
 		}(fileName, size, pid)
 	}
@@ -170,7 +172,7 @@ func ManejadorFinalizacionProcesos() {
 		if err != nil {
 			logger.Error("Error avisando fin proceso pid=%d: %v", pid, err)
 			continue
-		}*/ //MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
+		}*///MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
 
 		//ACA PONER UN WAIT/TUBERIA que espere a que memoria libere el proceso, ES PARA TENER UN ORDEN
 

@@ -56,12 +56,10 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	globals.RespuestaKernel = globals.DatosRespuestaDeKernel{
 		Pseudocodigo:   mensaje.Pseudocodigo,
 		TamanioMemoria: mensaje.TamanioMemoria,
+		PID:            mensaje.PID,
 	}
 
-	// ACA HAY QUE VER COMO KENEL LE ENVIA EL PID POR EL ENDPOINT Y AGREGARLO
-	pid := mensaje.PID
-
-	CargarInstrucciones(pid, mensaje.Pseudocodigo)
+	CargarInstrucciones(mensaje.PID, mensaje.Pseudocodigo)
 
 	logger.Info("Archivo Pseudocodigo: %s\n", mensaje.Pseudocodigo)
 	logger.Info("Tamanio de Memoria Pedido: %d\n", mensaje.TamanioMemoria)

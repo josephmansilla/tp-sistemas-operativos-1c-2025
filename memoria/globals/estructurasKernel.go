@@ -13,6 +13,7 @@ type DatosConsultaDeKernel struct {
 type DatosRespuestaDeKernel struct {
 	Pseudocodigo   string `json:"filename"`
 	TamanioMemoria int    `json:"tamanio_memoria"`
+	PID            int    `json:"pid"`
 }
 
 type RespuestaMemoria struct {
