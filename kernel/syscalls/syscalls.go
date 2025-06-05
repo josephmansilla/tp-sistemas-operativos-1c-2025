@@ -74,7 +74,7 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 			FileName:       fileName,
 			ProcessSize:    tamanio,
 			ME:             make(map[string]int),
-			MT:             make(map[string]int),
+			MT:             make(map[string]float64),
 			EstimadoRafaga: estimado,
 			RafagaRestante: 0,
 		}

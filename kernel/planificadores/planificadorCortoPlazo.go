@@ -58,10 +58,9 @@ func DespacharProceso() {
 		}
 
 		logger.Info("Proceso <%d> -> EXECUTE en CPU <%s>", proceso.PID, cpuID)
-		proceso.ME[pcb.EstadoExecute]++
-		proceso.Estado = pcb.EstadoExecute
 
 		Utils.MutexEjecutando.Lock()
+		pcb.CambiarEstado(proceso, pcb.EstadoExecute)
 		algoritmos.ColaEjecutando.Add(proceso)
 		Utils.MutexEjecutando.Unlock()
 
@@ -117,8 +116,7 @@ func BloquearProceso() {
 
 		//ENVIAR A BLOCKED
 		Utils.MutexBloqueado.Lock()
-		proceso.ME[pcb.EstadoBlocked]++
-		proceso.Estado = pcb.EstadoBlocked
+		pcb.CambiarEstado(proceso, pcb.EstadoBlocked)
 		algoritmos.ColaBloqueado.Add(proceso)
 		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado BLOCKED", proceso.PID)
 		Utils.MutexBloqueado.Unlock()
@@ -145,8 +143,7 @@ func FinDeIO() {
 		Utils.MutexBloqueado.Unlock()
 
 		Utils.MutexReady.Lock()
-		proceso.ME[pcb.EstadoReady]++
-		proceso.Estado = pcb.EstadoReady
+		pcb.CambiarEstado(proceso, pcb.EstadoReady)
 		algoritmos.ColaReady.Add(proceso)
 		logger.Info("## (%d) finalizó IO y pasa a READY", pid)
 		Utils.MutexReady.Unlock()

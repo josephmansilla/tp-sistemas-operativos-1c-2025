@@ -4,6 +4,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
 	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
+	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
@@ -18,20 +19,21 @@ func intentarInicializarDesdeSuspReady() bool {
 		return false
 	}
 
-	pcb := algoritmos.ColaSuspendidoReady.First()
-	exito, err := comunicacion.SolicitarEspacioEnMemoria(pcb.FileName, pcb.ProcessSize)
+	proceso := algoritmos.ColaSuspendidoReady.First()
+	exito, err := comunicacion.SolicitarEspacioEnMemoria(proceso.FileName, proceso.ProcessSize)
 	if err != nil || !exito {
-		logger.Info("No se pudo inicializar proceso desde SUSP.READY PID <%d>", pcb.PID)
+		logger.Info("No se pudo inicializar proceso desde SUSP.READY PID <%d>", proceso.PID)
 		return false
 	}
 	Utils.MutexSuspendidoReady.Lock()
-	algoritmos.ColaSuspendidoReady.Remove(pcb)
+	algoritmos.ColaSuspendidoReady.Remove(proceso)
 	Utils.MutexSuspendidoReady.Unlock()
 
 	Utils.MutexReady.Lock()
-	algoritmos.ColaReady.Add(pcb)
+	pcb.CambiarEstado(proceso, pcb.EstadoReady)
+	algoritmos.ColaReady.Add(proceso)
 	Utils.MutexReady.Unlock()
 
-	logger.Info("PID <%d> pasó de SUSP.READY a READY", pcb.PID)
+	logger.Info("PID <%d> pasó de SUSP.READY a READY", proceso.PID)
 	return true
 }

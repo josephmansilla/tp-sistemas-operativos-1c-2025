@@ -8,6 +8,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
 	"strconv"
+	"time"
 )
 
 // CREA PRIMER PROCESO (NEW)
@@ -19,18 +20,18 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 		PID:            pid,
 		PC:             0,
 		ME:             make(map[string]int),
-		MT:             make(map[string]int),
+		MT:             make(map[string]float64),
 		EstimadoRafaga: estimado,
 		RafagaRestante: 0,
 		FileName:       fileName,
 		ProcessSize:    tamanio,
+		TiempoEstado:   time.Now(),
 	}
 
 	// Paso 2: Agregar a la cola NEW
 	algoritmos.ColaNuevo.Add(&pcbNuevo)
-	pcbNuevo.ME[pcb.EstadoNew]++
-	pcbNuevo.Estado = pcb.EstadoNew
-	logger.Info("## (<%d>) Se crea el Primer proceso - Estado: NEW", pcbNuevo.PID)
+	pcb.CambiarEstado(&pcbNuevo, pcb.EstadoNew)
+	logger.Info("## (<%d>) Se crea el Primer proceso - Estado: <%s>", pcbNuevo.PID, pcbNuevo.Estado)
 
 	//PASO 3: Mandar archivo pseudocodigo a Memoria
 	comunicacion.EnviarArchivoMemoria(fileName, tamanio, pid)
@@ -45,11 +46,11 @@ func PlanificadorLargoPlazo() {
 	algoritmos.ColaNuevo.Remove(primerProceso)
 
 	//2. Mandar a Ready
-	primerProceso.ME[pcb.EstadoReady]++
-	primerProceso.Estado = pcb.EstadoReady
 	algoritmos.ColaReady.Add(primerProceso)
+	pcb.CambiarEstado(primerProceso, pcb.EstadoReady)
+
 	Utils.NotificarDespachador <- primerProceso.PID //SIGNAL QUE PASO A READY. MANDO PID
-	logger.Info("## (<%d>) Pasa de estado NEW a estado READY", primerProceso.PID)
+	logger.Info("## (<%d>) Pasa de estado NEW a estado %s", primerProceso.PID, primerProceso.Estado)
 
 	go ManejadorCreacionProcesos()
 	go ManejadorFinalizacionProcesos()
@@ -137,10 +138,8 @@ func agregarProcesoAReady(pid int) {
 	}
 
 	// 2) Agregar a READY
-	pcbPtr.ME[pcb.EstadoReady]++
-	pcbPtr.Estado = pcb.EstadoReady
-
 	Utils.MutexReady.Lock()
+	pcb.CambiarEstado(pcbPtr, pcb.EstadoExecute)
 	algoritmos.ColaReady.Add(pcbPtr)
 	Utils.MutexReady.Unlock()
 
@@ -196,8 +195,7 @@ func ManejadorFinalizacionProcesos() {
 
 		// Agregar a EXIT
 		Utils.MutexSalida.Lock()
-		pcbFinalizado.ME[pcb.EstadoExit]++
-		pcbFinalizado.Estado = pcb.EstadoExit
+		pcb.CambiarEstado(pcbFinalizado, pcb.EstadoExit)
 		algoritmos.ColaSalida.Add(pcbFinalizado)
 		logger.Info("## (<%d>) Pasa de estado EXECUTE a estado EXIT", pcbFinalizado.PID)
 		Utils.MutexSalida.Unlock()
@@ -224,7 +222,7 @@ func CrearProceso(fileName string, tamanio int) {
 		PID:         pid,
 		PC:          0,
 		ME:          make(map[string]int),
-		MT:          make(map[string]int),
+		MT:          make(map[string]float64),
 		FileName:    fileName,
 		ProcessSize: tamanio,
 	}
@@ -304,6 +302,7 @@ func MostrarColaReady() {
 		logger.Info(" - PCB EN COLA READY con PID: %d", pcb.PID)
 	}
 }
+
 func MostrarColaNew() {
 	lista := algoritmos.ColaNuevo.Values()
 

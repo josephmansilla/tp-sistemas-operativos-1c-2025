@@ -33,9 +33,10 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 	// Cargar en globals
 	globals.CPUMu.Lock()
 	globals.CPUs[id] = globals.DatosCPU{
-		ID:     mensajeRecibido.ID,
-		Ip:     mensajeRecibido.Ip,
-		Puerto: mensajeRecibido.Puerto,
+		ID:      mensajeRecibido.ID,
+		Ip:      mensajeRecibido.Ip,
+		Puerto:  mensajeRecibido.Puerto,
+		Ocupada: false,
 	}
 	globals.CPUCond.Broadcast() // Despierta a quien espera CPUs
 	globals.CPUMu.Unlock()
@@ -67,6 +68,7 @@ func EnviarContextoCPU(id string, pcb *pcb.PCB) {
 		PID: pcb.PID,
 		PC:  pcb.PC,
 	}
+	logger.Info("Enviando PID <%d> y PC <%d> a CPU", mensaje.PID, mensaje.PC)
 
 	err := data.EnviarDatos(url, mensaje)
 	if err != nil {

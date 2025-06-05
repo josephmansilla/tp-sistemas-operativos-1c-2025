@@ -1,6 +1,9 @@
 package pcb
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // posibles estados de un proceso
 const (
@@ -19,12 +22,13 @@ type PCB struct {
 	PID            int
 	PC             int
 	ME             map[string]int
-	MT             map[string]int
-	FileName       string // nombre de archivo de pseudoCodigo
+	MT             map[string]float64 // Tiempo en milisegundos con decimales
+	FileName       string             // nombre de archivo de pseudoCodigo
 	ProcessSize    int
 	EstimadoRafaga float64 // Para SJF/SRT
 	RafagaRestante int     // Para SRT
 	Estado         string
+	TiempoEstado   time.Time
 }
 
 func (a *PCB) Null() *PCB {
@@ -58,13 +62,31 @@ func (p *PCB) ImprimirMetricas() string {
 	for _, estado := range estados {
 		count := p.ME[estado]
 		tiempo := p.MT[estado]
-		salida += fmt.Sprintf(" %s (%d) (%d),", estado, count, tiempo)
+		salida += fmt.Sprintf(" %s (%d) (%.2f ms),", estado, count, tiempo)
 	}
 
 	// Eliminar la última coma
 	if len(salida) > 0 {
 		salida = salida[:len(salida)-1]
 	}
-
 	return salida
+}
+
+func CambiarEstado(p *PCB, nuevoEstado string) {
+	now := time.Now()
+
+	// Incrementamos contador para el nuevo estado
+	p.ME[nuevoEstado]++
+	p.Estado = nuevoEstado
+
+	// Cambiamos el estado y actualizamos el tiempo de inicio para el nuevo estado
+	p.TiempoEstado = now
+}
+
+func (p *PCB) ContarTiempoEnEstado() float64 {
+	if p.TiempoEstado.IsZero() {
+		return 0
+	}
+	duracion := time.Since(p.TiempoEstado)
+	return float64(duracion.Milliseconds()) // milisegundos con precisión de entero
 }
