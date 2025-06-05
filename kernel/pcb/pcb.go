@@ -73,20 +73,16 @@ func (p *PCB) ImprimirMetricas() string {
 }
 
 func CambiarEstado(p *PCB, nuevoEstado string) {
-	now := time.Now()
+	estadoAnterior := p.Estado
+	FinalizarEstado(p, estadoAnterior) //medir ANTES
 
-	// Incrementamos contador para el nuevo estado
 	p.ME[nuevoEstado]++
 	p.Estado = nuevoEstado
-
-	// Cambiamos el estado y actualizamos el tiempo de inicio para el nuevo estado
-	p.TiempoEstado = now
+	p.TiempoEstado = time.Now()
 }
 
-func (p *PCB) ContarTiempoEnEstado() float64 {
-	if p.TiempoEstado.IsZero() {
-		return 0
-	}
-	duracion := time.Since(p.TiempoEstado)
-	return float64(duracion.Milliseconds()) // milisegundos con precisión de entero
+func FinalizarEstado(p *PCB, estadoAnterior string) {
+	duracion := time.Since(p.TiempoEstado) //p.TiempoEnEstado()
+	ms := float64(duracion.Microseconds()) / 1000.0
+	p.MT[estadoAnterior] += ms
 }
