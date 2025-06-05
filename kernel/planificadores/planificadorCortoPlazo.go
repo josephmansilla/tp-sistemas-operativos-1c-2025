@@ -72,7 +72,7 @@ func DespacharProceso() {
 		cpu.Ocupada = true
 		globals.CPUs[cpuID] = cpu
 
-		comunicacion.EnviarContextoCPU(cpuID, proceso)
+		go comunicacion.EnviarContextoCPU(cpuID, proceso)
 	}
 }
 
