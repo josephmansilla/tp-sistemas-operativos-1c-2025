@@ -1,3 +1,6 @@
 NOOP
+GOTO 3
+NOOP
+INIT_PROC prueba2.txt 2
 NOOP
 EXIT

@@ -73,5 +73,4 @@ func EnviarContextoCPU(id string, pcb *pcb.PCB) {
 		logger.Info("Error enviando PID y PC a CPU: %s", err.Error())
 		return
 	}
-	logger.Info("PID: %d y PC: %d enviados exitosamente a CPU", pcb.PID, pcb.PC)
 }
