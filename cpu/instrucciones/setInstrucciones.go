@@ -104,7 +104,7 @@ func writeMemInstruccion(arguments []string) error {
 		return err
 	}
 
-	log.Printf("PID: %s - Acción: LEER - Dirección Física: %s - Valor: %s", globals.PIDActual, dirFisica, datos)
+	log.Printf("PID: %d - Acción: ESCRIBIR - Dirección Física: %d - Datos: %s", globals.PIDActual, dirFisica, datos)
 
 	return nil
 }
@@ -133,7 +133,7 @@ func readMemInstruccion(arguments []string) error {
 		return err
 	}
 
-	log.Printf("PID: %s - Acción: LEER - Dirección Física: %s - Valor: %s", globals.PIDActual, dirFisica, valorLeido)
+	log.Printf("PID: %d - Acción: LEER - Dirección Física: %d - Valor: %d", globals.PIDActual, dirFisica, valorLeido)
 
 	return nil
 }

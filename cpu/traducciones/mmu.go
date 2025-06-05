@@ -32,8 +32,9 @@ func Traducir(dirLogica int) int {
 
 	//Inicializo la TLB
 	var tlb = NuevaTLB(globals.ClientConfig.TlbEntries, globals.ClientConfig.TlbReplacement)
-	tlb.AgregarEntrada(10, 3)
-	tlb.AgregarEntrada(1, 10)
+	tlb.AgregarEntrada(1, 2)
+	tlb.AgregarEntrada(3, 4)
+	tlb.AgregarEntrada(5, 6)
 
 	// Consulto la tlb
 	if marco, ok := tlb.Buscar(nroPagina); ok {

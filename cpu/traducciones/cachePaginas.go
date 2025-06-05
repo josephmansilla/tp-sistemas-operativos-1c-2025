@@ -4,14 +4,14 @@ import "log"
 
 func Leer(dirFisica int, tamanio int) (string, error) {
 
-	log.Printf("Direccion leida: %s - Tamanio leido: %s", dirFisica, tamanio)
+	log.Printf("Direccion leida: %d - Tamanio leido: %d", dirFisica, tamanio)
 
 	return "", nil
 }
 
 func Escribir(dirFisica int, datos string) error {
 
-	log.Printf("Se escribio %d en la direccion fisica %s", datos, dirFisica)
+	log.Printf("Se escribio %s en la direccion fisica %d", datos, dirFisica)
 
 	return nil
 }
