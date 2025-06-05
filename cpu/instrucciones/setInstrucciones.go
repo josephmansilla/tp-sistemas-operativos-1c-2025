@@ -169,6 +169,7 @@ func ioInstruccion(arguments []string) error {
 
 	nombreIO := arguments[0]
 	tiempoIO, err := strconv.Atoi(arguments[1])
+	globals.PCActual++
 	if err != nil {
 		log.Printf("Error al convertir el tiempo de IO: %s", err)
 		return err
