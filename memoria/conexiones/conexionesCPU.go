@@ -77,10 +77,12 @@ func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pid := mensaje.PID
 	pc := mensaje.PC
+
 	var instruccion string
-	if pc >= 0 && pc < len(utils.Instrucciones) {
-		instruccion = utils.Instrucciones[pc]
+	if pc >= 0 && pc < len(utils.InstruccionesPorPID[pid]) {
+		instruccion = utils.InstruccionesPorPID[pid][pc]
 	} else {
 		instruccion = "" // Esto indica fin del archivo o error de PC
 	}
