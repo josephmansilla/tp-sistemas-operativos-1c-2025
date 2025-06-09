@@ -27,34 +27,32 @@ func Traducir(dirLogica int) int {
 	nroPagina := dirLogica / tamPagina
 	desplazamiento := dirLogica % tamPagina
 
-	//Inicializo la TLB
+	// Inicializo la TLB
 	var tlb = NuevaTLB(globals.ClientConfig.TlbEntries, globals.ClientConfig.TlbReplacement)
 	tlb.AgregarEntrada(1, 2)
 	tlb.AgregarEntrada(3, 4)
 	tlb.AgregarEntrada(5, 6)
 
-	// Consulto la tlb
+	// Consulto la TLB
 	if marco, ok := tlb.Buscar(nroPagina); ok {
 		return marco*tamPagina + desplazamiento
 	}
 
-	// La pagina no esta en la tlb, tengo que ir a memoria
+	// La página no está en la TLB, tengo que ir a Memoria
 	entradas := descomponerPagina(nroPagina, niveles, entradasPorNivel)
 
-	var marco int = -1
-
-	resp, err := accederTabla(globals.PIDActual, entradas)
+	marco, err := accederTabla(globals.PIDActual, entradas)
 	if err != nil {
-		log.Fatal("ELEGI QUE PONERLE SANTI")
+		log.Printf("No se pudo acceder a la tabla de páginas: %s", err.Error())
+		return -1
 	}
-	marco = resp
 
 	if marco == -1 {
 		log.Printf("No se pudo traducir la dirección lógica %d", dirLogica)
 		return -1
 	}
 
-	// Agrego la entrada a la tlb
+	// Agrego la entrada a la TLB
 	tlb.AgregarEntrada(nroPagina, marco)
 
 	return marco*tamPagina + desplazamiento
@@ -74,7 +72,7 @@ func descomponerPagina(nroPagina int, niveles int, entradasPorNivel int) []int {
 }
 
 // Hace una petición HTTP a Memoria para resolver una entrada de tabla
-func accederTabla(pid int, indices []int) (RespuestaTabla, error) {
+func accederTabla(pid int, indices []int) (int, error) {
 	url := fmt.Sprintf("http://%s:%d/memoria/tabla",
 		globals.ClientConfig.IpMemory,
 		globals.ClientConfig.PortMemory,
@@ -87,14 +85,15 @@ func accederTabla(pid int, indices []int) (RespuestaTabla, error) {
 
 	resp, err := data.EnviarDatosConRespuesta(url, mensaje)
 	if err != nil {
-		return RespuestaTabla{}, err
+		return -1, err
 	}
 	defer resp.Body.Close()
 
 	var respuesta RespuestaTabla
 	if err := json.NewDecoder(resp.Body).Decode(&respuesta); err != nil {
-		return RespuestaTabla{}, err
+		return -1, err
 	}
+	log.Printf("Marco Recibido: %d", respuesta.NumeroMarco)
 
-	return respuesta, nil
+	return respuesta.NumeroMarco, nil
 }

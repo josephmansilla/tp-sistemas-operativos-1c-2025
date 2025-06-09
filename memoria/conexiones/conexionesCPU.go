@@ -135,10 +135,13 @@ func EnviarEntradaPagina(w http.ResponseWriter, r *http.Request) {
 
 	marco := administracion.ObtenerEntradaPagina(pid, indices)
 
-	respuesta := globals.RespuestaTablaCPU{NumeroMarco: marco}
+	respuesta := globals.RespuestaTablaCPU{
+		NumeroMarco: marco,
+	}
 
 	logger.Info("## Número Frame enviado: %d ", marco)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(respuesta)
+	w.Write([]byte("marco devuelto"))
 }

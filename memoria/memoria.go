@@ -42,6 +42,11 @@ func main() {
 	}
 
 	var portMemory = globals.MemoryConfig.PortMemory
+	globals.CantidadNiveles = globals.MemoryConfig.NumberOfLevels
+	globals.EntradasPorPagina = globals.MemoryConfig.EntriesPerPage
+	globals.DelayMemoria = globals.MemoryConfig.MemoryDelay
+	globals.DelaySwap = globals.MemoryConfig.SwapDelay
+
 	logger.Info("======== Comenzo la ejecucion de Memoria ========")
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
@@ -67,7 +72,7 @@ func main() {
 	mux.HandleFunc("/memoria/espaciolibre", conexiones.ObtenerEspacioLibreMock)
 	// TODO: cambiar la funcion a la que escucha ,, debería devolver la cantidad de frames libres y su tamaño total
 
-	mux.HandleFunc("memoria/tabla", conexiones.EnviarEntradaPagina)
+	mux.HandleFunc("/memoria/tabla", conexiones.EnviarEntradaPagina)
 
 	//mux.HandleFunc("/memoria/lectura", utils.LecturaEspacio)
 	// TODO: debe responder a CPU el valor de una dirección física con el delay indicado en Memory Delay
