@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"github.com/sisoputnfrba/tp-golang/memoria/administracion"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
-	"github.com/sisoputnfrba/tp-golang/memoria/utils"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
@@ -51,8 +50,8 @@ func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 	pc := mensaje.PC
 
 	var instruccion string
-	if pc >= 0 && pc < len(utils.InstruccionesPorPID[pid]) {
-		instruccion = utils.InstruccionesPorPID[pid][pc]
+	if pc >= 0 && pc < len(InstruccionesPorPID[pid]) {
+		instruccion = InstruccionesPorPID[pid][pc]
 	} else {
 		instruccion = "" // Esto indica fin del archivo o error de PC
 	}
@@ -109,7 +108,7 @@ func CargarInstrucciones(pid int, nombreArchivo string) {
 	for scanner.Scan() {
 		linea := scanner.Text()
 		logger.Info("Línea leída: %s", linea)
-		utils.CargarInstruccionParaPID(pid, linea)
+		CargarInstruccionParaPID(pid, linea)
 		if strings.TrimSpace(linea) == "EOF" {
 			break
 		}
@@ -119,7 +118,7 @@ func CargarInstrucciones(pid int, nombreArchivo string) {
 		logger.Error("Error al leer el archivo: %s", err)
 	}
 
-	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", pid, len(utils.InstruccionesPorPID[pid]))
+	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", pid, len(InstruccionesPorPID[pid]))
 }
 
 func EnviarEntradaPagina(w http.ResponseWriter, r *http.Request) {
