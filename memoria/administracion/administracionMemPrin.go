@@ -8,12 +8,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 func InicializarMemoriaPrincipal() {
 	cantidadFrames := CalcularCantidadFrames()
 
-	globalData.MemoriaPrincipal = make([]byte, cantidadFrames)
+	globalData.MemoriaPrincipal = make([][]byte, cantidadFrames)
 	globalData.FramesLibres = make([]bool, cantidadFrames)
 	ConfigurarFrames(cantidadFrames)
 
@@ -45,6 +46,7 @@ func AsignarProceso(PID int, cantidadPaginas int) {
 
 func EscrituraEspacio(w http.ResponseWriter, r *http.Request) {
 	// TODO: ESCRIBIR LO INDICADO EN LA DIRECCION PEDIDA
+	time.Sleep(time.Duration(globalData.DelayMemoria) * time.Second)
 
 	logger.Info("## PID: <PID>  - <Escritura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")
 
@@ -52,6 +54,8 @@ func EscrituraEspacio(w http.ResponseWriter, r *http.Request) {
 }
 
 func LecturaEspacio(w http.ResponseWriter, r *http.Request) {
+
+	time.Sleep(time.Duration(globalData.DelayMemoria) * time.Second)
 
 	// TODO: DEBO CREAR UNA STRUCT PARA QUE ME ENVIEN LA DIRECCION FISICA
 	// TODO: DEVOLVER EL VALOR QUE SE ENCUENTRA EN LA DIRECCION PEDIDA

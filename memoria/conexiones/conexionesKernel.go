@@ -35,7 +35,9 @@ import (
 }*/
 
 func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
-	respuesta := globals.EspacioLibreRTA{EspacioLibre: globals.MemoryConfig.MemorySize}
+	respuesta := globals.EspacioLibreRTA{
+		EspacioLibre: globals.MemoryConfig.MemorySize,
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 

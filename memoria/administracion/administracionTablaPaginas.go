@@ -8,25 +8,9 @@ import (
 
 func InicializarTablaRaiz() data.TablaPaginas {
 	cantidadEntradasPorTabla := data.MemoryConfig.EntriesPerPage
-	tablaRaiz := make(data.TablaPaginas, cantidadEntradasPorTabla)
-	return tablaRaiz
+	return make(data.TablaPaginas, cantidadEntradasPorTabla)
 } //TODO: EL RESTO DE TABLAS Y ENTRADAS DE PAGINA SE VAN INSTANCIANDO A MEDIDA QUE
 // TODO: SE PIDE ASIGNAR X PROCESO EN LA MEMORIA.
-
-func UbicarPagina(numeroFrame int) []int {
-	cantidadNiveles := data.MemoryConfig.NumberOfLevels
-	entradasPorPagina := data.MemoryConfig.EntriesPerPage
-
-	indice := make([]int, cantidadNiveles)
-	divisor := 1
-
-	for i := cantidadNiveles - 1; i >= 0; i-- {
-		indice[i] = (numeroFrame / divisor) % entradasPorPagina
-		divisor *= entradasPorPagina
-	}
-
-	return indice
-}
 
 func BuscarEntradaPagina(procesoBuscado *data.Proceso, indices []int) *data.EntradaPagina {
 	//	cantidadNiveles := data.MemoryConfig.NumberOfLevels TODO: DEBERIA SER LO MISMO LA LONG DE INDICES Y LA CANT DE NIVELES
@@ -38,27 +22,26 @@ func BuscarEntradaPagina(procesoBuscado *data.Proceso, indices []int) *data.Entr
 
 	tablaApuntada := procesoBuscado.TablaRaiz[indices[0]]
 	if tablaApuntada == nil {
-		logger.Error("La tabla no existe")
+		logger.Fatal("La tabla no existe")
 		return nil
 	}
 	// TODO: optaria por dejar cantidad niveles
 	for i := 1; i <= tamanioIndices-1; i++ {
 		if tablaApuntada.Subtabla == nil {
-			logger.Error("La subtabla no existe")
-			// debería ser un error fatal al acceder una locacion
-			// de memoria a la que no tiene acceso
+			logger.Error("La subtabla no está en memoria")
+			// TODO: buscar de swap la tabla
 			return nil
 		}
 		tablaApuntada = tablaApuntada.Subtabla[indices[i]]
 	}
 	if tablaApuntada == nil {
-		logger.Error("La tabla no existe")
+		logger.Error("La tabla no está en memoria")
+		// TODO: buscar de swap la tabla
 		return nil
 	}
 	if tablaApuntada.EntradasPaginas == nil {
-		logger.Error("La entrada no existe")
-		// debería ser un error fatal al acceder una locacion
-		// de memoria a la que no tiene acceso
+		logger.Error("La entrada no está en memoria")
+		// TODO: buscar de swap la entrada
 		return nil
 	}
 
@@ -67,29 +50,29 @@ func BuscarEntradaPagina(procesoBuscado *data.Proceso, indices []int) *data.Entr
 
 	if entradaDeseada.EstaPresente == false {
 		logger.Error("No se encuentra presente en memoria el frame")
-		// Debería sacarse de SWAP
+		// TODO: Debería sacarse de SWAP
 		return nil
 	}
 
 	return entradaDeseada
 }
 
-func ObtenerEntradaPagina(pid int, numeroPagina int) int {
+func ObtenerEntradaPagina(pid int, indices []int) int {
 	procesoBuscado, err := data.ProcesosMapeable[pid]
 	if !err {
 		logger.Error("Processo Buscado no existe")
 		return -1
 	}
-	indices := UbicarPagina(numeroPagina)
 	entradaPagina := BuscarEntradaPagina(procesoBuscado, indices)
 	if entradaPagina == nil {
+		// TODO: si se la rta de buscar en swap sigue siendo nil entonces no existe por algun error raro
 		logger.Error("No se encontró la entrada de página para el PID: %d", pid)
 		return -1
 	}
 	if !entradaPagina.EstaPresente {
 		logger.Error("La entrada de página de número %d y de PID: %d no se encuentra presente ", entradaPagina.NumeroFrame, pid)
 		return -1
-		// aca podemos deberiamos sacarlo de swap
+		// TODO: aca podemos deberiamos sacarlo de swap (segunda verificacion que bueno veremos si queda)
 	}
 	return entradaPagina.NumeroFrame
 }
@@ -97,15 +80,14 @@ func ObtenerEntradaPagina(pid int, numeroPagina int) int {
 func AsignarEntradaPagina() int {
 	entradaLibre := -1
 	tamanioMaximo := data.MemoryConfig.MemorySize
-	framesMemoriaPrincipal := data.FramesLibres
+
 	for i := 0; i < tamanioMaximo; i++ {
-		if framesMemoriaPrincipal[i] == true {
+		if data.FramesLibres[i] == true {
 			entradaLibre = i
 			return entradaLibre
 		}
 	}
 	return entradaLibre
-	// retorna la entrada libre
 }
 
 func LiberarEntradaPagina(frameALiberar int) {

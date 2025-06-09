@@ -3,6 +3,7 @@ package conexiones
 import (
 	"bufio"
 	"encoding/json"
+	"github.com/sisoputnfrba/tp-golang/memoria/administracion"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/memoria/utils"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
@@ -37,37 +38,6 @@ func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosD
 	// se debe devolver el string mediante un JSON por el ResponseWriter
 	return globals.CPU
 }
-
-/*func CargarInstrucciones(nombreArchivo string) {
-
-	ruta := "../pruebas/" + nombreArchivo
-	// con el (..) vuelve para atras en los directorios
-	// accede a la carpeta de pruebas y abre el archivo pasado x parametro
-
-	file, err := os.Open(ruta)
-	if err != nil {
-		logger.Error("Error al abrir el archivo: %s\n", err)
-		return
-	}
-	defer file.Close() // se accede desde cualquier parte del código
-
-	logger.Info("Se leyó el archivo")
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		lineaPseudocodigo := scanner.Text()
-		logger.Info("Línea leída:%s", lineaPseudocodigo)
-		utils.CargarListaDeInstrucciones(lineaPseudocodigo)
-		if strings.TrimSpace(lineaPseudocodigo) == "EOF" {
-			break
-		}
-
-	}
-	if err := scanner.Err(); err != nil {
-		logger.Error("Error al leer el archivo:%s", err)
-	}
-	logger.Info("Total de instrucciones cargadas: %d", len(utils.Instrucciones))
-}*/
 
 func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.ContextoDeCPU
@@ -150,4 +120,25 @@ func CargarInstrucciones(pid int, nombreArchivo string) {
 	}
 
 	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", pid, len(utils.InstruccionesPorPID[pid]))
+}
+
+func EnviarEntradaPagina(w http.ResponseWriter, r *http.Request) {
+	var mensaje globals.MensajePedidoTablaCPU
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON del CPU\n", http.StatusBadRequest)
+		return
+	}
+
+	pid := mensaje.PID
+	indices := mensaje.IndicesEntrada
+
+	marco := administracion.ObtenerEntradaPagina(pid, indices)
+
+	respuesta := globals.RespuestaTablaCPU{NumeroMarco: marco}
+
+	logger.Info("## Número Frame enviado: %d ", marco)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(respuesta)
 }

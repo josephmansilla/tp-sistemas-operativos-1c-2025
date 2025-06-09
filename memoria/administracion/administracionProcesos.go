@@ -9,7 +9,7 @@ import (
 // ----------- FORMA PARTE DE LA MODIFICACIÓN DE PROCESOS -----------
 // ------------------------------------------------------------------
 
-func inicializacionProceso(w http.ResponseWriter, r *http.Request) {
+func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
 	// TODO: VERIFICAR EL TAMAÑO NECESARIO
 
 	// TODO: CREAR ESTRUCTURAS ADMINISTRATIVAS NECESARIAS
@@ -20,6 +20,7 @@ func inicializacionProceso(w http.ResponseWriter, r *http.Request) {
 
 func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 	//toDO
+
 	logger.Info("## PID: <PID>  - Proceso Destruido - Métricas - Acc.T.Pag: <ATP>; Inst.Sol.: <Inst.Sol>; SWAP: <SWAP>; Mem. Prin.: <Mem.Prin.>; Lec.Mem.: <Lec.Mem.>; Esc.Mem.: <Esc.Mem.>")
 }
 

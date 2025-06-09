@@ -67,6 +67,8 @@ func main() {
 	mux.HandleFunc("/memoria/espaciolibre", conexiones.ObtenerEspacioLibreMock)
 	// TODO: cambiar la funcion a la que escucha ,, debería devolver la cantidad de frames libres y su tamaño total
 
+	mux.HandleFunc("memoria/tabla", conexiones.EnviarEntradaPagina)
+
 	//mux.HandleFunc("/memoria/lectura", utils.LecturaEspacio)
 	// TODO: debe responder a CPU el valor de una dirección física con el delay indicado en Memory Delay
 	//mux.HandleFunc("/memoria/escritura", utils.EscrituraEspacio)

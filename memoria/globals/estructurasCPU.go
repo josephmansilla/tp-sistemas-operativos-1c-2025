@@ -26,6 +26,15 @@ type ConsultaConfigMemoria struct {
 	CantidadNiveles  int `json:"cantidadNiveles"`
 }
 
+type MensajePedidoTablaCPU struct {
+	PID            int   `json:"pid"`
+	IndicesEntrada []int `json:"indices_entrada"`
+}
+
+type RespuestaTablaCPU struct {
+	NumeroMarco int `json:"numero_marco"`
+}
+
 // TODO: conexiones con cpu
 type MensajeTabla struct {
 	PID           int `json:"pid"`
