@@ -1,7 +1,6 @@
 package algoritmos
 
 import (
-	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 )
 
@@ -10,7 +9,11 @@ import (
 //alpha
 
 func SeleccionarSJF() *pcb.PCB {
-	var masChico = ColaReady.First()
+	if len(ColaReady.elements) == 0 {
+		return nil
+	}
+
+	masChico := ColaReady.elements[0] //Tomo el primero y empiezo a comparar rafagas
 	for _, p := range ColaReady.elements {
 		if p.EstimadoRafaga < masChico.EstimadoRafaga {
 			masChico = p
@@ -18,15 +21,3 @@ func SeleccionarSJF() *pcb.PCB {
 	}
 	return masChico
 }
-
-// Utilizar despues de una rafaga en CPU
-func ActualizarEstimacionRafaga(proceso *pcb.PCB, rafagaReal int) {
-	alpha := globals.Config.Alpha
-	proceso.EstimadoRafaga = alpha*float64(rafagaReal) + (1-alpha)*proceso.EstimadoRafaga
-}
-
-//EJEMPLO DE USO
-/*
-cuando termina una ráfaga
-ActualizarEstimacionRafaga(proceso, 7) // 7 es el tiempo real que tardó la ráfaga
-*/

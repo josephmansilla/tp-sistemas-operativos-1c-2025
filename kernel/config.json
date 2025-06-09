@@ -3,10 +3,10 @@
     "port_memory": 8083,
     "ip_kernel": "127.0.0.1",
     "port_kernel": 8081,
-    "scheduler_algorithm": "FIFO",
+    "scheduler_algorithm": "SJF",
     "ready_ingress_algorithm": "PMCP",
     "alpha": 0.5,
-    "initial_estimate": 1000,
+    "initial_estimate": 1000.00,
     "suspension_time": 4500,
     "log_level": "DEBUG"
 }

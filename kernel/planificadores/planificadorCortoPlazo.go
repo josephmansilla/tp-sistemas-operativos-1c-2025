@@ -18,7 +18,8 @@ func PlanificarCortoPlazo() {
 
 func DespacharProceso() {
 	for {
-		// WAIT hasta que llegue un proceso a READY o nueva CPU por SYSCALL DE EXTI O I/O
+		// WAIT hasta que llegue un proceso a READY
+		//o se libere una CPU por SYSCALL DE EXTI O I/O
 		<-Utils.NotificarDespachador
 		logger.Info("Arranca Despachador")
 
@@ -26,9 +27,9 @@ func DespacharProceso() {
 
 		switch globals.KConfig.SchedulerAlgorithm {
 		case "FIFO":
-			proceso = algoritmos.ColaReady.First()
+			proceso = algoritmos.ColaReady.First() //Toma el primero de la cola Ready
 		case "SJF":
-			proceso = algoritmos.SeleccionarSJF()
+			proceso = algoritmos.SeleccionarSJF() //Toma la estimacion mas corta
 		case "SRT":
 			proceso = algoritmos.SeleccionarSRT()
 		default:

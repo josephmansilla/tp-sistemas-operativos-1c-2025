@@ -33,7 +33,7 @@ func (cfg KernelConfig) Validate() error {
 	if cfg.Alpha <= 0 {
 		return errors.New("falta el campo 'alpha' o es inválido")
 	}
-	if cfg.InitialEstimate <= 0 {
+	if cfg.InitialEstimate <= 0.00 {
 		return errors.New("falta el campo 'initial_estimate' o es inválido")
 	}
 	if cfg.SuspensionTime < 0 {
