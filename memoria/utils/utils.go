@@ -1,14 +1,8 @@
 package utils
 
 import (
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
-
-func InfomarMetricasProceso(metricasDelProceso globals.MetricasProceso) {
-
-	logger.Info("## Final proceso: %d", metricasDelProceso.AccesosTablasPaginas)
-}
 
 // Mapa global: PID → Lista de instrucciones
 var InstruccionesPorPID map[int][]string = make(map[int][]string)

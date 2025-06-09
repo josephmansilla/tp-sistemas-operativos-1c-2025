@@ -34,16 +34,3 @@ type MensajePedidoTablaCPU struct {
 type RespuestaTablaCPU struct {
 	NumeroMarco int `json:"numero_marco"`
 }
-
-// TODO: conexiones con cpu
-type MensajeTabla struct {
-	PID           int `json:"pid"`
-	NumeroTabla   int `json:"numeroTabla"`
-	EntradaIndice int `json:"entrada"`
-}
-
-type RespuestaTabla struct {
-	EsUltimoNivel bool `json:"esUltimoNivel"`
-	NumeroTabla   int  `json:"numeroTabla"`
-	NumeroMarco   int  `json:"marco"`
-}

@@ -9,8 +9,7 @@ import (
 func InicializarTablaRaiz() data.TablaPaginas {
 	cantidadEntradasPorTabla := data.MemoryConfig.EntriesPerPage
 	return make(data.TablaPaginas, cantidadEntradasPorTabla)
-} //TODO: EL RESTO DE TABLAS Y ENTRADAS DE PAGINA SE VAN INSTANCIANDO A MEDIDA QUE
-// TODO: SE PIDE ASIGNAR X PROCESO EN LA MEMORIA.
+}
 
 func BuscarEntradaPagina(procesoBuscado *data.Proceso, indices []int) *data.EntradaPagina {
 	//	cantidadNiveles := data.MemoryConfig.NumberOfLevels TODO: DEBERIA SER LO MISMO LA LONG DE INDICES Y LA CANT DE NIVELES
@@ -54,6 +53,7 @@ func BuscarEntradaPagina(procesoBuscado *data.Proceso, indices []int) *data.Entr
 		return nil
 	}
 
+	IncrementarMetrica(procesoBuscado, IncrementarAccesosTablasPaginas)
 	return entradaDeseada
 }
 
@@ -77,22 +77,23 @@ func ObtenerEntradaPagina(pid int, indices []int) int {
 	return entradaPagina.NumeroFrame
 }
 
-func AsignarEntradaPagina() int {
-	entradaLibre := -1
+func AsignarNumeroEntradaPagina() int {
+	numeroEntradaLibre := -1
 	tamanioMaximo := data.MemoryConfig.MemorySize
 
 	for i := 0; i < tamanioMaximo; i++ {
 		if data.FramesLibres[i] == true {
-			entradaLibre = i
-			return entradaLibre
+			numeroEntradaLibre = i
+			logger.Info("Espacio Libre encontrado")
+			return numeroEntradaLibre
 		}
 	}
-	return entradaLibre
+	return numeroEntradaLibre
 }
 
-func LiberarEntradaPagina(frameALiberar int) {
+func LiberarEntradaPagina(numeroFrameALiberar int) {
 	framesMemoriaPrincipal := data.FramesLibres
-	framesMemoriaPrincipal[frameALiberar] = true
+	framesMemoriaPrincipal[numeroFrameALiberar] = true
 }
 
 func SerializarPagina(pagina data.EntradaPagina, numeroAsignado int) {

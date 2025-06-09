@@ -28,4 +28,4 @@ type EspacioLibreRTA struct {
 type RespuestaEspacioLibre struct {
 	MemoriaDisponible int `json:"memoria_disponible"`
 	FramesLibres      int `json:"frames_libres"`
-} //TODO: calcular memDisp con la cantidad de frames libres * su tamaño
+}

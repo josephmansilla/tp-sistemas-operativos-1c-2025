@@ -1,9 +1,14 @@
 package administracion
 
 import (
+	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 )
+
+func LecturaPseudocigo(archivoPseudocodigo string) {
+
+}
 
 // ------------------------------------------------------------------
 // ----------- FORMA PARTE DE LA MODIFICACIÓN DE PROCESOS -----------
@@ -40,4 +45,40 @@ func DesSuspensionProceso(w http.ResponseWriter, r *http.Request) {
 	// TODO: ACTUALIZAR ESTRUCTURAS NECESARIAS
 
 	// TODO: RETORNAR OK
+}
+
+// METRICAS PROCESOS
+
+func IncrementarMetrica(proceso *globals.Proceso, funcMetrica globals.OperacionMetrica) {
+	funcMetrica(&proceso.Metricas)
+}
+
+func InformarMetricasProceso(metricasDelProceso globals.MetricasProceso) {
+
+	logger.Info("## AccesosTablasPaginas: %d", metricasDelProceso.AccesosTablasPaginas)
+	logger.Info("## InstruccionesSolicitadas: %d", metricasDelProceso.InstruccionesSolicitadas)
+	logger.Info("## BajadasSwap: %d", metricasDelProceso.BajadasSwap)
+	logger.Info("## SubidasMP: %d", metricasDelProceso.SubidasMP)
+	logger.Info("## LecturasDeMemoria: %d", metricasDelProceso.LecturasDeMemoria)
+	logger.Info("## EscriturasDeMemoria: %d", metricasDelProceso.EscriturasDeMemoria)
+
+}
+
+func IncrementarAccesosTablasPaginas(metrica *globals.MetricasProceso) {
+	metrica.AccesosTablasPaginas++
+}
+func IncrementarInstruccionesSolicitadas(metrica *globals.MetricasProceso) {
+	metrica.InstruccionesSolicitadas++
+}
+func IncrementarBajadasSwap(metrica *globals.MetricasProceso) {
+	metrica.BajadasSwap++
+}
+func IncrementarSubidasMP(metrica *globals.MetricasProceso) {
+	metrica.SubidasMP++
+}
+func IncrementarLecturaDeMemoria(metrica *globals.MetricasProceso) {
+	metrica.LecturasDeMemoria++
+}
+func IncrementarEscrituraDeMemoria(metrica *globals.MetricasProceso) {
+	metrica.EscriturasDeMemoria++
 }

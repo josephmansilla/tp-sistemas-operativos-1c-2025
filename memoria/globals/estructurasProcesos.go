@@ -2,7 +2,6 @@ package globals
 
 type Proceso struct {
 	PID       int             `json:"pid"`
-	Datos     []byte          `json:"datos"`
 	TablaRaiz TablaPaginas    `json:"tabla_paginas"`
 	Metricas  MetricasProceso `json:"metricas_proceso"`
 }
@@ -17,6 +16,8 @@ type MetricasProceso struct {
 	LecturasDeMemoria        int `json:"lecturas_de_memoria"`
 	EscriturasDeMemoria      int `json:"escrituras_de_memoria"`
 }
+
+type OperacionMetrica func(*MetricasProceso)
 
 type DatosParaDump struct {
 	PID       int    `json:"pid"`
