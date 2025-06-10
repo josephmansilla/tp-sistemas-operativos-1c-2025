@@ -8,7 +8,12 @@ import (
 	"time"
 )
 
+func PasarSwapEntradaPagina(numeroFrame int) {}
+
 func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
+	inicio := time.Now()
+	retrasoSwap := time.Duration(globals.DelaySwap) * time.Second
+
 	var mensaje globals.SuspensionProceso
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
@@ -18,12 +23,57 @@ func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
 
 	PasarSwapEntradaPagina(numeroFrame)
 	LiberarEntradaPagina(numeroFrame)
+  
+	proceso := globals.ProcesoSuspendido{}
 
-	respuesta := globals.ProcesoSuspendido{}
+	logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", mensaje.PID, proceso.DireccionFisica, proceso.TamanioProceso)
+
+	respuesta := globals.ExitoDesuspensionProceso{}
+
+	tiempoTranscurrido := time.Now().Sub(inicio)
+	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
+}
+// TODO: NO ES NECESARIO EL SWAPEO DE TABLAS DE PAGINAS
+
+// TODO: SE LIBERA EN MEMORIA
+// TODO: SE ESCRIBE EN SWAP LA INFO NECESARIA
+
+func SacarEntradaPaginaSwap(numeroFrame int) {}
+
+func LiberarEspacioEnSwap(numeroFrame int) {}
+
+
+func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
+	inicio := time.Now()
+	retrasoSwap := time.Duration(globals.DelaySwap) * time.Second
+
+	var mensaje globals.DesuspensionProceso
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+		return
+	}
+	VerificarTamanioNecesario
+	SacarEntradaPaginaSwap(numeroFrame)
+	LiberarEspacioEnSwap(numeroFrame)
+	// TODO: ActualizarEstructurasNecesarias
 
 	time.Sleep(time.Duration(globals.DelaySwap) * time.Second)
+	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>")
 
-	logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", mensaje.PID, respuesta.DireccionFisica, respuesta.TamanioProceso)
+
+	tiempoTranscurrido := time.Now().Sub(inicio)
+	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+  
+	respuesta := globals.ExitoDesuspensionProceso{}
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
@@ -34,17 +84,10 @@ func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Respuesta devuelta"))
 }
 
-func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
+// TODO: VERIFICAR EL TAMAÑO NECESARIO
 
-	var mensaje globals.DesuspensionProceso
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
-		return
-	}
+// TODO: LEER EL CONTENIDO DEL SWAP, ESCRIBIERLO EN EL FRAME ASIGNADO
+// TODO: LIBERAR ESPACIO EN SWAP
+// TODO: ACTUALIZAR ESTRUCTURAS NECESARIAS
 
-	SacarEntradaPaginaSwap(numeroFrame)
-
-	time.Sleep(time.Duration(globals.DelaySwap) * time.Second)
-	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>")
-}
+// TODO: RETORNAR OK

@@ -5,6 +5,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
+	"sync"
 )
 
 func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string) {
@@ -26,12 +27,20 @@ func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string)
 
 }
 func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso globals.Proceso) {
+
+	globals.MutexProcesosPorPID.Lock()
 	globals.ProcesosPorPID[pid] = &nuevoProceso
+	globals.MutexProcesosPorPID.Unlock()
 }
 
 func CargarEntradaMemoria(numeroFrame int, pid int, datosEnBytes []byte) {
+
+	globals.MutexMemoriaPrincipal.Lock()
 	globals.MemoriaPrincipal[numeroFrame] = datosEnBytes
+	globals.MutexMemoriaPrincipal.Unlock()
+	globals.MutexFrameOcupadoPorPID.Lock()
 	globals.FrameOcupadoPor[numeroFrame] = globals.Ocupante{PID: pid, NumeroPagina: numeroFrame}
+	globals.MutexFrameOcupadoPorPID.Unlock()
 }
 
 // ------------------------------------------------------------------
@@ -74,24 +83,6 @@ func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 	logger.Info("## PID: <PID>  - Proceso Destruido - Métricas - Acc.T.Pag: <ATP>; Inst.Sol.: <Inst.Sol>; SWAP: <SWAP>; Mem. Prin.: <Mem.Prin.>; Lec.Mem.: <Lec.Mem.>; Esc.Mem.: <Esc.Mem.>")
 }
 
-func SuspensionProceso(w http.ResponseWriter, r *http.Request) {
-	// TODO: NO ES NECESARIO EL SWAPEO DE TABLAS DE PAGINAS
-
-	// TODO: SE LIBERA EN MEMORIA
-	// TODO: SE ESCRIBE EN SWAP LA INFO NECESARIA
-
-}
-
-func DesSuspensionProceso(w http.ResponseWriter, r *http.Request) {
-	// TODO: VERIFICAR EL TAMAÑO NECESARIO
-
-	// TODO: LEER EL CONTENIDO DEL SWAP, ESCRIBIERLO EN EL FRAME ASIGNADO
-	// TODO: LIBERAR ESPACIO EN SWAP
-	// TODO: ACTUALIZAR ESTRUCTURAS NECESARIAS
-
-	// TODO: RETORNAR OK
-}
-
 // METRICAS PROCESOS
 
 func InicializarMetricas() globals.MetricasProceso {
@@ -107,7 +98,11 @@ func InicializarMetricas() globals.MetricasProceso {
 }
 
 func IncrementarMetrica(proceso *globals.Proceso, funcMetrica globals.OperacionMetrica) {
+	var mutexMetrica sync.Mutex
+
+	mutexMetrica.Lock()
 	funcMetrica(&proceso.Metricas)
+	mutexMetrica.Unlock()
 }
 
 func InformarMetricasProceso(metricasDelProceso globals.MetricasProceso) {

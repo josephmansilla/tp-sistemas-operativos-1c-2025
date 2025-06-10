@@ -25,4 +25,4 @@ type OperacionMetrica func(*MetricasProceso)
 type DatosParaDump struct {
 	PID       int    `json:"pid"`
 	TimeStamp string `json:"timeStamp"`
-} // HABRIA QUE VER QUE TIPO DE DATOS ES EL TIMESTAMP
+}
