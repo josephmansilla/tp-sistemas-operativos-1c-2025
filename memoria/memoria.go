@@ -64,15 +64,13 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/memoria/configuracion", conexiones.EnviarConfiguracionMemoria)
-	// ESTÁ ESPERANDO LOS MENSAJES DE LOS OTROS MODULOS
+
 	mux.HandleFunc("/memoria/cpu", conexiones.RecibirMensajeDeCPU)
 	mux.HandleFunc("/memoria/kernel", conexiones.RecibirMensajeDeKernel)
 	mux.HandleFunc("/memoria/instruccion", conexiones.ObtenerInstruccion)
 	// TODO: deberia devoler la instruccion que piden
 
-	mux.HandleFunc("/memoria/espaciolibre", conexiones.ObtenerEspacioLibreMock)
-	// TODO: cambiar la funcion a la que escucha ,, debería devolver la cantidad de frames libres y su tamaño total
-
+	mux.HandleFunc("/memoria/espaciolibre", conexiones.ObtenerEspacioLibre)
 	mux.HandleFunc("/memoria/tabla", conexiones.EnviarEntradaPagina)
 
 	//mux.HandleFunc("/memoria/lectura", utils.LecturaEspacio)

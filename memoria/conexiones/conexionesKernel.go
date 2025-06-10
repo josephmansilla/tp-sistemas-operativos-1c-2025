@@ -34,22 +34,23 @@ import (
 	json.NewEncoder(w).Encode(respuesta)
 }*/
 
-func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
-	respuesta := globals.EspacioLibreRTA{
-		EspacioLibre: globals.MemoryConfig.MemorySize,
-	}
+func ObtenerEspacioLibre(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Content-Type", "application/json")
+	espacioLibre := globals.CantidadFramesLibres * globals.TamanioMaximoFrame
+
+	respuesta := globals.EspacioLibreRTA{EspacioLibre: espacioLibre}
+
+	logger.Info("## Espacio libre mock devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
-
-	logger.Info("## Espacio libre mock devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
-
+	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ESPACIO DEVUELTO"))
 }
+
+// TODO: CAMBIAR CON INICIALIZACIONPROCESO
 func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.DatosRespuestaDeKernel
 

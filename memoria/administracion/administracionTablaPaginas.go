@@ -95,15 +95,23 @@ func AsignarNumeroEntradaPagina() int {
 	numeroEntradaLibre := -1
 	tamanioMaximo := data.MemoryConfig.MemorySize
 
-	for i := 0; i < tamanioMaximo; i++ {
-		if data.FramesLibres[i] == true {
-			numeroEntradaLibre = i
-			logger.Info("Espacio Libre encontrado")
+	for numeroFrame := 0; numeroFrame < tamanioMaximo; numeroFrame++ {
+		if data.FramesLibres[numeroFrame] == true {
+			numeroEntradaLibre = numeroFrame
+
+			MarcarOcupadoFrame(numeroEntradaLibre)
+
+			logger.Info("Marco Libre encontrado: %d", numeroEntradaLibre)
 			return numeroEntradaLibre
 		}
 	}
 	return numeroEntradaLibre
 	// TODO
+}
+
+func MarcarOcupadoFrame(numeroFrame int) {
+	data.FramesLibres[numeroFrame] = false
+	data.CantidadFramesLibres--
 }
 
 func LiberarEntradaPagina(numeroFrameALiberar int) {
@@ -149,6 +157,10 @@ func AsignarDatosAPaginacion(proceso *data.Proceso, informacionEnBytes []byte) e
 
 	for numeroPagina := range fragmentosPaginas {
 		frame := AsignarNumeroEntradaPagina()
+		if frame == -1 {
+			logger.Error("No hay marcos libres")
+			break
+		}
 
 		entrada := &data.EntradaPagina{
 			NumeroFrame:   frame,
@@ -156,14 +168,15 @@ func AsignarDatosAPaginacion(proceso *data.Proceso, informacionEnBytes []byte) e
 			EstaEnUso:     true,
 			FueModificado: false,
 		}
-		indices := CrearIndicePara(numeroPagina)
-		InsertarEntradaPagina(proceso.TablaRaiz, indices, entrada)
-		data.FrameOcupadoPor[frame] = data.Ocupante{PID: proceso.PID, NumeroPagina: numeroPagina}
+		CargarEntradaMemoria(frame, proceso.PID, fragmentosPaginas[numeroPagina])
+		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entrada)
 	}
 	return nil
 }
 
-func InsertarEntradaPagina(tablaRaiz data.TablaPaginas, indices []int, entrada *data.EntradaPagina) {
+func InsertarEntradaPaginaEnTabla(tablaRaiz data.TablaPaginas, numeroPagina int, entrada *data.EntradaPagina) {
+	indices := CrearIndicePara(numeroPagina)
+
 	actual := tablaRaiz[indices[0]]
 
 	for i := 1; i < len(indices)-1; i++ {
@@ -176,7 +189,6 @@ func InsertarEntradaPagina(tablaRaiz data.TablaPaginas, indices []int, entrada *
 		actual.EntradasPaginas = make(map[int]*data.EntradaPagina)
 	}
 	actual.EntradasPaginas[indices[len(indices)-1]] = entrada
-
 }
 
 // -.-.--...

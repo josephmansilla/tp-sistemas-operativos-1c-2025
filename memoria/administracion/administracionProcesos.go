@@ -1,6 +1,7 @@
 package administracion
 
 import (
+	"encoding/json"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
@@ -21,12 +22,22 @@ func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string)
 	if err != nil {
 		logger.Error("Error al asignarDatosAPaginacion %v", err)
 	}
+	OcuparProcesoEnVectorMapeable(pid, nuevoProceso)
 
+}
+
+func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso globals.Proceso) {
+	globals.ProcesosPorPID[pid] = &nuevoProceso
 }
 
 func TieneTamanioNecesario(tamanioProceso int) bool {
 	var framesNecesarios = float64(tamanioProceso) / float64(globals.TamanioMaximoFrame)
 	return framesNecesarios <= float64(globals.CantidadFramesLibres)
+}
+
+func CargarEntradaMemoria(numeroFrame int, pid int, datosEnBytes []byte) {
+	globals.MemoriaPrincipal[numeroFrame] = datosEnBytes
+	globals.FrameOcupadoPor[numeroFrame] = globals.Ocupante{PID: pid, NumeroPagina: numeroFrame}
 }
 
 func LecturaPseudocodigo(archivoPseudocodigo string) []byte {
@@ -42,12 +53,33 @@ func LecturaPseudocodigo(archivoPseudocodigo string) []byte {
 // ------------------------------------------------------------------
 
 func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
-	// TODO: VERIFICAR EL TAMAÑO NECESARIO
+	var mensaje globals.DatosRespuestaDeKernel
 
-	// TODO: CREAR ESTRUCTURAS ADMINISTRATIVAS NECESARIAS
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+		return
+	}
+
+	pid := mensaje.PID
+	tamanioProceso := mensaje.TamanioMemoria
+
+	InicializarProceso(pid, tamanioProceso, mensaje.Pseudocodigo)
 
 	// TODO: RESPONDER CON EL NUMERO DE PAGINA DE 1ER NIVEL DEL PROCESO
-	logger.Info("## PID: <%d>  - Proceso Creado - Tamaño: <%d>")
+	logger.Info("## PID: <%d> - Proceso Creado - Tamaño: <%d>", pid, tamanioProceso)
+
+	respuesta := globals.RespuestaMemoria{
+		Exito:   true,
+		Mensaje: "Proceso creado correctamente en memoria",
+	}
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
 }
 
 func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
