@@ -1,7 +1,6 @@
 package administracion
 
 import (
-	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	data "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
@@ -130,42 +129,39 @@ func cambiarEstadoModificacionPagina(pagina data.EntradaPagina) {
 	pagina.FueModificado = !pagina.FueModificado
 }
 
-func DividirBytesEnPaginas(data []byte) [][]byte {
+func DividirBytesEnPaginas(informacionEnBytes []byte) [][]byte {
 	var paginas [][]byte
 	tamanioPagina := globals.TamanioPagina
-	totalBytes := len(data)
+	totalBytes := len(informacionEnBytes)
 
-	for i := 0; i < totalBytes; i += tamanioPagina {
-		end := i + tamanioPagina
+	for offset := 0; offset < totalBytes; offset += tamanioPagina {
+		end := offset + tamanioPagina
 		if end > totalBytes {
 			end = totalBytes
 		}
-		paginas = append(paginas, data[i:end])
+		paginas = append(paginas, informacionEnBytes[offset:end])
 	}
 	return paginas
 }
 
-func AsignarDatosAPaginacion(proceso *data.Proceso, data []byte) error {
+func AsignarDatosAPaginacion(proceso *data.Proceso, informacionEnBytes []byte) error {
 
-	paginas := DividirBytesEnPaginas(data)
+	fragmentosPaginas := DividirBytesEnPaginas(informacionEnBytes)
 
-	for i, pagina := range paginas {
-		frame, err := AsignarFrame() //TODO
-		if err != nil {
-			return fmt.Errorf("error al asignar marco para la pag %d: %v", i, err)
-		}
+	for numeroPagina := range fragmentosPaginas {
+		frame := AsignarNumeroEntradaPagina()
+
 		entrada := &data.EntradaPagina{
 			NumeroFrame:   frame,
-			Data:          datos,
+			EstaPresente:  true,
 			EstaEnUso:     true,
 			FueModificado: false,
 		}
-
-		indices := CrearIndicePara(i)
+		indices := CrearIndicePara(numeroPagina)
 		InsertarEntradaPagina(proceso.TablaRaiz, indices, entrada)
-
+		data.FrameOcupadoPor[frame] = data.Ocupante{PID: proceso.PID, NumeroPagina: numeroPagina}
 	}
-
+	return nil
 }
 
 func InsertarEntradaPagina(tablaRaiz data.TablaPaginas, indices []int, entrada *data.EntradaPagina) {
