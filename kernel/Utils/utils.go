@@ -53,17 +53,18 @@ var (
 	MutexBloqueadoSuspendido sync.Mutex
 	MutexSuspendidoReady     sync.Mutex
 
-	// Canales de señalización
+	//Canales de señalización
 	ChannelProcessArguments chan []string
-	ChannelFinishprocess    chan FinishProcess
 	InitProcess             chan struct{}
 	SemProcessCreateOK      chan struct{}
 	ChannelFinishProcess2   chan bool
+	ChannelFinishprocess    chan FinishProcess
 
-	//AVISAR CUANDO UN PROCESO LLEGA A READY
-	NotificarDespachador chan int
-	NotificarComienzoIO  chan MensajeIOChannel
-	NotificarFinIO       chan int
+	//AVISAR AL DESPACHADOR CUANDO UN PROCESO CAMBIA SU ESTADO
+	NotificarDespachador chan int              //PASA A READY
+	NotificarComienzoIO  chan MensajeIOChannel //PASA A BLOQUEADO
+	NotificarFinIO       chan int              //FIN DE IO
+	ContextoInterrupcion chan InterruptProcess //FIN DE EXECUTE
 )
 
 // InicializarMutexes deja listas las variables de mutex.
@@ -85,6 +86,7 @@ func InicializarCanales() {
 	NotificarDespachador = make(chan int, 10) // buffer 10 procesos listos
 	NotificarComienzoIO = make(chan MensajeIOChannel, 10)
 	NotificarFinIO = make(chan int, 10)
+	//ContextoInterrupcion make(chan InterruptProcess, 10)
 }
 
 type MensajeIOChannel struct {
@@ -98,4 +100,10 @@ type FinishProcess struct {
 	PID   int
 	PC    int
 	CpuID string
+}
+type InterruptProcess struct {
+	PID    int
+	PC     int
+	CpuID  string
+	Motivo string
 }

@@ -1,21 +1,50 @@
 package administracion
 
 import (
-	globalData "github.com/sisoputnfrba/tp-golang/memoria/globals"
+	"encoding/json"
+	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 	"time"
 )
 
 func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
-	//TODO: se escriben sus páginas en el arhcivo
-	// TODO: se liberan los frames
-	time.Sleep(time.Duration(globalData.DelaySwap) * time.Second)
-	logger.Info("## PID: <PID>  - <Lectura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")
+	var mensaje globals.SuspensionProceso
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+		return
+	}
+
+	PasarSwapEntradaPagina(numeroFrame)
+	LiberarEntradaPagina(numeroFrame)
+
+	respuesta := globals.ProcesoSuspendido{}
+
+	time.Sleep(time.Duration(globals.DelaySwap) * time.Second)
+
+	logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", mensaje.PID, respuesta.DireccionFisica, respuesta.TamanioProceso)
+
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
 }
 
 func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
-	//TODO: se copian las páginas desde el archivo a nuevos frames
-	time.Sleep(time.Duration(globalData.DelaySwap) * time.Second)
-	logger.Info("## PID: <PID>  - <Lectura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")
+
+	var mensaje globals.DesuspensionProceso
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+		return
+	}
+
+	SacarEntradaPaginaSwap(numeroFrame)
+
+	time.Sleep(time.Duration(globals.DelaySwap) * time.Second)
+	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>")
 }

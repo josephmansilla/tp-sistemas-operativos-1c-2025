@@ -38,13 +38,41 @@ type MensajeSyscall struct {
 	ID  string `json:"id"`
 }
 
+type MensajeInterrupt struct {
+	PID    int    `json:"pid"`
+	PC     int    `json:"pc"`
+	ID     string `json:"id"`
+	Motivo string `json:"motivo"`
+}
+
 type MensajeDUMP struct {
 	PID       int    `json:"pid"`
 	Timestamp string `json:"timestamp"`
 }
 
 func ContextoInterrumpido(w http.ResponseWriter, r *http.Request) {
-	//TODO
+	// 1) Leer y parsear el JSON entrante
+	//se recibe el PID
+	//y el Program Counter (PC) actualizado
+	//con motivo de la interrupción.
+	var msg MensajeInterrupt
+	if err := data.LeerJson(w, r, &msg); err != nil {
+		return
+	}
+
+	logger.Info("<%d> Se ha recibido contexto de Interrupcion: %s. CPU <%s>", msg.PID, msg.Motivo, msg.ID)
+	//SIGNAL A Planif. CORTO PLAZO QUE SE INTERRUMPIO
+	go func(p int) {
+		Utils.ContextoInterrupcion <- Utils.InterruptProcess{
+			PID:    msg.PID,
+			PC:     msg.PC,
+			CpuID:  msg.ID,
+			Motivo: msg.Motivo,
+		}
+	}(msg.PID)
+
+	//Responder de inmediato
+	w.WriteHeader(http.StatusOK)
 }
 
 func InitProcess(w http.ResponseWriter, r *http.Request) {
