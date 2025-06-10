@@ -6,16 +6,22 @@ import (
 	"net/http"
 )
 
-func InicializarProceso() {
+func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string) {
 
 	if !TieneTamanioNecesario(tamanioProceso) {
 		// TODO
 		logger.Error("No hay memoria")
 	}
-	LecturaPseudocodigo(archivoPseudocodigo)
-	datos := DividirBytesEnPaginas(data)
-	AsignarDatosAPaginacion(datos)
-	AgregarAProcesosMap
+	nuevoProceso := globals.Proceso{
+		PID:       pid,
+		TablaRaiz: InicializarTablaRaiz(),
+		Metricas:  InicializarMetricas(),
+	}
+	err := AsignarDatosAPaginacion(&nuevoProceso, LecturaPseudocodigo(archivoPseudocodigo))
+	if err != nil {
+		logger.Error("Error al asignarDatosAPaginacion %v", err)
+	}
+
 }
 
 func TieneTamanioNecesario(tamanioProceso int) bool {
@@ -23,8 +29,12 @@ func TieneTamanioNecesario(tamanioProceso int) bool {
 	return framesNecesarios <= float64(globals.CantidadFramesLibres)
 }
 
-func LecturaPseudocodigo(archivoPseudocodigo string) {
+func LecturaPseudocodigo(archivoPseudocodigo string) []byte {
 
+	string := archivoPseudocodigo
+	stringEnBytes := []byte(string)
+
+	return stringEnBytes
 }
 
 // ------------------------------------------------------------------
@@ -65,6 +75,18 @@ func DesSuspensionProceso(w http.ResponseWriter, r *http.Request) {
 }
 
 // METRICAS PROCESOS
+
+func InicializarMetricas() globals.MetricasProceso {
+	metricas := globals.MetricasProceso{
+		AccesosTablasPaginas:     0,
+		InstruccionesSolicitadas: 0,
+		BajadasSwap:              0,
+		SubidasMP:                0,
+		LecturasDeMemoria:        0,
+		EscriturasDeMemoria:      0,
+	}
+	return metricas
+}
 
 func IncrementarMetrica(proceso *globals.Proceso, funcMetrica globals.OperacionMetrica) {
 	funcMetrica(&proceso.Metricas)

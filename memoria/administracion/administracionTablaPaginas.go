@@ -118,7 +118,6 @@ func SerializarPagina(pagina data.EntradaPagina, numeroAsignado int) {
 	pagina.EstaEnUso = true
 	pagina.FueModificado = false
 }
-
 func cambiarEstadoPresentePagina(pagina data.EntradaPagina) {
 	pagina.EstaPresente = !pagina.EstaPresente
 }
