@@ -10,16 +10,13 @@ import (
 
 // Estructura del mensaje hacia Memoria
 type MensajeTabla struct {
-	PID           int `json:"pid"`
-	NumeroTabla   int `json:"numeroTabla"`
-	EntradaIndice int `json:"entrada"`
+	PID            int   `json:"pid"`
+	IndicesEntrada []int `json:"indices_entrada"`
 }
 
 // Respuesta de Memoria
 type RespuestaTabla struct {
-	EsUltimoNivel bool `json:"esUltimoNivel"`
-	NumeroTabla   int  `json:"numeroTabla"`
-	NumeroMarco   int  `json:"marco"`
+	NumeroMarco int `json:"numero_marco"`
 }
 
 // Función principal de traducción
@@ -30,51 +27,48 @@ func Traducir(dirLogica int) int {
 	nroPagina := dirLogica / tamPagina
 	desplazamiento := dirLogica % tamPagina
 
-	//Inicializo la TLB
+	//Primero verifico si la cache esta activa
+	if cache.EstaActiva() {
+		log.Printf("Cache Activa")
+	} else {
+		log.Printf("Cache Inactiva")
+	}
+
+	// Inicializo la TLB
 	var tlb = NuevaTLB(globals.ClientConfig.TlbEntries, globals.ClientConfig.TlbReplacement)
 	tlb.AgregarEntrada(1, 2)
 	tlb.AgregarEntrada(3, 4)
 	tlb.AgregarEntrada(5, 6)
 
-	// Consulto la tlb
+	// Consulto la TLB
 	if marco, ok := tlb.Buscar(nroPagina); ok {
 		return marco*tamPagina + desplazamiento
 	}
 
-	// La pagina no esta en la tlb, tengo que ir a memoria
+	// La página no está en la TLB, voy a Memoria
 	entradas := descomponerPagina(nroPagina, niveles, entradasPorNivel)
-
-	var tablaActual = 0
-	var marco int = -1
-
-	for nivel := 0; nivel < niveles; nivel++ {
-		resp, err := accederTabla(globals.PIDActual, tablaActual, entradas[nivel])
-		if err != nil {
-			log.Printf("Error accediendo a nivel %d de la tabla: %s", nivel, err.Error())
-			return -1
-		}
-
-		if resp.EsUltimoNivel {
-			marco = resp.NumeroMarco
-			break
-		} else {
-			tablaActual = resp.NumeroTabla //vuelvo a ejecutar hasta llegar a la ult tabla
-		}
+	marco, err := accederTabla(globals.PIDActual, entradas)
+	if err != nil {
+		log.Printf("No se pudo acceder a la tabla de páginas: %s", err.Error())
+		return -1
 	}
-
 	if marco == -1 {
 		log.Printf("No se pudo traducir la dirección lógica %d", dirLogica)
 		return -1
 	}
 
-	// Agrego la entrada a la tlb
+	// Agrego entrada a la TLB
 	tlb.AgregarEntrada(nroPagina, marco)
-
+	// Agrego tmb a la cache
+	if cache.EstaActiva() {
+		cache.Agregar(nroPagina, "", true) // reemplazá "" con el contenido real si lo tenés
+		log.Printf("PID: %d - CACHE ADD - Pagina: %d", globals.PIDActual, nroPagina)
+	}
 	return marco*tamPagina + desplazamiento
 }
 
 // Descompone el número de página en los índices para cada nivel
-func descomponerPagina(nroPagina, niveles, entradasPorNivel int) []int {
+func descomponerPagina(nroPagina int, niveles int, entradasPorNivel int) []int {
 	entradas := make([]int, niveles)
 	divisor := 1
 
@@ -87,28 +81,44 @@ func descomponerPagina(nroPagina, niveles, entradasPorNivel int) []int {
 }
 
 // Hace una petición HTTP a Memoria para resolver una entrada de tabla
-func accederTabla(pid, nroTabla, entrada int) (RespuestaTabla, error) {
+func accederTabla(pid int, indices []int) (int, error) {
 	url := fmt.Sprintf("http://%s:%d/memoria/tabla",
 		globals.ClientConfig.IpMemory,
 		globals.ClientConfig.PortMemory,
 	)
 
 	mensaje := MensajeTabla{
-		PID:           pid,
-		NumeroTabla:   nroTabla,
-		EntradaIndice: entrada,
+		PID:            pid,
+		IndicesEntrada: indices,
 	}
 
 	resp, err := data.EnviarDatosConRespuesta(url, mensaje)
 	if err != nil {
-		return RespuestaTabla{}, err
+		return -1, err
 	}
 	defer resp.Body.Close()
 
 	var respuesta RespuestaTabla
 	if err := json.NewDecoder(resp.Body).Decode(&respuesta); err != nil {
-		return RespuestaTabla{}, err
+		return -1, err
 	}
+	log.Printf("Marco Recibido: %d", respuesta.NumeroMarco)
 
-	return respuesta, nil
+	return respuesta.NumeroMarco, nil
+}
+
+func Leer(pagina int, tamanio int) {
+	if cache.EstaActiva() {
+		LeerEnCache(pagina, tamanio)
+	} else {
+		//TODO leer en memoria
+	}
+}
+
+func Escribir(pagina int, datos string) {
+	if cache.EstaActiva() {
+		EscribirEnCache(pagina, datos)
+	} else {
+		//TODO escribir en memoria
+	}
 }

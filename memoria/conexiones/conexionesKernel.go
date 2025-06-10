@@ -34,20 +34,23 @@ import (
 	json.NewEncoder(w).Encode(respuesta)
 }*/
 
-func ObtenerEspacioLibreMock(w http.ResponseWriter, r *http.Request) {
-	respuesta := globals.EspacioLibreRTA{EspacioLibre: globals.MemoryConfig.MemorySize}
+func ObtenerEspacioLibre(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Content-Type", "application/json")
+	espacioLibre := globals.CantidadFramesLibres * globals.TamanioMaximoFrame
+
+	respuesta := globals.RespuestaEspacioLibre{EspacioLibre: espacioLibre}
+
+	logger.Info("## Espacio libre mock devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
-
-	logger.Info("## Espacio libre mock devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
-
+	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ESPACIO DEVUELTO"))
 }
+
+// TODO: CAMBIAR CON INICIALIZACIONPROCESO
 func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.DatosRespuestaDeKernel
 
@@ -72,4 +75,22 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(respuesta)
+}
+
+// Mapa global: PID → Lista de instrucciones
+var InstruccionesPorPID map[int][]string = make(map[int][]string)
+
+// Cargar instrucción para un PID específico
+func CargarInstruccionParaPID(pid int, instruccion string) {
+	InstruccionesPorPID[pid] = append(InstruccionesPorPID[pid], instruccion)
+	logger.Info("Se cargó una instrucción para PID %d", pid)
+}
+
+// Obtener instrucción por PID y PC
+func ObtenerInstruccionB(pid int, pc int) string {
+	instrucciones, existe := InstruccionesPorPID[pid]
+	if !existe || pc < 0 || pc >= len(instrucciones) {
+		return ""
+	}
+	return instrucciones[pc]
 }

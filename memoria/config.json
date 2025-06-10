@@ -5,9 +5,9 @@
   "pag_size": 1024,
   "entries_per_page": 3,
   "number_of_levels": 2,
-  "memory_delay": 1000,
+  "memory_delay": 1,
   "swapfile_path": "./swap/",
-  "swap_delay": 10000,
+  "swap_delay": 2,
   "log_level": "DEBUG",
   "dump_path": "./dump/",
   "scripts_path": "./scripts/"

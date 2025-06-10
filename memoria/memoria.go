@@ -42,6 +42,12 @@ func main() {
 	}
 
 	var portMemory = globals.MemoryConfig.PortMemory
+	globals.CantidadNiveles = globals.MemoryConfig.NumberOfLevels
+	globals.EntradasPorPagina = globals.MemoryConfig.EntriesPerPage
+	globals.DelayMemoria = globals.MemoryConfig.MemoryDelay
+	globals.DelaySwap = globals.MemoryConfig.SwapDelay
+	globals.TamanioMaximoFrame = globals.MemoryConfig.PagSize
+
 	logger.Info("======== Comenzo la ejecucion de Memoria ========")
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
@@ -58,14 +64,20 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/memoria/configuracion", conexiones.EnviarConfiguracionMemoria)
-	// ESTÁ ESPERANDO LOS MENSAJES DE LOS OTROS MODULOS
+
 	mux.HandleFunc("/memoria/cpu", conexiones.RecibirMensajeDeCPU)
 	mux.HandleFunc("/memoria/kernel", conexiones.RecibirMensajeDeKernel)
+	mux.HandleFunc("/memoria/InicializacionProceso", administracion.InicializacionProceso) // TODO: HACER CONEXIONES CON KERNEL DESPUES DEL MERGE
+
 	mux.HandleFunc("/memoria/instruccion", conexiones.ObtenerInstruccion)
 	// TODO: deberia devoler la instruccion que piden
 
-	mux.HandleFunc("/memoria/espaciolibre", conexiones.ObtenerEspacioLibreMock)
-	// TODO: cambiar la funcion a la que escucha ,, debería devolver la cantidad de frames libres y su tamaño total
+	mux.HandleFunc("/memoria/espaciolibre", conexiones.ObtenerEspacioLibre)
+	mux.HandleFunc("/memoria/tabla", conexiones.EnviarEntradaPagina)
+
+	// TODO: USTEDES DEBEN IMPLEMENTAR ESTAS FUNCIONES
+	mux.HandleFunc("/memoria/LeerEntradaPagina", administracion.LeerPaginaCompleta)
+	mux.HandleFunc("/memoria/ActualizarEntrada", administracion.ActualizarPaginaCompleta)
 
 	//mux.HandleFunc("/memoria/lectura", utils.LecturaEspacio)
 	// TODO: debe responder a CPU el valor de una dirección física con el delay indicado en Memory Delay

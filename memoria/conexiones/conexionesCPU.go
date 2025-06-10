@@ -3,8 +3,8 @@ package conexiones
 import (
 	"bufio"
 	"encoding/json"
+	"github.com/sisoputnfrba/tp-golang/memoria/administracion"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
-	"github.com/sisoputnfrba/tp-golang/memoria/utils"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
@@ -38,37 +38,6 @@ func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosD
 	return globals.CPU
 }
 
-/*func CargarInstrucciones(nombreArchivo string) {
-
-	ruta := "../pruebas/" + nombreArchivo
-	// con el (..) vuelve para atras en los directorios
-	// accede a la carpeta de pruebas y abre el archivo pasado x parametro
-
-	file, err := os.Open(ruta)
-	if err != nil {
-		logger.Error("Error al abrir el archivo: %s\n", err)
-		return
-	}
-	defer file.Close() // se accede desde cualquier parte del código
-
-	logger.Info("Se leyó el archivo")
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		lineaPseudocodigo := scanner.Text()
-		logger.Info("Línea leída:%s", lineaPseudocodigo)
-		utils.CargarListaDeInstrucciones(lineaPseudocodigo)
-		if strings.TrimSpace(lineaPseudocodigo) == "EOF" {
-			break
-		}
-
-	}
-	if err := scanner.Err(); err != nil {
-		logger.Error("Error al leer el archivo:%s", err)
-	}
-	logger.Info("Total de instrucciones cargadas: %d", len(utils.Instrucciones))
-}*/
-
 func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.ContextoDeCPU
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
@@ -81,8 +50,8 @@ func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 	pc := mensaje.PC
 
 	var instruccion string
-	if pc >= 0 && pc < len(utils.InstruccionesPorPID[pid]) {
-		instruccion = utils.InstruccionesPorPID[pid][pc]
+	if pc >= 0 && pc < len(InstruccionesPorPID[pid]) {
+		instruccion = InstruccionesPorPID[pid][pc]
 	} else {
 		instruccion = "" // Esto indica fin del archivo o error de PC
 	}
@@ -139,7 +108,7 @@ func CargarInstrucciones(pid int, nombreArchivo string) {
 	for scanner.Scan() {
 		linea := scanner.Text()
 		logger.Info("Línea leída: %s", linea)
-		utils.CargarInstruccionParaPID(pid, linea)
+		CargarInstruccionParaPID(pid, linea)
 		if strings.TrimSpace(linea) == "EOF" {
 			break
 		}
@@ -149,5 +118,29 @@ func CargarInstrucciones(pid int, nombreArchivo string) {
 		logger.Error("Error al leer el archivo: %s", err)
 	}
 
-	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", pid, len(utils.InstruccionesPorPID[pid]))
+	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", pid, len(InstruccionesPorPID[pid]))
+}
+
+func EnviarEntradaPagina(w http.ResponseWriter, r *http.Request) {
+	var mensaje globals.MensajePedidoTablaCPU
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON del CPU\n", http.StatusBadRequest)
+		return
+	}
+
+	pid := mensaje.PID
+	indices := mensaje.IndicesEntrada
+
+	marco := administracion.ObtenerEntradaPagina(pid, indices)
+
+	respuesta := globals.RespuestaTablaCPU{
+		NumeroMarco: marco,
+	}
+
+	logger.Info("## Número Frame enviado: %d ", marco)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(respuesta)
+	w.Write([]byte("marco devuelto"))
 }
