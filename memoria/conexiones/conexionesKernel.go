@@ -35,12 +35,15 @@ import (
 }*/
 
 func ObtenerEspacioLibre(w http.ResponseWriter, r *http.Request) {
+	globals.MutexCantidadFramesLibres.Lock()
+	cantFramesLibres := globals.CantidadFramesLibres
+	globals.MutexCantidadFramesLibres.Unlock()
 
-	espacioLibre := globals.CantidadFramesLibres * globals.TamanioMaximoFrame
+	espacioLibre := cantFramesLibres * globals.TamanioMaximoFrame
 
 	respuesta := globals.RespuestaEspacioLibre{EspacioLibre: espacioLibre}
 
-	logger.Info("## Espacio libre mock devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
+	logger.Info("## Espacio libre devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
