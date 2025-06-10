@@ -74,24 +74,6 @@ func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 	logger.Info("## PID: <PID>  - Proceso Destruido - Métricas - Acc.T.Pag: <ATP>; Inst.Sol.: <Inst.Sol>; SWAP: <SWAP>; Mem. Prin.: <Mem.Prin.>; Lec.Mem.: <Lec.Mem.>; Esc.Mem.: <Esc.Mem.>")
 }
 
-func SuspensionProceso(w http.ResponseWriter, r *http.Request) {
-	// TODO: NO ES NECESARIO EL SWAPEO DE TABLAS DE PAGINAS
-
-	// TODO: SE LIBERA EN MEMORIA
-	// TODO: SE ESCRIBE EN SWAP LA INFO NECESARIA
-
-}
-
-func DesSuspensionProceso(w http.ResponseWriter, r *http.Request) {
-	// TODO: VERIFICAR EL TAMAÑO NECESARIO
-
-	// TODO: LEER EL CONTENIDO DEL SWAP, ESCRIBIERLO EN EL FRAME ASIGNADO
-	// TODO: LIBERAR ESPACIO EN SWAP
-	// TODO: ACTUALIZAR ESTRUCTURAS NECESARIAS
-
-	// TODO: RETORNAR OK
-}
-
 // METRICAS PROCESOS
 
 func InicializarMetricas() globals.MetricasProceso {

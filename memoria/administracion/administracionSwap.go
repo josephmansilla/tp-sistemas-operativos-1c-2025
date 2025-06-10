@@ -8,7 +8,12 @@ import (
 	"time"
 )
 
+func PasarSwapEntradaPagina(numeroFrame int) {}
+
 func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
+	inicio := time.Now()
+	retrasoSwap := time.Duration(globals.DelaySwap) * time.Second
+
 	var mensaje globals.SuspensionProceso
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
@@ -19,11 +24,12 @@ func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	PasarSwapEntradaPagina(numeroFrame)
 	LiberarEntradaPagina(numeroFrame)
 
-	respuesta := globals.ProcesoSuspendido{}
-
-	time.Sleep(time.Duration(globals.DelaySwap) * time.Second)
+	respuesta := globals.ExitoSuspensionProceso{}
 
 	logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", mensaje.PID, respuesta.DireccionFisica, respuesta.TamanioProceso)
+
+	tiempoTranscurrido := time.Now().Sub(inicio)
+	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
@@ -34,7 +40,16 @@ func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Respuesta devuelta"))
 }
 
+// TODO: NO ES NECESARIO EL SWAPEO DE TABLAS DE PAGINAS
+
+// TODO: SE LIBERA EN MEMORIA
+// TODO: SE ESCRIBE EN SWAP LA INFO NECESARIA
+
+func SacarEntradaPaginaSwap(numeroFrame int) {}
+
 func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
+	inicio := time.Now()
+	retrasoSwap := time.Duration(globals.DelaySwap) * time.Second
 
 	var mensaje globals.DesuspensionProceso
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
@@ -47,4 +62,25 @@ func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
 
 	time.Sleep(time.Duration(globals.DelaySwap) * time.Second)
 	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>")
+
+	tiempoTranscurrido := time.Now().Sub(inicio)
+	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+
+	respuesta := globals.ExitoDesuspensionProceso{}
+
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
 }
+
+// TODO: VERIFICAR EL TAMAÑO NECESARIO
+
+// TODO: LEER EL CONTENIDO DEL SWAP, ESCRIBIERLO EN EL FRAME ASIGNADO
+// TODO: LIBERAR ESPACIO EN SWAP
+// TODO: ACTUALIZAR ESTRUCTURAS NECESARIAS
+
+// TODO: RETORNAR OK
