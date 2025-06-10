@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+func PasarSwapEntradaPagina(numeroFrame int) {}
+
 func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.SuspensionProceso
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
@@ -36,6 +38,11 @@ func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Respuesta devuelta"))
 }
 
+func SacarEntradaPaginaSwap(numeroFrame) {
+}
+
+func LiberarEspacioEnSwap(numeroFrame int) {}
+
 func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
 
 	var mensaje globals.DesuspensionProceso
@@ -46,8 +53,8 @@ func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	}
 	VerificarTamanioNecesario
 	SacarEntradaPaginaSwap(numeroFrame)
-	LiberarEspacioEnSwap
-	ActualizarEstructurasNecesarias
+	LiberarEspacioEnSwap(numeroFrame)
+	// TODO: ActualizarEstructurasNecesarias
 
 	time.Sleep(time.Duration(globals.DelaySwap) * time.Second)
 	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>")

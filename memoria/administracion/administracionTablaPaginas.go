@@ -107,7 +107,6 @@ func AsignarNumeroEntradaPagina() int {
 
 		if bool == true {
 			numeroEntradaLibre = numeroFrame
-
 			MarcarOcupadoFrame(numeroEntradaLibre)
 
 			logger.Info("Marco Libre encontrado: %d", numeroEntradaLibre)
@@ -225,6 +224,7 @@ func ModificarEstadoEntradaLectura(pid int) {
 	proceso := globals.ProcesosPorPID[pid]
 	globals.MutexProcesosPorPID.Unlock()
 	IncrementarMetrica(proceso, IncrementarLecturaDeMemoria)
+	logger.Info("## Modificacion del estado entrada exitosa")
 }
 
 func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) int {
@@ -268,6 +268,8 @@ func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
 
+	logger.Info("## Lectura Éxitosa")
+
 	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Respuesta devuelta"))
@@ -299,6 +301,8 @@ func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
+
+	logger.Info("## Escritura Éxitosa")
 
 	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)

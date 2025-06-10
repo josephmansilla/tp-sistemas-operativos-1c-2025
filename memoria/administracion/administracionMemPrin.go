@@ -71,6 +71,42 @@ func ObtenerDatosMemoria(numeroFrame int) globals.ExitoLecturaPagina {
 	return datosLectura
 }
 
+func RealizarDumpMemoria(pid int) string {
+	globals.MutexProcesosPorPID.Lock()
+	proceso := globals.ProcesosPorPID[pid]
+	globals.MutexProcesosPorPID.Unlock()
+	if proceso == nil {
+		logger.Fatal("No existe el proceso solicitado para DUMP")
+		// TODO:
+	}
+
+	resultado := fmt.Sprintf("## Dump De Memoria Para PID: %d\n\n", pid)
+
+	tamanioProceso := 10000 // tamanioMaximoProceso / globals.TamanioMaximoFrame
+	for numeroPagina := 0; numeroPagina < tamanioProceso; numeroPagina++ {
+		indices := CrearIndicePara(numeroPagina)
+		entrada := BuscarEntradaPagina(proceso, indices)
+
+		if entrada == nil || !entrada.EstaPresente {
+			continue
+		}
+		frame := entrada.NumeroFrame
+		globals.MutexMemoriaPrincipal.Lock()
+		datos := globals.MemoriaPrincipal[frame]
+		globals.MutexMemoriaPrincipal.Unlock()
+		datosEnString := string(datos)
+		resultado += fmt.Sprintf("Pagina: %d | Frame: %d | Datos: %s\n", numeroPagina, frame, datosEnString)
+	}
+	return resultado
+}
+
+func ParsearContenido(dumpFile *os.File, contenido string) {
+	_, err := dumpFile.WriteString(contenido)
+	if err != nil {
+		logger.Error("Error al escribir contenido en el archivo dump: %v", err)
+	}
+}
+
 func MemoriaDump(w http.ResponseWriter, r *http.Request) {
 	var dump globals.DatosParaDump
 
@@ -81,7 +117,7 @@ func MemoriaDump(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dumpFileName := fmt.Sprintf("%s/<%d>-<%s>.dmp", globals.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
-	logger.Info("EL NOMBRE DEL DUMPFILE ES: " + dumpFileName)
+	logger.Info("## Se creo el file: %d ", dumpFileName)
 	dumpFile, err := os.OpenFile(dumpFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		fmt.Printf("Error al crear archivo de log para <%d-%s>: %v\n", dump.PID, dump.TimeStamp, err)
@@ -90,10 +126,13 @@ func MemoriaDump(w http.ResponseWriter, r *http.Request) {
 	log.SetOutput(dumpFile)
 	defer dumpFile.Close()
 
-	logger.Info("## PID: <%d>  - Memory Dump solicitado", dump.PID) // se logea
-	// TODO: se debe ubicar el proceso completo
-	// InformarMetricasProceso(proceso.Metricas)
+	logger.Info("## PID: <%d>  - Memory Dump solicitado", dump.PID)
 
+	contenido := RealizarDumpMemoria(dump.PID)
+	// TODO: verificacion esta vacio
+	ParsearContenido(dumpFile, contenido)
+
+	logger.Info("## Archivo Dump fue creado con EXITO")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Dump Realizado"))
 }

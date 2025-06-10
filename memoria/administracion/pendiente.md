@@ -10,4 +10,8 @@
 
 1) Eliminación de un proceso
 2) Lectura de un espacio
-3) Memory Dump
+
+
+Contabilizar las instrucciones solicitadas con obtenerInstrucciones
+
+Hay que atajar errores y logear de todo lo nuevo
