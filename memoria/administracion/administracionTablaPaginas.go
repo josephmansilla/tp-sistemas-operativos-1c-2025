@@ -1,32 +1,34 @@
 package administracion
 
 import (
-	"github.com/sisoputnfrba/tp-golang/cpu/globals"
-	data "github.com/sisoputnfrba/tp-golang/memoria/globals"
+	"encoding/json"
+	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"log"
 	"net/http"
+	"time"
 )
 
-func InicializarTablaRaiz() data.TablaPaginas {
-	cantidadEntradasPorTabla := data.MemoryConfig.EntriesPerPage
-	return make(data.TablaPaginas, cantidadEntradasPorTabla)
+func InicializarTablaRaiz() globals.TablaPaginas {
+	cantidadEntradasPorTabla := globals.MemoryConfig.EntriesPerPage
+	return make(globals.TablaPaginas, cantidadEntradasPorTabla)
 }
 
 func CrearIndicePara(nroPagina int) []int {
 
-	entradas := make([]int, data.CantidadNiveles)
+	entradas := make([]int, globals.CantidadNiveles)
 	divisor := 1
 
-	for i := data.CantidadNiveles - 1; i >= 0; i-- {
-		entradas[i] = (nroPagina / divisor) % data.EntradasPorPagina
-		divisor *= data.EntradasPorPagina
+	for i := globals.CantidadNiveles - 1; i >= 0; i-- {
+		entradas[i] = (nroPagina / divisor) % globals.EntradasPorPagina
+		divisor *= globals.EntradasPorPagina
 	}
 
 	return entradas
 }
 
-func BuscarEntradaPagina(procesoBuscado *data.Proceso, indices []int) *data.EntradaPagina {
-	//	cantidadNiveles := data.MemoryConfig.NumberOfLevels TODO: DEBERIA SER LO MISMO LA LONG DE INDICES Y LA CANT DE NIVELES
+func BuscarEntradaPagina(procesoBuscado *globals.Proceso, indices []int) *globals.EntradaPagina {
+	//	cantidadNiveles := globals.MemoryConfig.NumberOfLevels TODO: DEBERIA SER LO MISMO LA LONG DE INDICES Y LA CANT DE NIVELES
 	tamanioIndices := len(indices)
 	if tamanioIndices == 0 {
 		logger.Error("Índice vacío")
@@ -72,7 +74,7 @@ func BuscarEntradaPagina(procesoBuscado *data.Proceso, indices []int) *data.Entr
 }
 
 func ObtenerEntradaPagina(pid int, indices []int) int {
-	procesoBuscado, err := data.ProcesosPorPID[pid]
+	procesoBuscado, err := globals.ProcesosPorPID[pid]
 	if !err {
 		logger.Error("Processo Buscado no existe")
 		return -1
@@ -93,10 +95,10 @@ func ObtenerEntradaPagina(pid int, indices []int) int {
 
 func AsignarNumeroEntradaPagina() int {
 	numeroEntradaLibre := -1
-	tamanioMaximo := data.MemoryConfig.MemorySize
+	tamanioMaximo := globals.MemoryConfig.MemorySize
 
 	for numeroFrame := 0; numeroFrame < tamanioMaximo; numeroFrame++ {
-		if data.FramesLibres[numeroFrame] == true {
+		if globals.FramesLibres[numeroFrame] == true {
 			numeroEntradaLibre = numeroFrame
 
 			MarcarOcupadoFrame(numeroEntradaLibre)
@@ -110,35 +112,29 @@ func AsignarNumeroEntradaPagina() int {
 }
 
 func MarcarOcupadoFrame(numeroFrame int) {
-	data.FramesLibres[numeroFrame] = false
-	data.CantidadFramesLibres--
+	globals.FramesLibres[numeroFrame] = false
+	globals.CantidadFramesLibres--
 }
 
 func LiberarEntradaPagina(numeroFrameALiberar int) {
-	framesMemoriaPrincipal := data.FramesLibres
+	framesMemoriaPrincipal := globals.FramesLibres
 	framesMemoriaPrincipal[numeroFrameALiberar] = true
 	//TODO
 }
 
-func SerializarPagina(pagina data.EntradaPagina, numeroAsignado int) {
-	pagina.NumeroFrame = numeroAsignado // Se le asigna para testear
-	pagina.EstaPresente = true
-	pagina.EstaEnUso = true
-	pagina.FueModificado = false
-}
-func cambiarEstadoPresentePagina(pagina data.EntradaPagina) {
+func cambiarEstadoPresentePagina(pagina globals.EntradaPagina) {
 	pagina.EstaPresente = !pagina.EstaPresente
 }
-func cambiarEstadoUsoPagina(pagina data.EntradaPagina) {
+func cambiarEstadoUsoPagina(pagina globals.EntradaPagina) {
 	pagina.EstaEnUso = !pagina.EstaEnUso
 }
-func cambiarEstadoModificacionPagina(pagina data.EntradaPagina) {
+func cambiarEstadoModificacionPagina(pagina globals.EntradaPagina) {
 	pagina.FueModificado = !pagina.FueModificado
 }
 
 func DividirBytesEnPaginas(informacionEnBytes []byte) [][]byte {
 	var paginas [][]byte
-	tamanioPagina := globals.TamanioPagina
+	tamanioPagina := globals.TamanioMaximoFrame
 	totalBytes := len(informacionEnBytes)
 
 	for offset := 0; offset < totalBytes; offset += tamanioPagina {
@@ -151,7 +147,7 @@ func DividirBytesEnPaginas(informacionEnBytes []byte) [][]byte {
 	return paginas
 }
 
-func AsignarDatosAPaginacion(proceso *data.Proceso, informacionEnBytes []byte) error {
+func AsignarDatosAPaginacion(proceso *globals.Proceso, informacionEnBytes []byte) error {
 
 	fragmentosPaginas := DividirBytesEnPaginas(informacionEnBytes)
 
@@ -162,7 +158,7 @@ func AsignarDatosAPaginacion(proceso *data.Proceso, informacionEnBytes []byte) e
 			break
 		}
 
-		entrada := &data.EntradaPagina{
+		entrada := &globals.EntradaPagina{
 			NumeroFrame:   frame,
 			EstaPresente:  true,
 			EstaEnUso:     true,
@@ -174,24 +170,53 @@ func AsignarDatosAPaginacion(proceso *data.Proceso, informacionEnBytes []byte) e
 	return nil
 }
 
-func InsertarEntradaPaginaEnTabla(tablaRaiz data.TablaPaginas, numeroPagina int, entrada *data.EntradaPagina) {
+func InsertarEntradaPaginaEnTabla(tablaRaiz globals.TablaPaginas, numeroPagina int, entrada *globals.EntradaPagina) {
 	indices := CrearIndicePara(numeroPagina)
 
 	actual := tablaRaiz[indices[0]]
 
 	for i := 1; i < len(indices)-1; i++ {
 		if actual.Subtabla == nil {
-			actual.Subtabla = make(map[int]*data.TablaPagina)
+			actual.Subtabla = make(map[int]*globals.TablaPagina)
 		}
 		actual = actual.Subtabla[indices[i]]
 	}
 	if actual.EntradasPaginas == nil {
-		actual.EntradasPaginas = make(map[int]*data.EntradaPagina)
+		actual.EntradasPaginas = make(map[int]*globals.EntradaPagina)
 	}
 	actual.EntradasPaginas[indices[len(indices)-1]] = entrada
 }
 
-// -.-.--...
+func EscribirEspacioEntrada(pid int, indice []int, datosEscritura string) globals.ExitoEscrituraPagina {
+	stringEnBytes := LecturaPseudocodigo(datosEscritura)
+	numeroFrame := ObtenerEntradaPagina(pid, indice)
+	ModificarEstadoEntradaEscritura(pid, numeroFrame, stringEnBytes)
+
+	exito := globals.ExitoEscrituraPagina{
+		Exito:           true,
+		DireccionFisica: numeroFrame,
+		Mensaje:         "Proceso fue modificado correctamente en memoria",
+	}
+
+	return exito
+}
+
+func ModificarEstadoEntradaEscritura(numeroFrame int, pid int, datosEnBytes []byte) {
+	globals.MemoriaPrincipal[numeroFrame] = datosEnBytes
+	proceso := globals.ProcesosPorPID[pid]
+	IncrementarMetrica(proceso, IncrementarEscrituraDeMemoria)
+}
+func LeerEspacioEntrada(pid int, indice []int) globals.ExitoLecturaPagina {
+	numeroFrame := ObtenerEntradaPagina(pid, indice)
+	var datosLectura globals.ExitoLecturaPagina = ObtenerDatosMemoria(numeroFrame)
+	ModificarEstadoEntradaLectura(pid)
+	return datosLectura
+}
+
+func ModificarEstadoEntradaLectura(pid int) {
+	proceso := globals.ProcesosPorPID[pid]
+	IncrementarMetrica(proceso, IncrementarLecturaDeMemoria)
+}
 
 func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) int {
 
@@ -214,21 +239,57 @@ func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) int {
 	return (-1) // EN CASO DE ERROR
 }
 func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
-	// TODO: RETORNAR EL CONTENIDO DESDE LA PAGINA A PARTIR DEL BYTE ENVIADO DE DIRECC FIS. DE LA USER MEMORY
-	// TODO: ESTE DEBERÁ COINCIDEIR CON LA POS DEL BYTE 0 DE LA PAGINA
-	logger.Info("## Leer Página Completa - Dir. Física: <DIR>")
-}
-func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) bool {
-	err := 1 // valor basura
+	var mensaje globals.LecturaPagina
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+		return
+	}
+	time.Sleep(time.Duration(globals.DelayMemoria) * time.Second)
 
-	// TODO: SE ESCRIBE LA PAGINA COMPLETO A PARTIR DEL BYTE 0 DE LA DIRECCION FISICA ENVIADA
+	pid := mensaje.PID
+	indice := mensaje.Indice
+	respuesta := LeerEspacioEntrada(pid, indice)
 
-	if err != 0 { // err != nil
-		logger.Error("Error al actualizar la página - %s", err)
-		return false
+	logger.Info("## Leer Página Completa - Dir. Física: <%d>", respuesta.DireccionFisica)
+
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
 
-	// TODO: RETONAR OK SI ES SATISFACTORIO
-	logger.Info("## PID: <PID> - Actualizar Página Completa - Dir. Física: <DIR>")
-	return true
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
+}
+
+func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
+	var mensaje globals.EscrituraPagina
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+		return
+	}
+
+	time.Sleep(time.Duration(globals.DelayMemoria) * time.Second)
+
+	tamanioNecesario := mensaje.TamanioNecesario
+	pid := mensaje.PID
+	datosASobreEscribir := mensaje.DatosASobreEscribir
+	indice := mensaje.Indice
+
+	if tamanioNecesario > globals.TamanioMaximoFrame {
+		log.Fatal("No se puede cargar en una pagina este tamaño")
+		// TODO: FATAL ...
+	}
+	respuesta := EscribirEspacioEntrada(pid, indice, datosASobreEscribir)
+
+	logger.Info("## PID: <%d> - Actualizar Página Completa - Dir. Física: <%d>", pid, respuesta.DireccionFisica)
+
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
 }

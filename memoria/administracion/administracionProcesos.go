@@ -25,27 +25,13 @@ func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string)
 	OcuparProcesoEnVectorMapeable(pid, nuevoProceso)
 
 }
-
 func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso globals.Proceso) {
 	globals.ProcesosPorPID[pid] = &nuevoProceso
-}
-
-func TieneTamanioNecesario(tamanioProceso int) bool {
-	var framesNecesarios = float64(tamanioProceso) / float64(globals.TamanioMaximoFrame)
-	return framesNecesarios <= float64(globals.CantidadFramesLibres)
 }
 
 func CargarEntradaMemoria(numeroFrame int, pid int, datosEnBytes []byte) {
 	globals.MemoriaPrincipal[numeroFrame] = datosEnBytes
 	globals.FrameOcupadoPor[numeroFrame] = globals.Ocupante{PID: pid, NumeroPagina: numeroFrame}
-}
-
-func LecturaPseudocodigo(archivoPseudocodigo string) []byte {
-
-	string := archivoPseudocodigo
-	stringEnBytes := []byte(string)
-
-	return stringEnBytes
 }
 
 // ------------------------------------------------------------------

@@ -67,11 +67,17 @@ func main() {
 
 	mux.HandleFunc("/memoria/cpu", conexiones.RecibirMensajeDeCPU)
 	mux.HandleFunc("/memoria/kernel", conexiones.RecibirMensajeDeKernel)
+	mux.HandleFunc("/memoria/InicializacionProceso", administracion.InicializacionProceso) // TODO: HACER CONEXIONES CON KERNEL DESPUES DEL MERGE
+
 	mux.HandleFunc("/memoria/instruccion", conexiones.ObtenerInstruccion)
 	// TODO: deberia devoler la instruccion que piden
 
 	mux.HandleFunc("/memoria/espaciolibre", conexiones.ObtenerEspacioLibre)
 	mux.HandleFunc("/memoria/tabla", conexiones.EnviarEntradaPagina)
+
+	// TODO: USTEDES DEBEN IMPLEMENTAR ESTAS FUNCIONES
+	mux.HandleFunc("/memoria/LeerEntradaPagina", administracion.LeerPaginaCompleta)
+	mux.HandleFunc("/memoria/ActualizarEntrada", administracion.ActualizarPaginaCompleta)
 
 	//mux.HandleFunc("/memoria/lectura", utils.LecturaEspacio)
 	// TODO: debe responder a CPU el valor de una dirección física con el delay indicado en Memory Delay

@@ -10,6 +10,29 @@ type EntradaPagina struct {
 type TablaPagina struct {
 	Subtabla        map[int]*TablaPagina   `json:"subtabla"`
 	EntradasPaginas map[int]*EntradaPagina `json:"entradas_pagina"`
-} // las entradasPaginas se instancian en nil hasta el último nivel
+}
 
 type TablaPaginas map[int]*TablaPagina
+
+type EscrituraPagina struct {
+	PID                 int    `json:"pid"`
+	Indice              []int  `json:"indice"`
+	DatosASobreEscribir string `json:"datos_a_sobre_escribir"`
+	TamanioNecesario    int    `json:"tamanio_necesario"`
+}
+
+type ExitoEscrituraPagina struct {
+	Exito           bool   `json:"exito"`
+	DireccionFisica int    `json:"direccion_fisica"`
+	Mensaje         string `json:"mensaje"`
+}
+
+type LecturaPagina struct {
+	PID    int   `json:"pid"`
+	Indice []int `json:"indice"`
+}
+
+type ExitoLecturaPagina struct {
+	PseudoCodigo    string `json:"pseudo_codigo"`
+	DireccionFisica int    `json:"direccion_fisica"`
+}

@@ -38,7 +38,7 @@ func ObtenerEspacioLibre(w http.ResponseWriter, r *http.Request) {
 
 	espacioLibre := globals.CantidadFramesLibres * globals.TamanioMaximoFrame
 
-	respuesta := globals.EspacioLibreRTA{EspacioLibre: espacioLibre}
+	respuesta := globals.RespuestaEspacioLibre{EspacioLibre: espacioLibre}
 
 	logger.Info("## Espacio libre mock devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
 

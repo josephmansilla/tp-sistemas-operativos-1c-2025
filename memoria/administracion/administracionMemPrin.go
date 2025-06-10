@@ -1,8 +1,9 @@
 package administracion
 
 import (
+	"encoding/json"
 	"fmt"
-	globalData "github.com/sisoputnfrba/tp-golang/memoria/globals"
+	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"log"
@@ -14,32 +15,50 @@ import (
 func InicializarMemoriaPrincipal() {
 	cantidadFrames := CalcularTotalFrames()
 
-	globalData.MemoriaPrincipal = make([][]byte, cantidadFrames)
-	for i := range globalData.MemoriaPrincipal {
-		globalData.MemoriaPrincipal[i] = make([]byte, globalData.TamanioMaximoFrame)
+	globals.MemoriaPrincipal = make([][]byte, cantidadFrames)
+	for i := range globals.MemoriaPrincipal {
+		globals.MemoriaPrincipal[i] = make([]byte, globals.TamanioMaximoFrame)
 	}
-	globalData.FramesLibres = make([]bool, cantidadFrames)
+	globals.FramesLibres = make([]bool, cantidadFrames)
 	ConfigurarFrames(cantidadFrames)
 
-	logger.Info("Tamanio Memoria Principal de %d", globalData.MemoryConfig.MemorySize)
-	logger.Info("Memoria Principal Inicializada con %d frames de %d cada una.", cantidadFrames, globalData.MemoryConfig.PagSize)
+	logger.Info("Tamanio Memoria Principal de %d", globals.MemoryConfig.MemorySize)
+	logger.Info("Memoria Principal Inicializada con %d frames de %d cada una.", cantidadFrames, globals.MemoryConfig.PagSize)
 }
-
 func CalcularTotalFrames() int {
-	tamanioMemoriaPrincipal := globalData.MemoryConfig.MemorySize
-	tamanioPagina := globalData.MemoryConfig.PagSize
+	tamanioMemoriaPrincipal := globals.MemoryConfig.MemorySize
+	tamanioPagina := globals.MemoryConfig.PagSize
 
 	return tamanioMemoriaPrincipal / tamanioPagina
 }
-
 func ConfigurarFrames(cantidadFrames int) {
 	for i := 0; i < cantidadFrames; i++ {
-		globalData.FramesLibres[i] = true
+		globals.FramesLibres[i] = true
 	}
 	logger.Info("Todos los frames están libres.")
 }
 
-func AsignarProceso(PID int, cantidadPaginas int) {
+func TieneTamanioNecesario(tamanioProceso int) bool {
+	var framesNecesarios = float64(tamanioProceso) / float64(globals.TamanioMaximoFrame)
+	return framesNecesarios <= float64(globals.CantidadFramesLibres)
+}
+func LecturaPseudocodigo(archivoPseudocodigo string) []byte {
+	string := archivoPseudocodigo
+	stringEnBytes := []byte(string)
+	return stringEnBytes
+}
+
+func ObtenerDatosMemoria(numeroFrame int) globals.ExitoLecturaPagina {
+
+	pseudocodigoEnBytes := globals.MemoriaPrincipal[numeroFrame]
+	pseudocodigoEnString := string(pseudocodigoEnBytes)
+
+	datosLectura := globals.ExitoLecturaPagina{
+		PseudoCodigo:    pseudocodigoEnString,
+		DireccionFisica: numeroFrame,
+	}
+
+	return datosLectura
 }
 
 // ------------------------------------------------------------------
@@ -47,17 +66,46 @@ func AsignarProceso(PID int, cantidadPaginas int) {
 // ------------------------------------------------------------------
 
 func EscrituraEspacio(w http.ResponseWriter, r *http.Request) {
-	// TODO: ESCRIBIR LO INDICADO EN LA DIRECCION PEDIDA
-	time.Sleep(time.Duration(globalData.DelayMemoria) * time.Second)
+	var mensaje globals.EscrituraPagina // TODO: defiinir otro tipo
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+		return
+	}
 
-	logger.Info("## PID: <PID>  - <Escritura> - Dir. Física: <DIRECCIÓN_FÍSICA> - Tamaño: <TAMAÑO>")
+	time.Sleep(time.Duration(globals.DelayMemoria) * time.Second)
 
-	// TODO: RESPONDER CON OK
+	tamanioNecesario := mensaje.TamanioNecesario
+	pid := mensaje.PID
+	datosASobreEscribir := mensaje.DatosASobreEscribir
+	indice := mensaje.Indice
+
+	// TODO: CAMBIAR PORQUE DEBEN HABER VARIOS MARCOS PARA EDITAR
+	if tamanioNecesario > globals.TamanioMaximoFrame {
+		log.Fatal("No se puede cargar en una pagina este tamaño")
+		// TODO: FATAL ...
+	}
+	EscribirEspacioEntrada(pid, indice, datosASobreEscribir)
+	// TODO: DIRECCION FISICA
+	logger.Info("## PID: <%d> - <%s> - Dir. Física: <%d> - Tamaño: <%d>", pid, datosASobreEscribir, direccionFisica, tamanioNecesario)
+
+	respuesta := globals.ExitoEscrituraPagina{
+		Exito:   true,
+		Mensaje: "Proceso fue modificado correctamente en memoria",
+	}
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
 }
 
 func LecturaEspacio(w http.ResponseWriter, r *http.Request) {
 
-	time.Sleep(time.Duration(globalData.DelayMemoria) * time.Second)
+	time.Sleep(time.Duration(globals.DelayMemoria) * time.Second)
+	LeerEspacio()
 
 	// TODO: DEBO CREAR UNA STRUCT PARA QUE ME ENVIEN LA DIRECCION FISICA
 	// TODO: DEVOLVER EL VALOR QUE SE ENCUENTRA EN LA DIRECCION PEDIDA
@@ -65,7 +113,7 @@ func LecturaEspacio(w http.ResponseWriter, r *http.Request) {
 }
 
 func MemoriaDump(w http.ResponseWriter, r *http.Request) {
-	var dump globalData.DatosParaDump
+	var dump globals.DatosParaDump
 
 	if err := data.LeerJson(w, r, &dump); err != nil {
 		logger.Error("Error al recibir JSON: %v", err)
@@ -73,7 +121,7 @@ func MemoriaDump(w http.ResponseWriter, r *http.Request) {
 		return
 	} // err handling
 
-	dumpFileName := fmt.Sprintf("%s/<%d>-<%s>.dmp", globalData.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
+	dumpFileName := fmt.Sprintf("%s/<%d>-<%s>.dmp", globals.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
 	logger.Info("EL NOMBRE DEL DUMPFILE ES: " + dumpFileName)
 	dumpFile, err := os.OpenFile(dumpFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
