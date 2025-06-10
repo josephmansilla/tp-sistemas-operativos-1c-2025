@@ -89,7 +89,35 @@ func liberarCPU(cpuID string) {
 }
 
 func DesalojarProceso() {
+	//WAIT mensaje contexto interrupcion
+	msg := <-Utils.ContextoInterrupcion
+	pid := msg.PID
+	pc := msg.PC
+	cpuID := msg.CpuID
 
+	logger.Info("## (<%d>) Interrumpido de CPU <%s>", pid, cpuID)
+
+	//BUSCAR en EXECUTE y actualizar PC proveniente de CPU
+	var proceso *pcb.PCB
+	Utils.MutexEjecutando.Lock()
+	for _, p := range algoritmos.ColaEjecutando.Values() {
+		if p.PID == pid {
+			algoritmos.ColaEjecutando.Remove(p)
+			p.PC = pc
+			proceso = p
+			break
+		}
+	}
+	Utils.MutexEjecutando.Unlock()
+
+	liberarCPU(cpuID)
+
+	//ENVIAR A READY
+	Utils.MutexBloqueado.Lock()
+	pcb.CambiarEstado(proceso, pcb.EstadoReady)
+	algoritmos.ColaReady.Add(proceso)
+	logger.Info("## (<%d>) Pasa del estado EXECUTE al estado READY", proceso.PID)
+	Utils.MutexBloqueado.Unlock()
 }
 
 func BloquearProceso() {
