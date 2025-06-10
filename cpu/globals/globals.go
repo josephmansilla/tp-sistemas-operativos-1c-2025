@@ -7,16 +7,18 @@ import (
 
 // No se si es correcto crear una carpeta globals
 type Config struct {
-	IpSelf         string `json:"ip_self"`
-	PortSelf       int    `json:"port_self"`
-	IpMemory       string `json:"ip_memory"`
-	PortMemory     int    `json:"port_memory"`
-	IpKernel       string `json:"ip_kernel"`
-	PortKernel     int    `json:"port_kernel"`
-	TlbEntries     int    `json:"tlb_entries"`
-	TlbReplacement string `json:"tlb_replacement"`
-	CacheDelay     int    `json:"cache_delay"`
-	LogLevel       string `json:"log_level"`
+	IpSelf           string `json:"ip_self"`
+	PortSelf         int    `json:"port_self"`
+	IpMemory         string `json:"ip_memory"`
+	PortMemory       int    `json:"port_memory"`
+	IpKernel         string `json:"ip_kernel"`
+	PortKernel       int    `json:"port_kernel"`
+	TlbEntries       int    `json:"tlb_entries"`
+	TlbReplacement   string `json:"tlb_replacement"`
+	CacheEntries     int    `json:"cache_entries"`
+	CacheDelay       int    `json:"cache_delay"`
+	CacheReplacement string `json:"cache_replacement"`
+	LogLevel         string `json:"log_level"`
 }
 
 var PIDActual int

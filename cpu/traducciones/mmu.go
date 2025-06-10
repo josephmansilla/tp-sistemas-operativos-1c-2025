@@ -27,6 +27,13 @@ func Traducir(dirLogica int) int {
 	nroPagina := dirLogica / tamPagina
 	desplazamiento := dirLogica % tamPagina
 
+	//Primero verifico si la cache esta activa
+	if cache.EstaActiva() {
+		log.Printf("Cache Activa")
+	} else {
+		log.Printf("Cache Inactiva")
+	}
+
 	// Inicializo la TLB
 	var tlb = NuevaTLB(globals.ClientConfig.TlbEntries, globals.ClientConfig.TlbReplacement)
 	tlb.AgregarEntrada(1, 2)
@@ -38,23 +45,25 @@ func Traducir(dirLogica int) int {
 		return marco*tamPagina + desplazamiento
 	}
 
-	// La página no está en la TLB, tengo que ir a Memoria
+	// La página no está en la TLB, voy a Memoria
 	entradas := descomponerPagina(nroPagina, niveles, entradasPorNivel)
-
 	marco, err := accederTabla(globals.PIDActual, entradas)
 	if err != nil {
 		log.Printf("No se pudo acceder a la tabla de páginas: %s", err.Error())
 		return -1
 	}
-
 	if marco == -1 {
 		log.Printf("No se pudo traducir la dirección lógica %d", dirLogica)
 		return -1
 	}
 
-	// Agrego la entrada a la TLB
+	// Agrego entrada a la TLB
 	tlb.AgregarEntrada(nroPagina, marco)
-
+	// Agrego tmb a la cache
+	if cache.EstaActiva() {
+		cache.Agregar(nroPagina, "", true) // reemplazá "" con el contenido real si lo tenés
+		log.Printf("PID: %d - CACHE ADD - Pagina: %d", globals.PIDActual, nroPagina)
+	}
 	return marco*tamPagina + desplazamiento
 }
 
@@ -96,4 +105,20 @@ func accederTabla(pid int, indices []int) (int, error) {
 	log.Printf("Marco Recibido: %d", respuesta.NumeroMarco)
 
 	return respuesta.NumeroMarco, nil
+}
+
+func Leer(pagina int, tamanio int) {
+	if cache.EstaActiva() {
+		LeerEnCache(pagina, tamanio)
+	} else {
+		//TODO leer en memoria
+	}
+}
+
+func Escribir(pagina int, datos string) {
+	if cache.EstaActiva() {
+		EscribirEnCache(pagina, datos)
+	} else {
+		//TODO escribir en memoria
+	}
 }
