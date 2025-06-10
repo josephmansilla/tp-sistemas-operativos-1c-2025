@@ -9,6 +9,6 @@
   "tlb_replacement": "FIFO",
   "cache_entries": 5,
   "cache_delay": 10,
-  "cache_replacement" : "CLOCK",
+  "cache_replacement" : "CLOCK-M",
   "log_level": "DEBUG"
 }

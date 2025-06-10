@@ -97,15 +97,25 @@ func writeMemInstruccion(arguments []string) error {
 		return err
 	}
 	datos := arguments[1]
-	dirFisica := traducciones.Traducir(dirLogica)
+	nroPagina := dirLogica / globals.TamanioPagina
 
-	if err := traducciones.Escribir(dirFisica, datos); err != nil {
+	if traducciones.Cache.EstaActiva() {
+		err := traducciones.EscribirEnCache(nroPagina, datos)
+		if err != nil {
+			log.Printf("Error escribiendo en cache: %v", err)
+			return err
+		}
+		log.Printf("PID: %d - ESCRIBIR (Cache Activa) - Pagina: %d - Datos: %s", globals.PIDActual, nroPagina, datos)
+		return nil
+	}
+
+	dirFisica := traducciones.Traducir(dirLogica)
+	if err := traducciones.EscribirEnMemoria(dirFisica, datos); err != nil {
 		log.Printf("Error escribiendo en Memoria: %s", err)
 		return err
 	}
 
-	log.Printf("PID: %d - Acción: ESCRIBIR - Dirección Física: %d - Datos: %s", globals.PIDActual, dirFisica, datos)
-
+	log.Printf("PID: %d - ESCRIBIR (Memoria) - Dirección Física: %d - Datos: %s", globals.PIDActual, dirFisica, datos)
 	return nil
 }
 
@@ -125,16 +135,27 @@ func readMemInstruccion(arguments []string) error {
 		log.Printf("Error al convertir el tamanio: %s", err)
 		return err
 	}
-	dirFisica := traducciones.Traducir(dirLogica)
+	nroPagina := dirLogica / globals.TamanioPagina
 
-	valorLeido, err := traducciones.Leer(dirFisica, tamanio)
+	var valorLeido string
+	if traducciones.Cache.EstaActiva() {
+		valorLeido, err = traducciones.LeerEnCache(nroPagina, tamanio)
+		if err != nil {
+			log.Printf("Error leyendo en cache: %v", err)
+			return err
+		}
+		log.Printf("PID: %d - LEER (Cache Activa) - Pagina: %d - Valor: %s", globals.PIDActual, nroPagina, valorLeido)
+		return nil
+	}
+
+	dirFisica := traducciones.Traducir(dirLogica)
+	valorLeido, err = traducciones.LeerEnMemoria(dirFisica, tamanio)
 	if err != nil {
 		log.Printf("Error leyendo de memoria: %v", err)
 		return err
 	}
 
-	log.Printf("PID: %d - Acción: LEER - Dirección Física: %d - Valor: %d", globals.PIDActual, dirFisica, valorLeido)
-
+	log.Printf("PID: %d - LEER (Memoria) - Dirección Física: %d - Valor: %s", globals.PIDActual, dirFisica, valorLeido)
 	return nil
 }
 

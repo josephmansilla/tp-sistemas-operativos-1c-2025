@@ -19,18 +19,33 @@ type RespuestaTabla struct {
 	NumeroMarco int `json:"numero_marco"`
 }
 
-type Mensaje
+type MensajeEscritura struct {
+	PID       int    `json:"pid"`
+	DirFisica int    `json:"dirFisica"`
+	Datos     string `json:"datos"`
+}
+
+type MensajeLectura struct {
+	PID       int `json:"pid"`
+	DirFisica int `json:"dirFisica"`
+	Tamanio   int `json:"tamanio"`
+}
+
+type RespuestaLectura struct {
+	ValorLeido string `json:"valorLeido"`
+}
 
 // Función principal de traducción
 func Traducir(dirLogica int) int {
 	tamPagina := globals.TamanioPagina
 	entradasPorNivel := globals.EntradasPorNivel
 	niveles := globals.CantidadNiveles
+
 	nroPagina := dirLogica / tamPagina
 	desplazamiento := dirLogica % tamPagina
 
 	//Primero verifico si la cache esta activa
-	if cache.EstaActiva() {
+	if Cache.EstaActiva() {
 		log.Printf("Cache Activa")
 	} else {
 		log.Printf("Cache Inactiva")
@@ -62,8 +77,8 @@ func Traducir(dirLogica int) int {
 	// Agrego entrada a la TLB
 	tlb.AgregarEntrada(nroPagina, marco)
 	// Agrego tmb a la cache
-	if cache.EstaActiva() {
-		cache.Agregar(nroPagina, "", true) // reemplazá "" con el contenido real si lo tenés
+	if Cache.EstaActiva() {
+		Cache.Agregar(nroPagina, "", true) // reemplazá "" con el contenido real si lo tenés
 		log.Printf("PID: %d - CACHE ADD - Pagina: %d", globals.PIDActual, nroPagina)
 	}
 	return marco*tamPagina + desplazamiento
@@ -109,42 +124,53 @@ func accederTabla(pid int, indices []int) (int, error) {
 	return respuesta.NumeroMarco, nil
 }
 
-func Leer(pagina int, tamanio int) (string, error) {
-	if cache.EstaActiva() {
-		contenido, err := LeerEnCache(pagina, tamanio)
-		if err != nil {
-			log.Printf("Error leyendo en cache: %v", err)
-			return "", err
-		}
-		return contenido, nil
-	} else {
-		//TODO leer en memoria
-		contenido := ""
-		cache.Agregar(pagina, contenido, true)
-		log.Printf("PID: %d - CACHE ADD - Pagina: %d", globals.PIDActual, pagina)
-		return "", nil
+func LeerEnMemoria(dirFisica int, tamanio int) (string, error) {
+	msg := MensajeLectura{
+		PID:       globals.PIDActual,
+		DirFisica: dirFisica,
+		Tamanio:   tamanio,
 	}
-}
 
-func Escribir(pagina int, datos string) error {
-	if cache.EstaActiva() {
-		if err := EscribirEnCache(pagina, datos); err != nil {
-			log.Printf("Error escribiendo en cache: %v", err)
-			return err
-		}
-		return nil
-	} else {
-		//TODO escribir en memoria
-		cache.Agregar(pagina, datos, true)
-		log.Printf("PID: %d - CACHE ADD - Pagina: %d", globals.PIDActual, pagina)
-		return nil
+	url := fmt.Sprintf("http://%s:%d/memoria/lectura",
+		globals.ClientConfig.IpMemory,
+		globals.ClientConfig.PortMemory,
+	)
+
+	resp, err := data.EnviarDatosConRespuesta(url, msg)
+	if err != nil {
+		log.Printf("Error enviando Direccion Fisica y Tamanio: %s", err.Error())
+		return "", err
 	}
+	defer resp.Body.Close()
+
+	var respuesta RespuestaLectura
+	if err := json.NewDecoder(resp.Body).Decode(&respuesta); err != nil {
+		log.Printf("Error decodificando respuesta de memoria: %s", err.Error())
+		return "", err
+	}
+
+	log.Printf("Direccion Fisica: %d y Tamanio: %d enviados correctamente a memoria", dirFisica, tamanio)
+	log.Printf("Valor leído: %s", respuesta.ValorLeido)
+
+	return respuesta.ValorLeido, nil
 }
 
-func LeerEnMemoria(pagina int, tamanio int) {
+func EscribirEnMemoria(dirFisica int, datos string) error {
+	msg := MensajeEscritura{
+		PID:       globals.PIDActual,
+		DirFisica: dirFisica,
+		Datos:     datos,
+	}
 
-}
+	url := fmt.Sprintf("http://%s:%d/memoria/escritura",
+		globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
 
-func EscribirEnMemoria(pagina int, datos string) {
+	err := data.EnviarDatos(url, msg)
+	if err != nil {
+		log.Printf("Error enviando Direccion Fisica y Datos: %s", err.Error())
+		return err
+	}
 
+	log.Println("Direccion Fisica: %d y Datos: %s enviados correctamente a memoria", dirFisica, datos)
+	return nil
 }

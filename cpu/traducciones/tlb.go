@@ -9,7 +9,7 @@ import (
 )
 
 type EntradaTLB struct {
-	Pagina       int
+	NroPagina    int
 	Marco        int
 	UltimoAcceso time.Time
 }
@@ -36,28 +36,28 @@ func NuevaTLB(maxEntradas int, algoritmo string) *TLB {
 
 // busco la pagina y devuelvo el marco, si esta es un hit
 // (tlb *TLB) para trabajar y modificar directamente la TLB y no una copia
-func (tlb *TLB) Buscar(pagina int) (int, bool) {
+func (tlb *TLB) Buscar(nroPagina int) (int, bool) {
 	tlb.mutex.Lock()
 	defer tlb.mutex.Unlock()
 
-	if elem, ok := tlb.entradas[pagina]; ok {
+	if elem, ok := tlb.entradas[nroPagina]; ok {
 		if tlb.algoritmo == "LRU" {
 			tlb.orden.MoveToFront(elem)
 		}
-		log.Printf("PID: %d - TLB HIT - Pagina: %d", globals.PIDActual, pagina)
+		log.Printf("PID: %d - TLB HIT - Pagina: %d", globals.PIDActual, nroPagina)
 		return elem.Value.(EntradaTLB).Marco, true
 	}
-	log.Printf("PID: %d - TLB MISS - Pagina: %d", globals.PIDActual, pagina)
+	log.Printf("PID: %d - TLB MISS - Pagina: %d", globals.PIDActual, nroPagina)
 	return -1, false
 }
 
-func (tlb *TLB) AgregarEntrada(pagina int, marco int) {
+func (tlb *TLB) AgregarEntrada(nroPagina int, marco int) {
 	tlb.mutex.Lock()
 	defer tlb.mutex.Unlock()
 
 	// Si ya existe, actualizar
-	if elem, ok := tlb.entradas[pagina]; ok {
-		elem.Value = EntradaTLB{Pagina: pagina, Marco: marco}
+	if elem, ok := tlb.entradas[nroPagina]; ok {
+		elem.Value = EntradaTLB{NroPagina: nroPagina, Marco: marco}
 		if tlb.algoritmo == "LRU" {
 			tlb.orden.MoveToFront(elem)
 		}
@@ -71,13 +71,13 @@ func (tlb *TLB) AgregarEntrada(pagina int, marco int) {
 
 		if victima != nil {
 			entrada := victima.Value.(EntradaTLB)
-			delete(tlb.entradas, entrada.Pagina)
+			delete(tlb.entradas, entrada.NroPagina)
 			tlb.orden.Remove(victima)
 		}
 	}
 
 	// Agregar nueva entrada al frente
-	nuevaEntrada := EntradaTLB{Pagina: pagina, Marco: marco}
+	nuevaEntrada := EntradaTLB{NroPagina: nroPagina, Marco: marco}
 	elem := tlb.orden.PushFront(nuevaEntrada)
-	tlb.entradas[pagina] = elem
+	tlb.entradas[nroPagina] = elem
 }

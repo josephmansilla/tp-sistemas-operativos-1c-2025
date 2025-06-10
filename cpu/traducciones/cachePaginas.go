@@ -8,7 +8,7 @@ import (
 )
 
 type EntradaCache struct {
-	Pagina     int
+	NroPagina  int
 	Contenido  string
 	Modificado bool
 	Usado      bool
@@ -22,7 +22,7 @@ type CachePaginas struct {
 	mutex       sync.Mutex
 }
 
-var cache *CachePaginas
+var Cache *CachePaginas
 var max = globals.ClientConfig.CacheEntries
 
 func NuevaCachePaginas() *CachePaginas {
@@ -37,12 +37,12 @@ func NuevaCachePaginas() *CachePaginas {
 	}
 }
 
-func (c *CachePaginas) Agregar(pagina int, contenido string, modificado bool) {
+func (c *CachePaginas) Agregar(nroPagina int, contenido string, modificado bool) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	nueva := EntradaCache{
-		Pagina:     pagina,
+		NroPagina:  nroPagina,
 		Contenido:  contenido,
 		Modificado: modificado,
 		Usado:      true,
@@ -55,18 +55,18 @@ func (c *CachePaginas) Agregar(pagina int, contenido string, modificado bool) {
 	}
 }
 
-func (c *CachePaginas) Buscar(pagina int) (string, bool) {
+func (c *CachePaginas) Buscar(nroPagina int) (string, bool) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	for i := range c.Entradas {
-		if c.Entradas[i].Pagina == pagina {
+		if c.Entradas[i].NroPagina == nroPagina {
 			c.Entradas[i].Usado = true
-			log.Printf("PID: %d - CACHE HIT - Página: %d", globals.PIDActual, pagina)
+			log.Printf("PID: %d - Cache HIT - Página: %d", globals.PIDActual, nroPagina)
 			return c.Entradas[i].Contenido, true
 		}
 	}
-	log.Printf("PID: %d - CACHE MISS - Página: %d", globals.PIDActual, pagina)
+	log.Printf("PID: %d - Cache MISS - Página: %d", globals.PIDActual, nroPagina)
 	return "", false
 }
 
@@ -78,48 +78,48 @@ func (c *CachePaginas) reemplazarEntrada(nueva EntradaCache) {
 	//TODO
 }
 
-func (c *CachePaginas) MarcarUso(pagina int) {
+func (c *CachePaginas) MarcarUso(nroPagina int) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	for i := range c.Entradas {
-		if c.Entradas[i].Pagina == pagina {
+		if c.Entradas[i].NroPagina == nroPagina {
 			c.Entradas[i].Usado = true
-			log.Printf("PID: %d - CACHE USO - Página %d marcada con bit de uso en true", globals.PIDActual, pagina)
+			log.Printf("PID: %d - Cache USO - Página %d marcada con bit de uso en true", globals.PIDActual, nroPagina)
 			return
 		}
 	}
 }
 
-func LeerEnCache(pagina int, tamanio int) (string, error) {
-	contenido, ok := cache.Buscar(pagina)
+func LeerEnCache(nroPagina int, tamanio int) (string, error) {
+	contenido, ok := Cache.Buscar(nroPagina)
 	if !ok {
-		err := fmt.Errorf("Página %d no encontrada en la caché", pagina)
+		err := fmt.Errorf("Página %d no encontrada en la caché", nroPagina)
 		log.Printf("Error: %v", err)
 		return "", err
 	}
-	cache.MarcarUso(pagina)
+	Cache.MarcarUso(nroPagina)
 	// Si querés leer solo parte del contenido: contenido = contenido[:tamanio]
 	return contenido, nil
 }
 
-func EscribirEnCache(pagina int, datos string) error {
-	for i := range cache.Entradas {
-		if cache.Entradas[i].Pagina == pagina {
-			cache.Entradas[i].Contenido = datos
-			cache.Entradas[i].Modificado = true
-			cache.Entradas[i].Usado = true
-			log.Printf("Se escribió %s en página %d", datos, pagina)
+func EscribirEnCache(nroPagina int, datos string) error {
+	for i := range Cache.Entradas {
+		if Cache.Entradas[i].NroPagina == nroPagina {
+			Cache.Entradas[i].Contenido = datos
+			Cache.Entradas[i].Modificado = true
+			Cache.Entradas[i].Usado = true
+			log.Printf("Se escribió %s en página %d", datos, nroPagina)
 			return nil
 		}
 	}
-	err := fmt.Errorf("No se encontró la página %d en la caché", pagina)
+	err := fmt.Errorf("No se encontró la página %d en la caché", nroPagina)
 	log.Printf("Error: %v", err)
 	return err
 }
 
 /*LOGS MINIMOS RESTANTES:
-CACHE HIT --> Si con la dirFisica encuentra una Pagina
+Cache HIT --> Si con la dirFisica encuentra una Pagina
 CACHE MISS --> Si con la dirFisica no encuentra una Pagina
 CACHE ADD --> Despues de no haber encontrado la pagina, la agrega
 */
