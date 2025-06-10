@@ -16,7 +16,7 @@ type TablaPaginas map[int]*TablaPagina
 
 type EscrituraPagina struct {
 	PID                 int    `json:"pid"`
-	Indice              []int  `json:"indice"`
+	DireccionFisica     int    `json:"direccion_fisica"`
 	DatosASobreEscribir string `json:"datos_a_sobre_escribir"`
 	TamanioNecesario    int    `json:"tamanio_necesario"`
 }
@@ -28,8 +28,8 @@ type ExitoEscrituraPagina struct {
 }
 
 type LecturaPagina struct {
-	PID    int   `json:"pid"`
-	Indice []int `json:"indice"`
+	PID             int `json:"pid"`
+	DireccionFisica int `json:"direccion_fisica"`
 }
 
 type ExitoLecturaPagina struct {

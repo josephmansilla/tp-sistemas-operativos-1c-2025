@@ -5,6 +5,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
+	"sync"
 )
 
 func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string) {
@@ -26,12 +27,20 @@ func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string)
 
 }
 func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso globals.Proceso) {
+
+	globals.MutexProcesosPorPID.Lock()
 	globals.ProcesosPorPID[pid] = &nuevoProceso
+	globals.MutexProcesosPorPID.Unlock()
 }
 
 func CargarEntradaMemoria(numeroFrame int, pid int, datosEnBytes []byte) {
+
+	globals.MutexMemoriaPrincipal.Lock()
 	globals.MemoriaPrincipal[numeroFrame] = datosEnBytes
+	globals.MutexMemoriaPrincipal.Unlock()
+	globals.MutexFrameOcupadoPorPID.Lock()
 	globals.FrameOcupadoPor[numeroFrame] = globals.Ocupante{PID: pid, NumeroPagina: numeroFrame}
+	globals.MutexFrameOcupadoPorPID.Unlock()
 }
 
 // ------------------------------------------------------------------
@@ -89,7 +98,11 @@ func InicializarMetricas() globals.MetricasProceso {
 }
 
 func IncrementarMetrica(proceso *globals.Proceso, funcMetrica globals.OperacionMetrica) {
+	var mutexMetrica sync.Mutex
+
+	mutexMetrica.Lock()
 	funcMetrica(&proceso.Metricas)
+	mutexMetrica.Unlock()
 }
 
 func InformarMetricasProceso(metricasDelProceso globals.MetricasProceso) {
