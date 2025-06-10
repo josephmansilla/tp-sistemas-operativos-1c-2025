@@ -249,6 +249,9 @@ func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) int {
 }
 
 func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
+	inicio := time.Now()
+	retrasoSwap := time.Duration(globals.DelayMemoria) * time.Second
+
 	var mensaje globals.LecturaPagina
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
@@ -264,6 +267,9 @@ func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 
 	time.Sleep(time.Duration(globals.DelayMemoria) * time.Second)
 
+	tiempoTranscurrido := time.Now().Sub(inicio)
+	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
@@ -276,6 +282,9 @@ func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 }
 
 func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
+	inicio := time.Now()
+	retrasoSwap := time.Duration(globals.DelayMemoria) * time.Second
+
 	var mensaje globals.EscrituraPagina
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
@@ -297,6 +306,9 @@ func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	logger.Info("## PID: <%d> - Actualizar Página Completa - Dir. Física: <%d>", pid, direccionFisica)
 
 	time.Sleep(time.Duration(globals.DelayMemoria) * time.Second)
+
+	tiempoTranscurrido := time.Now().Sub(inicio)
+	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
