@@ -91,16 +91,6 @@ func SuspensionProceso(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func DesSuspensionProceso(w http.ResponseWriter, r *http.Request) {
-	// TODO: VERIFICAR EL TAMAÑO NECESARIO
-
-	// TODO: LEER EL CONTENIDO DEL SWAP, ESCRIBIERLO EN EL FRAME ASIGNADO
-	// TODO: LIBERAR ESPACIO EN SWAP
-	// TODO: ACTUALIZAR ESTRUCTURAS NECESARIAS
-
-	// TODO: RETORNAR OK
-}
-
 // METRICAS PROCESOS
 
 func InicializarMetricas() globals.MetricasProceso {

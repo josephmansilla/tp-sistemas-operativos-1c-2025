@@ -19,11 +19,13 @@ func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	PasarSwapEntradaPagina(numeroFrame)
 	LiberarEntradaPagina(numeroFrame)
 
-	respuesta := globals.ProcesoSuspendido{}
+	proceso := globals.ProcesoSuspendido{}
 
 	time.Sleep(time.Duration(globals.DelaySwap) * time.Second)
 
-	logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", mensaje.PID, respuesta.DireccionFisica, respuesta.TamanioProceso)
+	logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", mensaje.PID, proceso.DireccionFisica, proceso.TamanioProceso)
+
+	respuesta := globals.ExitoDesuspensionProceso{}
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
@@ -42,9 +44,22 @@ func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
 		return
 	}
-
+	VerificarTamanioNecesario
 	SacarEntradaPaginaSwap(numeroFrame)
+	LiberarEspacioEnSwap
+	ActualizarEstructurasNecesarias
 
 	time.Sleep(time.Duration(globals.DelaySwap) * time.Second)
 	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>")
+
+	respuesta := globals.ExitoDesuspensionProceso{}
+
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
+
 }
