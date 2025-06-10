@@ -1,6 +1,7 @@
 package traducciones
 
 import (
+	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"log"
 	"sync"
@@ -91,12 +92,15 @@ func (c *CachePaginas) MarcarUso(pagina int) {
 }
 
 func LeerEnCache(pagina int, tamanio int) (string, error) {
-	if contenido, ok := cache.Buscar(pagina); ok {
-		cache.MarcarUso(pagina) // actualizás el bit de uso si usás CLOCK
-		// Simulás leer solo una porción si querés
-		return contenido, nil
+	contenido, ok := cache.Buscar(pagina)
+	if !ok {
+		err := fmt.Errorf("Página %d no encontrada en la caché", pagina)
+		log.Printf("Error: %v", err)
+		return "", err
 	}
-	return "", nil
+	cache.MarcarUso(pagina)
+	// Si querés leer solo parte del contenido: contenido = contenido[:tamanio]
+	return contenido, nil
 }
 
 func EscribirEnCache(pagina int, datos string) error {
@@ -105,11 +109,13 @@ func EscribirEnCache(pagina int, datos string) error {
 			cache.Entradas[i].Contenido = datos
 			cache.Entradas[i].Modificado = true
 			cache.Entradas[i].Usado = true
-			log.Printf("Se escribio %s en página %d", datos, pagina)
+			log.Printf("Se escribió %s en página %d", datos, pagina)
 			return nil
 		}
 	}
-	return nil
+	err := fmt.Errorf("No se encontró la página %d en la caché", pagina)
+	log.Printf("Error: %v", err)
+	return err
 }
 
 /*LOGS MINIMOS RESTANTES:

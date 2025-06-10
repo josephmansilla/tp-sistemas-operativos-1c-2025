@@ -99,9 +99,7 @@ func writeMemInstruccion(arguments []string) error {
 	datos := arguments[1]
 	dirFisica := traducciones.Traducir(dirLogica)
 
-	pagina := dirLogica / globals.TamanioPagina
-
-	if err := traducciones.Escribir(pagina, datos); err != nil {
+	if err := traducciones.Escribir(dirFisica, datos); err != nil {
 		log.Printf("Error escribiendo en Memoria: %s", err)
 		return err
 	}
@@ -129,11 +127,9 @@ func readMemInstruccion(arguments []string) error {
 	}
 	dirFisica := traducciones.Traducir(dirLogica)
 
-	pagina := dirLogica / globals.TamanioPagina
-
-	valorLeido, err := traducciones.Leer(pagina, tamanio)
+	valorLeido, err := traducciones.Leer(dirFisica, tamanio)
 	if err != nil {
-		log.Printf("Error leyendo en Memoria: %s", err)
+		log.Printf("Error leyendo de memoria: %v", err)
 		return err
 	}
 

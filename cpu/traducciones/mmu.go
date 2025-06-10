@@ -19,6 +19,8 @@ type RespuestaTabla struct {
 	NumeroMarco int `json:"numero_marco"`
 }
 
+type Mensaje
+
 // Función principal de traducción
 func Traducir(dirLogica int) int {
 	tamPagina := globals.TamanioPagina
@@ -107,18 +109,42 @@ func accederTabla(pid int, indices []int) (int, error) {
 	return respuesta.NumeroMarco, nil
 }
 
-func Leer(pagina int, tamanio int) {
+func Leer(pagina int, tamanio int) (string, error) {
 	if cache.EstaActiva() {
-		LeerEnCache(pagina, tamanio)
+		contenido, err := LeerEnCache(pagina, tamanio)
+		if err != nil {
+			log.Printf("Error leyendo en cache: %v", err)
+			return "", err
+		}
+		return contenido, nil
 	} else {
 		//TODO leer en memoria
+		contenido := ""
+		cache.Agregar(pagina, contenido, true)
+		log.Printf("PID: %d - CACHE ADD - Pagina: %d", globals.PIDActual, pagina)
+		return "", nil
 	}
 }
 
-func Escribir(pagina int, datos string) {
+func Escribir(pagina int, datos string) error {
 	if cache.EstaActiva() {
-		EscribirEnCache(pagina, datos)
+		if err := EscribirEnCache(pagina, datos); err != nil {
+			log.Printf("Error escribiendo en cache: %v", err)
+			return err
+		}
+		return nil
 	} else {
 		//TODO escribir en memoria
+		cache.Agregar(pagina, datos, true)
+		log.Printf("PID: %d - CACHE ADD - Pagina: %d", globals.PIDActual, pagina)
+		return nil
 	}
+}
+
+func LeerEnMemoria(pagina int, tamanio int) {
+
+}
+
+func EscribirEnMemoria(pagina int, datos string) {
+
 }
