@@ -46,6 +46,7 @@ func main() {
 	globals.EntradasPorPagina = globals.MemoryConfig.EntriesPerPage
 	globals.DelayMemoria = globals.MemoryConfig.MemoryDelay
 	globals.DelaySwap = globals.MemoryConfig.SwapDelay
+	globals.TamanioMaximoFrame = globals.MemoryConfig.PagSize
 
 	logger.Info("======== Comenzo la ejecucion de Memoria ========")
 

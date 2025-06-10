@@ -1,6 +1,8 @@
 package administracion
 
 import (
+	"fmt"
+	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	data "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
@@ -9,6 +11,19 @@ import (
 func InicializarTablaRaiz() data.TablaPaginas {
 	cantidadEntradasPorTabla := data.MemoryConfig.EntriesPerPage
 	return make(data.TablaPaginas, cantidadEntradasPorTabla)
+}
+
+func CrearIndicePara(nroPagina int) []int {
+
+	entradas := make([]int, data.CantidadNiveles)
+	divisor := 1
+
+	for i := data.CantidadNiveles - 1; i >= 0; i-- {
+		entradas[i] = (nroPagina / divisor) % data.EntradasPorPagina
+		divisor *= data.EntradasPorPagina
+	}
+
+	return entradas
 }
 
 func BuscarEntradaPagina(procesoBuscado *data.Proceso, indices []int) *data.EntradaPagina {
@@ -58,7 +73,7 @@ func BuscarEntradaPagina(procesoBuscado *data.Proceso, indices []int) *data.Entr
 }
 
 func ObtenerEntradaPagina(pid int, indices []int) int {
-	procesoBuscado, err := data.ProcesosMapeable[pid]
+	procesoBuscado, err := data.ProcesosPorPID[pid]
 	if !err {
 		logger.Error("Processo Buscado no existe")
 		return -1
@@ -89,11 +104,13 @@ func AsignarNumeroEntradaPagina() int {
 		}
 	}
 	return numeroEntradaLibre
+	// TODO
 }
 
 func LiberarEntradaPagina(numeroFrameALiberar int) {
 	framesMemoriaPrincipal := data.FramesLibres
 	framesMemoriaPrincipal[numeroFrameALiberar] = true
+	//TODO
 }
 
 func SerializarPagina(pagina data.EntradaPagina, numeroAsignado int) {
@@ -111,6 +128,60 @@ func cambiarEstadoUsoPagina(pagina data.EntradaPagina) {
 }
 func cambiarEstadoModificacionPagina(pagina data.EntradaPagina) {
 	pagina.FueModificado = !pagina.FueModificado
+}
+
+func DividirBytesEnPaginas(data []byte) [][]byte {
+	var paginas [][]byte
+	tamanioPagina := globals.TamanioPagina
+	totalBytes := len(data)
+
+	for i := 0; i < totalBytes; i += tamanioPagina {
+		end := i + tamanioPagina
+		if end > totalBytes {
+			end = totalBytes
+		}
+		paginas = append(paginas, data[i:end])
+	}
+	return paginas
+}
+
+func AsignarDatosAPaginacion(proceso *data.Proceso, data []byte) error {
+
+	paginas := DividirBytesEnPaginas(data)
+
+	for i, pagina := range paginas {
+		frame, err := AsignarFrame() //TODO
+		if err != nil {
+			return fmt.Errorf("error al asignar marco para la pag %d: %v", i, err)
+		}
+		entrada := &data.EntradaPagina{
+			NumeroFrame:   frame,
+			Data:          datos,
+			EstaEnUso:     true,
+			FueModificado: false,
+		}
+
+		indices := CrearIndicePara(i)
+		InsertarEntradaPagina(proceso.TablaRaiz, indices, entrada)
+
+	}
+
+}
+
+func InsertarEntradaPagina(tablaRaiz data.TablaPaginas, indices []int, entrada *data.EntradaPagina) {
+	actual := tablaRaiz[indices[0]]
+
+	for i := 1; i < len(indices)-1; i++ {
+		if actual.Subtabla == nil {
+			actual.Subtabla = make(map[int]*data.TablaPagina)
+		}
+		actual = actual.Subtabla[indices[i]]
+	}
+	if actual.EntradasPaginas == nil {
+		actual.EntradasPaginas = make(map[int]*data.EntradaPagina)
+	}
+	actual.EntradasPaginas[indices[len(indices)-1]] = entrada
+
 }
 
 // -.-.--...

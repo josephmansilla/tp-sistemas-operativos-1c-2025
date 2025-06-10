@@ -6,7 +6,24 @@ import (
 	"net/http"
 )
 
-func LecturaPseudocigo(archivoPseudocodigo string) {
+func InicializarProceso() {
+
+	if !TieneTamanioNecesario(tamanioProceso) {
+		// TODO
+		logger.Error("No hay memoria")
+	}
+	LecturaPseudocodigo(archivoPseudocodigo)
+	datos := DividirBytesEnPaginas(data)
+	AsignarDatosAPaginacion(datos)
+	AgregarAProcesosMap
+}
+
+func TieneTamanioNecesario(tamanioProceso int) bool {
+	var framesNecesarios = float64(tamanioProceso) / float64(globals.TamanioMaximoFrame)
+	return framesNecesarios <= float64(globals.CantidadFramesLibres)
+}
+
+func LecturaPseudocodigo(archivoPseudocodigo string) {
 
 }
 

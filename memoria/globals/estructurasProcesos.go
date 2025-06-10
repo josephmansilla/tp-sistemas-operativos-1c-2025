@@ -6,7 +6,10 @@ type Proceso struct {
 	Metricas  MetricasProceso `json:"metricas_proceso"`
 }
 
-type ProcesosMap map[int]*Proceso
+type Ocupante struct {
+	PID          int `json:"pid"`
+	NumeroPagina int `json:"numero_pagina"`
+}
 
 type MetricasProceso struct {
 	AccesosTablasPaginas     int `json:"acceso_tablas_paginas"`

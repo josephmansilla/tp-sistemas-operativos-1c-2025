@@ -1,5 +1,7 @@
 package globals
 
+var EntradaGenerica EntradaPagina
+
 type EntradaPagina struct {
 	NumeroFrame   int    `json:"numero_frame"`
 	Datos         []byte `json:"datos"`

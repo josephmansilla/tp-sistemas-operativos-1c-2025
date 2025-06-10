@@ -12,9 +12,12 @@ import (
 )
 
 func InicializarMemoriaPrincipal() {
-	cantidadFrames := CalcularCantidadFrames()
+	cantidadFrames := CalcularTotalFrames()
 
 	globalData.MemoriaPrincipal = make([][]byte, cantidadFrames)
+	for i := range globalData.MemoriaPrincipal {
+		globalData.MemoriaPrincipal[i] = make([]byte, globalData.TamanioMaximoFrame)
+	}
 	globalData.FramesLibres = make([]bool, cantidadFrames)
 	ConfigurarFrames(cantidadFrames)
 
@@ -22,7 +25,7 @@ func InicializarMemoriaPrincipal() {
 	logger.Info("Memoria Principal Inicializada con %d frames de %d cada una.", cantidadFrames, globalData.MemoryConfig.PagSize)
 }
 
-func CalcularCantidadFrames() int {
+func CalcularTotalFrames() int {
 	tamanioMemoriaPrincipal := globalData.MemoryConfig.MemorySize
 	tamanioPagina := globalData.MemoryConfig.PagSize
 
@@ -81,8 +84,8 @@ func MemoriaDump(w http.ResponseWriter, r *http.Request) {
 	defer dumpFile.Close()
 
 	logger.Info("## PID: <%d>  - Memory Dump solicitado", dump.PID) // se logea
-	proceso := globalData.ProcesosMapeable[dump.PID]
-	InformarMetricasProceso(proceso.Metricas)
+	// TODO: se debe ubicar el proceso completo
+	// InformarMetricasProceso(proceso.Metricas)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Dump Realizado"))
