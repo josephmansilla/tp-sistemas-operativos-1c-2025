@@ -132,12 +132,13 @@ func LiberarEntradaPagina(numeroFrameALiberar int) {
 	globals.FramesLibres[numeroFrameALiberar] = true
 	globals.MutexEstructuraFramesLibres.Unlock()
 
-	//TODO
+	globals.MutexCantidadFramesLibres.Lock()
+	globals.CantidadFramesLibres++
+	globals.MutexCantidadFramesLibres.Unlock()
 }
 
-func DividirBytesEnPaginas(informacionEnBytes []byte) [][]byte {
-	var paginas [][]byte
-	tamanioPagina := globals.TamanioMaximoFrame
+func AsignarDatosAPaginacion(proceso *globals.Proceso, informacionEnBytes []byte) error {
+	tamanioPagina := globals.MemoryConfig.PagSize
 	totalBytes := len(informacionEnBytes)
 
 	for offset := 0; offset < totalBytes; offset += tamanioPagina {
@@ -145,30 +146,24 @@ func DividirBytesEnPaginas(informacionEnBytes []byte) [][]byte {
 		if end > totalBytes {
 			end = totalBytes
 		}
-		paginas = append(paginas, informacionEnBytes[offset:end])
-	}
-	return paginas
-}
 
-func AsignarDatosAPaginacion(proceso *globals.Proceso, informacionEnBytes []byte) error {
-
-	fragmentosPaginas := DividirBytesEnPaginas(informacionEnBytes)
-
-	for numeroPagina := range fragmentosPaginas {
-		frame := AsignarNumeroEntradaPagina()
-		if frame == -1 {
+		fragmentoACargar := informacionEnBytes[offset:end]
+		numeroPagina := AsignarNumeroEntradaPagina()
+		if numeroPagina == -1 {
 			logger.Error("No hay marcos libres")
 			break
 		}
 
-		entrada := &globals.EntradaPagina{
-			NumeroFrame:   frame,
+		entradaPagina := &globals.EntradaPagina{
+			NumeroFrame:   numeroPagina,
 			EstaPresente:  true,
 			EstaEnUso:     true,
 			FueModificado: false,
 		}
-		CargarEntradaMemoria(frame, proceso.PID, fragmentosPaginas[numeroPagina])
-		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entrada)
+
+		direccionFisica := numeroPagina * tamanioPagina
+		ModificarEstadoEntradaEscritura(direccionFisica, proceso.PID, fragmentoACargar)
+		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entradaPagina)
 	}
 	return nil
 }
@@ -190,31 +185,21 @@ func InsertarEntradaPaginaEnTabla(tablaRaiz globals.TablaPaginas, numeroPagina i
 	actual.EntradasPaginas[indices[len(indices)-1]] = entrada
 }
 
-func EscribirEspacioEntrada(pid int, numeroFrame int, datosEscritura string) globals.ExitoEscrituraPagina {
+func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string) globals.ExitoEscrituraPagina {
 	stringEnBytes := LecturaPseudocodigo(datosEscritura)
-	ModificarEstadoEntradaEscritura(pid, numeroFrame, stringEnBytes)
+	ModificarEstadoEntradaEscritura(pid, direccionFisica, stringEnBytes)
 
 	exito := globals.ExitoEscrituraPagina{
 		Exito:           true,
-		DireccionFisica: numeroFrame,
+		DireccionFisica: direccionFisica,
 		Mensaje:         "Proceso fue modificado correctamente en memoria",
 	}
 
 	return exito
 }
 
-func ModificarEstadoEntradaEscritura(numeroFrame int, pid int, datosEnBytes []byte) {
-	globals.MutexMemoriaPrincipal.Lock()
-	globals.MemoriaPrincipal[numeroFrame] = datosEnBytes
-	globals.MutexMemoriaPrincipal.Unlock()
-
-	globals.MutexProcesosPorPID.Lock()
-	proceso := globals.ProcesosPorPID[pid]
-	globals.MutexProcesosPorPID.Unlock()
-	IncrementarMetrica(proceso, IncrementarEscrituraDeMemoria)
-}
-func LeerEspacioEntrada(pid int, numeroFrame int) globals.ExitoLecturaPagina {
-	var datosLectura globals.ExitoLecturaPagina = ObtenerDatosMemoria(numeroFrame)
+func LeerEspacioEntrada(pid int, direccionFisica int) globals.ExitoLecturaPagina {
+	datosLectura := ObtenerDatosMemoria(direccionFisica)
 	ModificarEstadoEntradaLectura(pid)
 	return datosLectura
 }
@@ -250,7 +235,7 @@ func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) int {
 
 func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoSwap := time.Duration(globals.DelayMemoria) * time.Second
+	retrasoSwap := time.Duration(globals.MemoryConfig.MemoryDelay) * time.Second
 
 	var mensaje globals.LecturaPagina
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
@@ -265,7 +250,7 @@ func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## Leer Página Completa - Dir. Física: <%d>", direccionFisica)
 
-	time.Sleep(time.Duration(globals.DelayMemoria) * time.Second)
+	time.Sleep(time.Duration(globals.MemoryConfig.MemoryDelay) * time.Second)
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
@@ -283,7 +268,7 @@ func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 
 func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoSwap := time.Duration(globals.DelayMemoria) * time.Second
+	retrasoMemoria := time.Duration(globals.MemoryConfig.MemoryDelay) * time.Second
 
 	var mensaje globals.EscrituraPagina
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
@@ -297,7 +282,7 @@ func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	datosASobreEscribir := mensaje.DatosASobreEscribir
 	direccionFisica := mensaje.DireccionFisica
 
-	if tamanioNecesario > globals.TamanioMaximoFrame {
+	if tamanioNecesario > globals.MemoryConfig.PagSize {
 		log.Fatal("No se puede cargar en una pagina este tamaño")
 		// TODO: FATAL ...
 	}
@@ -305,10 +290,10 @@ func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## PID: <%d> - Actualizar Página Completa - Dir. Física: <%d>", pid, direccionFisica)
 
-	time.Sleep(time.Duration(globals.DelayMemoria) * time.Second)
+	time.Sleep(time.Duration(globals.MemoryConfig.SwapDelay) * time.Second)
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
-	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)

@@ -11,64 +11,104 @@ import (
 )
 
 func InicializarMemoriaPrincipal() {
-	cantidadFrames := CalcularTotalFrames()
+	tamanioMemoriaPrincipal := globals.MemoryConfig.MemorySize
+	tamanioPagina := globals.MemoryConfig.PagSize
+	cantidadFrames := tamanioMemoriaPrincipal / tamanioPagina
 
-	globals.MemoriaPrincipal = make([][]byte, cantidadFrames)
-	globals.MutexMemoriaPrincipal.Lock()
-	for i := range globals.MemoriaPrincipal {
-		globals.MemoriaPrincipal[i] = make([]byte, globals.TamanioMaximoFrame)
-	}
-	globals.MutexMemoriaPrincipal.Unlock()
+	globals.MemoriaPrincipal = make([]byte, tamanioMemoriaPrincipal)
+
 	globals.FramesLibres = make([]bool, cantidadFrames)
 	ConfigurarFrames(cantidadFrames)
 
 	logger.Info("Tamanio Memoria Principal de %d", globals.MemoryConfig.MemorySize)
-	logger.Info("Memoria Principal Inicializada con %d frames de %d cada una.", cantidadFrames, globals.MemoryConfig.PagSize)
+	logger.Info("Memoria Principal Inicializada con %d con %d frames de %d.",
+		tamanioMemoriaPrincipal, cantidadFrames, tamanioPagina)
 }
-func CalcularTotalFrames() int {
-	tamanioMemoriaPrincipal := globals.MemoryConfig.MemorySize
-	tamanioPagina := globals.MemoryConfig.PagSize
 
-	return tamanioMemoriaPrincipal / tamanioPagina
-}
-func ConfigurarFrames(cantidadFrames int) {
+func ConfigurarFrames(cantidadFrames int) { //TODO: OBSOLETO
 	globals.MutexEstructuraFramesLibres.Lock()
 	for i := 0; i < cantidadFrames; i++ {
 		globals.FramesLibres[i] = true
 	}
 	globals.MutexEstructuraFramesLibres.Unlock()
+	globals.CantidadFramesLibres = cantidadFrames
 	logger.Info("Todos los frames están libres.")
 }
 
 func TieneTamanioNecesario(tamanioProceso int) bool {
-	var framesNecesarios = float64(tamanioProceso) / float64(globals.TamanioMaximoFrame)
+	var framesNecesarios = float64(tamanioProceso) / float64(globals.MemoryConfig.PagSize)
 
 	globals.MutexCantidadFramesLibres.Lock()
 	bool := framesNecesarios <= float64(globals.CantidadFramesLibres)
 	globals.MutexCantidadFramesLibres.Unlock()
 	return bool
-}
+} //TODO: testear
 
 func LecturaPseudocodigo(archivoPseudocodigo string) []byte {
 	string := archivoPseudocodigo
 	stringEnBytes := []byte(string)
 	return stringEnBytes
-}
+} //TODO: testear
 
-func ObtenerDatosMemoria(numeroFrame int) globals.ExitoLecturaPagina {
+func ObtenerDatosMemoria(direccionFisica int) globals.ExitoLecturaPagina {
+	tamanioPagina := globals.MemoryConfig.PagSize
+	numeroPagina := direccionFisica / tamanioPagina
+	offset := direccionFisica % tamanioPagina
+
+	inicioFrame := numeroPagina * tamanioPagina
+	finFrame := inicioFrame + tamanioPagina
+	bytesRestantes := tamanioPagina - offset
+
+	if direccionFisica+bytesRestantes > finFrame {
+		logger.Fatal("¡¡¡¡¡¡¡¡¡¡Segment Fault!!!!!!!!!!!!")
+		panic("Segment Fault - Lectura fuera del marco asignado")
+	}
+
+	pseudocodigoEnBytes := make([]byte, bytesRestantes)
 
 	globals.MutexMemoriaPrincipal.Lock()
-	pseudocodigoEnBytes := globals.MemoriaPrincipal[numeroFrame]
+	copy(pseudocodigoEnBytes, globals.MemoriaPrincipal[direccionFisica:direccionFisica+bytesRestantes])
 	globals.MutexMemoriaPrincipal.Unlock()
 
 	pseudocodigoEnString := string(pseudocodigoEnBytes)
 
 	datosLectura := globals.ExitoLecturaPagina{
+		Exito:           true,
 		PseudoCodigo:    pseudocodigoEnString,
-		DireccionFisica: numeroFrame,
+		DireccionFisica: direccionFisica,
 	}
 
 	return datosLectura
+}
+
+func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes []byte) {
+	tamanioPagina := globals.MemoryConfig.PagSize
+	numeroPagina := direccionFisica / tamanioPagina
+
+	inicioFrame := numeroPagina * tamanioPagina
+	finFrame := inicioFrame + tamanioPagina
+
+	if direccionFisica+len(datosEnBytes) > finFrame {
+		logger.Fatal("¡¡¡¡¡¡¡¡¡¡Segment Fault!!!!!!!!!!!!")
+		panic("Segment Fault - Lectura fuera del marco asignado")
+	}
+
+	globals.MutexMemoriaPrincipal.Lock()
+	copy(globals.MemoriaPrincipal[direccionFisica:], datosEnBytes)
+	globals.MutexMemoriaPrincipal.Unlock()
+
+	globals.MutexProcesosPorPID.Lock()
+	proceso := globals.ProcesosPorPID[pid]
+	globals.MutexProcesosPorPID.Unlock()
+
+	indices := CrearIndicePara(numeroPagina)
+	entrada := BuscarEntradaPagina(proceso, indices)
+	if entrada != nil {
+		entrada.FueModificado = true
+		entrada.EstaEnUso = true
+	}
+
+	IncrementarMetrica(proceso, IncrementarEscrituraDeMemoria)
 }
 
 func RealizarDumpMemoria(pid int) string {
@@ -105,7 +145,7 @@ func ParsearContenido(dumpFile *os.File, contenido string) {
 	if err != nil {
 		logger.Error("Error al escribir contenido en el archivo dump: %v", err)
 	}
-}
+} //TODO: rever
 
 func MemoriaDump(w http.ResponseWriter, r *http.Request) {
 	var dump globals.DatosParaDump

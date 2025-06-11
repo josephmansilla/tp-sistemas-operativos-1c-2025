@@ -39,7 +39,7 @@ func ObtenerEspacioLibre(w http.ResponseWriter, r *http.Request) {
 	cantFramesLibres := globals.CantidadFramesLibres
 	globals.MutexCantidadFramesLibres.Unlock()
 
-	espacioLibre := cantFramesLibres * globals.TamanioMaximoFrame
+	espacioLibre := cantFramesLibres * globals.MemoryConfig.PagSize
 
 	respuesta := globals.RespuestaEspacioLibre{EspacioLibre: espacioLibre}
 
@@ -53,7 +53,6 @@ func ObtenerEspacioLibre(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ESPACIO DEVUELTO"))
 }
 
-// TODO: CAMBIAR CON INICIALIZACIONPROCESO
 func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.DatosRespuestaDeKernel
 
@@ -78,7 +77,7 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(respuesta)
-}
+} // TODO: CAMBIAR CON INICIALIZACIONPROCESO
 
 // Mapa global: PID → Lista de instrucciones
 var InstruccionesPorPID map[int][]string = make(map[int][]string)

@@ -33,6 +33,7 @@ type LecturaPagina struct {
 }
 
 type ExitoLecturaPagina struct {
+	Exito           bool   `json:"exito"`
 	PseudoCodigo    string `json:"pseudo_codigo"`
 	DireccionFisica int    `json:"direccion_fisica"`
 }
