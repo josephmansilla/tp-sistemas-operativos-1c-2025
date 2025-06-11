@@ -115,6 +115,11 @@ func writeMemInstruccion(arguments []string) error {
 		return err
 	}
 
+	if traducciones.Cache.EstaActiva() {
+		traducciones.Cache.Agregar(nroPagina, datos, true) // reemplazá "" con el contenido real si lo tenés
+		log.Printf("PID: %d - CACHE ADD - Pagina: %d", globals.PIDActual, nroPagina)
+	}
+
 	log.Printf("PID: %d - ESCRIBIR (Memoria) - Dirección Física: %d - Datos: %s", globals.PIDActual, dirFisica, datos)
 	return nil
 }
@@ -153,6 +158,10 @@ func readMemInstruccion(arguments []string) error {
 	if err != nil {
 		log.Printf("Error leyendo de memoria: %v", err)
 		return err
+	}
+	if traducciones.Cache.EstaActiva() {
+		traducciones.Cache.Agregar(nroPagina, valorLeido, true) // reemplazá "" con el contenido real si lo tenés
+		log.Printf("PID: %d - CACHE ADD - Pagina: %d", globals.PIDActual, nroPagina)
 	}
 
 	log.Printf("PID: %d - LEER (Memoria) - Dirección Física: %d - Valor: %s", globals.PIDActual, dirFisica, valorLeido)

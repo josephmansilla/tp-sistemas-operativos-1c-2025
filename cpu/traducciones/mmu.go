@@ -76,11 +76,7 @@ func Traducir(dirLogica int) int {
 
 	// Agrego entrada a la TLB
 	tlb.AgregarEntrada(nroPagina, marco)
-	// Agrego tmb a la cache
-	if Cache.EstaActiva() {
-		Cache.Agregar(nroPagina, "", true) // reemplazá "" con el contenido real si lo tenés
-		log.Printf("PID: %d - CACHE ADD - Pagina: %d", globals.PIDActual, nroPagina)
-	}
+
 	return marco*tamPagina + desplazamiento
 }
 
