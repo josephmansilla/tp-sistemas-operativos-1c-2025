@@ -142,24 +142,24 @@ func (c *CachePaginas) reemplazoClock(nueva EntradaCache) {
 func (c *CachePaginas) reemplazoClockM(nueva EntradaCache) {
 	//Primero busco U=0, M=0
 	for i := 0; i < c.MaxEntradas; i++ {
-		idx := (c.Puntero + i) % c.MaxEntradas
-		entrada := &c.Entradas[idx]
+		indice := (c.Puntero + i) % c.MaxEntradas
+		entrada := &c.Entradas[indice]
 		if !entrada.Usado && !entrada.Modificado {
 			log.Printf("Reemplazo CLOCK-M (0,0) - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
-			c.Entradas[idx] = nueva
-			c.Puntero = (idx + 1) % c.MaxEntradas
+			c.Entradas[indice] = nueva
+			c.Puntero = (indice + 1) % c.MaxEntradas
 			return
 		}
 	}
 
 	// Despues busco U=0, M=1
 	for i := 0; i < c.MaxEntradas; i++ {
-		idx := (c.Puntero + i) % c.MaxEntradas
-		entrada := &c.Entradas[idx]
+		indice := (c.Puntero + i) % c.MaxEntradas
+		entrada := &c.Entradas[indice]
 		if !entrada.Usado && entrada.Modificado {
 			log.Printf("Reemplazo CLOCK-M (0,1) - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
-			c.Entradas[idx] = nueva
-			c.Puntero = (idx + 1) % c.MaxEntradas
+			c.Entradas[indice] = nueva
+			c.Puntero = (indice + 1) % c.MaxEntradas
 			return
 		}
 	}
