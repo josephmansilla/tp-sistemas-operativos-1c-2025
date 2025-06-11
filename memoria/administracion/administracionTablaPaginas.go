@@ -137,8 +137,7 @@ func LiberarEntradaPagina(numeroFrameALiberar int) {
 	globals.MutexCantidadFramesLibres.Unlock()
 }
 
-func DividirBytesEnPaginas(informacionEnBytes []byte) [][]byte {
-	var paginas [][]byte
+func AsignarDatosAPaginacion(proceso *globals.Proceso, informacionEnBytes []byte) error {
 	tamanioPagina := globals.MemoryConfig.PagSize
 	totalBytes := len(informacionEnBytes)
 
@@ -147,30 +146,24 @@ func DividirBytesEnPaginas(informacionEnBytes []byte) [][]byte {
 		if end > totalBytes {
 			end = totalBytes
 		}
-		paginas = append(paginas, informacionEnBytes[offset:end])
-	}
-	return paginas
-}
 
-func AsignarDatosAPaginacion(proceso *globals.Proceso, informacionEnBytes []byte) error {
-
-	fragmentosPaginas := DividirBytesEnPaginas(informacionEnBytes)
-
-	for numeroPagina := range fragmentosPaginas {
-		frame := AsignarNumeroEntradaPagina()
-		if frame == -1 {
+		fragmentoACargar := informacionEnBytes[offset:end]
+		numeroPagina := AsignarNumeroEntradaPagina()
+		if numeroPagina == -1 {
 			logger.Error("No hay marcos libres")
 			break
 		}
 
-		entrada := &globals.EntradaPagina{
-			NumeroFrame:   frame,
+		entradaPagina := &globals.EntradaPagina{
+			NumeroFrame:   numeroPagina,
 			EstaPresente:  true,
 			EstaEnUso:     true,
 			FueModificado: false,
 		}
-		CargarEntradaMemoria(frame, proceso.PID, fragmentosPaginas[numeroPagina])
-		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entrada)
+
+		direccionFisica := numeroPagina * tamanioPagina
+		ModificarEstadoEntradaEscritura(direccionFisica, proceso.PID, fragmentoACargar)
+		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entradaPagina)
 	}
 	return nil
 }
@@ -275,7 +268,7 @@ func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 
 func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoSwap := time.Duration(globals.MemoryConfig.MemoryDelay) * time.Second
+	retrasoMemoria := time.Duration(globals.MemoryConfig.MemoryDelay) * time.Second
 
 	var mensaje globals.EscrituraPagina
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
@@ -300,7 +293,7 @@ func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(time.Duration(globals.MemoryConfig.SwapDelay) * time.Second)
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
-	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)

@@ -76,7 +76,7 @@ func ObtenerDatosMemoria(direccionFisica int) globals.ExitoLecturaPagina {
 		Exito:           true,
 		PseudoCodigo:    pseudocodigoEnString,
 		DireccionFisica: direccionFisica,
-	} //TODO: agregar atributo de exito
+	}
 
 	return datosLectura
 }
@@ -145,7 +145,7 @@ func ParsearContenido(dumpFile *os.File, contenido string) {
 	if err != nil {
 		logger.Error("Error al escribir contenido en el archivo dump: %v", err)
 	}
-}
+} //TODO: rever
 
 func MemoriaDump(w http.ResponseWriter, r *http.Request) {
 	var dump globals.DatosParaDump
