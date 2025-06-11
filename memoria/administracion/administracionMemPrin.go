@@ -11,27 +11,20 @@ import (
 )
 
 func InicializarMemoriaPrincipal() {
-	cantidadFrames := CalcularTotalFrames()
+	tamanioMemoriaPrincipal := globals.MemoryConfig.MemorySize
+	tamanioPagina := globals.MemoryConfig.PagSize
+	cantidadFrames := tamanioMemoriaPrincipal / tamanioPagina
 
-	globals.MemoriaPrincipal = make([][]byte, cantidadFrames)
-	globals.MutexMemoriaPrincipal.Lock()
-	for i := range globals.MemoriaPrincipal {
-		globals.MemoriaPrincipal[i] = make([]byte, globals.TamanioMaximoFrame)
-	}
-	globals.MutexMemoriaPrincipal.Unlock()
+	globals.MemoriaPrincipal = make([]byte, tamanioMemoriaPrincipal)
+
 	globals.FramesLibres = make([]bool, cantidadFrames)
 	ConfigurarFrames(cantidadFrames)
 
 	logger.Info("Tamanio Memoria Principal de %d", globals.MemoryConfig.MemorySize)
-	logger.Info("Memoria Principal Inicializada con %d frames de %d cada una.", cantidadFrames, globals.MemoryConfig.PagSize)
+	logger.Info("Memoria Principal Inicializada con %d frames de %d cada una.", , globals.MemoryConfig.PagSize)
 }
-func CalcularTotalFrames() int {
-	tamanioMemoriaPrincipal := globals.MemoryConfig.MemorySize
-	tamanioPagina := globals.MemoryConfig.PagSize
 
-	return tamanioMemoriaPrincipal / tamanioPagina
-}
-func ConfigurarFrames(cantidadFrames int) {
+func ConfigurarFrames(cantidadFrames int) { //TODO: OBSOLETO
 	globals.MutexEstructuraFramesLibres.Lock()
 	for i := 0; i < cantidadFrames; i++ {
 		globals.FramesLibres[i] = true
@@ -41,6 +34,7 @@ func ConfigurarFrames(cantidadFrames int) {
 }
 
 func TieneTamanioNecesario(tamanioProceso int) bool {
+	//TODO: CAMBIAR IMPLEMENTACION
 	var framesNecesarios = float64(tamanioProceso) / float64(globals.TamanioMaximoFrame)
 
 	globals.MutexCantidadFramesLibres.Lock()
