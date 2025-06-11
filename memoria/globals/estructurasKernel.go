@@ -9,7 +9,6 @@ type DatosConsultaDeKernel struct {
 	TamanioMemoria int `json:"tamanio_memoria"`
 }
 
-// TODO: CAMBIAR NOMBRE
 type DatosRespuestaDeKernel struct {
 	PID            int    `json:"pid"`
 	TamanioMemoria int    `json:"tamanio_memoria"`
@@ -23,4 +22,8 @@ type RespuestaMemoria struct {
 
 type RespuestaEspacioLibre struct {
 	EspacioLibre int `json:"espacio_libre"`
+}
+
+type DatosFinalizacionProceso struct {
+	PID int `json:"pid"`
 }

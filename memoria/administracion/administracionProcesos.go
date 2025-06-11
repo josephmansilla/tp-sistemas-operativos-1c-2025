@@ -78,9 +78,43 @@ func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
 }
 
 func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
-	//toDO
 
-	logger.Info("## PID: <PID>  - Proceso Destruido - Métricas - Acc.T.Pag: <ATP>; Inst.Sol.: <Inst.Sol>; SWAP: <SWAP>; Mem. Prin.: <Mem.Prin.>; Lec.Mem.: <Lec.Mem.>; Esc.Mem.: <Esc.Mem.>")
+	var mensaje globals.DatosFinalizacionProceso
+
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+		return
+	}
+
+	pid := mensaje.PID
+	LiberarMemoria(pid) // TODO: pendiente
+	globals.MutexProcesosPorPID.Lock()
+	proceso := globals.ProcesosPorPID[pid]
+	delete(globals.ProcesosPorPID, pid)
+	globals.MutexProcesosPorPID.Unlock()
+
+	metricas := proceso.Metricas
+
+	// TODO: revisar logger
+	logger.Info("## PID: <%d>  - Proceso Destruido - "+
+		"Métricas - Acc.T.Pag: <%d>; Inst.Sol.: <%d>; "+
+		"SWAP: <ñññ%d>; Mem. Prin.: <ñññ>; Lec.Mem.: <&d>; "+
+		"Esc.Mem.: <Esc.Mem.>", pid, metricas.AccesosTablasPaginas,
+		metricas.InstruccionesSolicitadas, metricas.BajadasSwap+metricas.SubidasMP,
+		metricas.LecturasDeMemoria, metricas.EscriturasDeMemoria)
+
+	respuesta := globals.RespuestaMemoria{
+		Exito:   true,
+		Mensaje: "Proceso creado correctamente en memoria",
+	}
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
 }
 
 // METRICAS PROCESOS
