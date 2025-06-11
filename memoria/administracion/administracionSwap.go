@@ -12,7 +12,7 @@ func PasarSwapEntradaPagina(numeroFrame int) {}
 
 func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoSwap := time.Duration(globals.DelaySwap) * time.Second
+	retrasoSwap := time.Duration(globals.MemoryConfig.SwapDelay) * time.Second
 
 	var mensaje globals.SuspensionProceso
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
@@ -23,7 +23,7 @@ func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
 
 	PasarSwapEntradaPagina(numeroFrame)
 	LiberarEntradaPagina(numeroFrame)
-  
+
 	proceso := globals.ProcesoSuspendido{}
 
 	logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", mensaje.PID, proceso.DireccionFisica, proceso.TamanioProceso)
@@ -41,6 +41,7 @@ func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Respuesta devuelta"))
 }
+
 // TODO: NO ES NECESARIO EL SWAPEO DE TABLAS DE PAGINAS
 
 // TODO: SE LIBERA EN MEMORIA
@@ -50,10 +51,9 @@ func SacarEntradaPaginaSwap(numeroFrame int) {}
 
 func LiberarEspacioEnSwap(numeroFrame int) {}
 
-
 func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoSwap := time.Duration(globals.DelaySwap) * time.Second
+	retrasoSwap := time.Duration(globals.MemoryConfig.SwapDelay) * time.Second
 
 	var mensaje globals.DesuspensionProceso
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
@@ -66,13 +66,12 @@ func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	LiberarEspacioEnSwap(numeroFrame)
 	// TODO: ActualizarEstructurasNecesarias
 
-	time.Sleep(time.Duration(globals.DelaySwap) * time.Second)
+	time.Sleep(time.Duration(globals.MemoryConfig.SwapDelay) * time.Second)
 	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>")
-
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
-  
+
 	respuesta := globals.ExitoDesuspensionProceso{}
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {

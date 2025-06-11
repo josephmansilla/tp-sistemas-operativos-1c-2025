@@ -9,7 +9,6 @@ import (
 )
 
 func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string) {
-
 	if !TieneTamanioNecesario(tamanioProceso) {
 		// TODO
 		logger.Error("No hay memoria")
@@ -24,28 +23,22 @@ func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string)
 		logger.Error("Error al asignarDatosAPaginacion %v", err)
 	}
 	OcuparProcesoEnVectorMapeable(pid, nuevoProceso)
-
 }
-func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso globals.Proceso) {
 
+func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso globals.Proceso) {
 	globals.MutexProcesosPorPID.Lock()
 	globals.ProcesosPorPID[pid] = &nuevoProceso
 	globals.MutexProcesosPorPID.Unlock()
 }
 
 func CargarEntradaMemoria(numeroFrame int, pid int, datosEnBytes []byte) {
-
+	direccionFisica := numeroFrame * globals.MemoryConfig.PagSize
 	globals.MutexMemoriaPrincipal.Lock()
-	globals.MemoriaPrincipal[numeroFrame] = datosEnBytes
+	for indice := 0; indice < len(datosEnBytes); indice++ {
+		globals.MemoriaPrincipal[direccionFisica] = datosEnBytes[indice]
+	}
 	globals.MutexMemoriaPrincipal.Unlock()
-	globals.MutexFrameOcupadoPorPID.Lock()
-	globals.FrameOcupadoPor[numeroFrame] = globals.Ocupante{PID: pid, NumeroPagina: numeroFrame}
-	globals.MutexFrameOcupadoPorPID.Unlock()
 }
-
-// ------------------------------------------------------------------
-// ----------- FORMA PARTE DE LA MODIFICACIÓN DE PROCESOS -----------
-// ------------------------------------------------------------------
 
 func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.DatosRespuestaDeKernel
@@ -58,10 +51,8 @@ func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
 
 	pid := mensaje.PID
 	tamanioProceso := mensaje.TamanioMemoria
-
 	InicializarProceso(pid, tamanioProceso, mensaje.Pseudocodigo)
 
-	// TODO: RESPONDER CON EL NUMERO DE PAGINA DE 1ER NIVEL DEL PROCESO
 	logger.Info("## PID: <%d> - Proceso Creado - Tamaño: <%d>", pid, tamanioProceso)
 
 	respuesta := globals.RespuestaMemoria{
@@ -75,7 +66,8 @@ func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Respuesta devuelta"))
-}
+} //TODO:
+// TODO: RESPONDER CON EL NUMERO DE PAGINA DE 1ER NIVEL DEL PROCESO???
 
 func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 
