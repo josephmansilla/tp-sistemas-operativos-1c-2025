@@ -16,7 +16,7 @@ type DatosRespuestaDeKernel struct {
 }
 
 type RespuestaMemoria struct {
-	Exito   bool   `json:"exito"`
+	Exito   bool   `json:"exito"` // TODO: cambiar a error
 	Mensaje string `json:"mensaje"`
 }
 

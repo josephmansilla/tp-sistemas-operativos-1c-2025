@@ -22,7 +22,7 @@ type EscrituraPagina struct {
 }
 
 type ExitoEscrituraPagina struct {
-	Exito           bool   `json:"exito"`
+	Exito           error  `json:"exito"`
 	DireccionFisica int    `json:"direccion_fisica"`
 	Mensaje         string `json:"mensaje"`
 }
@@ -33,7 +33,7 @@ type LecturaPagina struct {
 }
 
 type ExitoLecturaPagina struct {
-	Exito           bool   `json:"exito"`
+	Exito           error  `json:"exito"`
 	PseudoCodigo    string `json:"pseudo_codigo"`
 	DireccionFisica int    `json:"direccion_fisica"`
 }

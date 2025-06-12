@@ -2,7 +2,7 @@ package administracion
 
 import (
 	"fmt"
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"log"
@@ -11,47 +11,51 @@ import (
 )
 
 func InicializarMemoriaPrincipal() {
-	tamanioMemoriaPrincipal := globals.MemoryConfig.MemorySize
-	tamanioPagina := globals.MemoryConfig.PagSize
+	tamanioMemoriaPrincipal := g.MemoryConfig.MemorySize
+	tamanioPagina := g.MemoryConfig.PagSize
 	cantidadFrames := tamanioMemoriaPrincipal / tamanioPagina
 
-	globals.MemoriaPrincipal = make([]byte, tamanioMemoriaPrincipal)
+	g.MemoriaPrincipal = make([]byte, tamanioMemoriaPrincipal)
 
-	globals.FramesLibres = make([]bool, cantidadFrames)
+	g.FramesLibres = make([]bool, cantidadFrames)
 	ConfigurarFrames(cantidadFrames)
 
-	logger.Info("Tamanio Memoria Principal de %d", globals.MemoryConfig.MemorySize)
+	logger.Info("Tamanio Memoria Principal de %d", g.MemoryConfig.MemorySize)
 	logger.Info("Memoria Principal Inicializada con %d con %d frames de %d.",
 		tamanioMemoriaPrincipal, cantidadFrames, tamanioPagina)
 }
 
-func ConfigurarFrames(cantidadFrames int) { //TODO: OBSOLETO
-	globals.MutexEstructuraFramesLibres.Lock()
+func ConfigurarFrames(cantidadFrames int) { //TODO: MAS O MENOS OBSOLETO
+	g.MutexEstructuraFramesLibres.Lock()
 	for i := 0; i < cantidadFrames; i++ {
-		globals.FramesLibres[i] = true
+		g.FramesLibres[i] = true
 	}
-	globals.MutexEstructuraFramesLibres.Unlock()
-	globals.CantidadFramesLibres = cantidadFrames
+	g.MutexEstructuraFramesLibres.Unlock()
+	g.CantidadFramesLibres = cantidadFrames
 	logger.Info("Todos los frames están libres.")
 }
 
-func TieneTamanioNecesario(tamanioProceso int) bool {
-	var framesNecesarios = float64(tamanioProceso) / float64(globals.MemoryConfig.PagSize)
+func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
+	var framesNecesarios = float64(tamanioProceso) / float64(g.MemoryConfig.PagSize)
 
-	globals.MutexCantidadFramesLibres.Lock()
-	bool := framesNecesarios <= float64(globals.CantidadFramesLibres)
-	globals.MutexCantidadFramesLibres.Unlock()
-	return bool
+	g.MutexCantidadFramesLibres.Lock()
+	resultado = framesNecesarios <= float64(g.CantidadFramesLibres)
+	g.MutexCantidadFramesLibres.Unlock()
+	return
 } //TODO: testear
 
-func LecturaPseudocodigo(archivoPseudocodigo string) []byte {
+func LecturaPseudocodigo(archivoPseudocodigo string) (stringEnBytes []byte, err error) {
+	err = nil
 	string := archivoPseudocodigo
-	stringEnBytes := []byte(string)
-	return stringEnBytes
+	if string == "" {
+		return nil, fmt.Errorf("El string es vacio: %w")
+	}
+	stringEnBytes = []byte(string)
+	return
 } //TODO: testear
 
-func ObtenerDatosMemoria(direccionFisica int) globals.ExitoLecturaPagina {
-	tamanioPagina := globals.MemoryConfig.PagSize
+func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
+	tamanioPagina := g.MemoryConfig.PagSize
 	numeroPagina := direccionFisica / tamanioPagina
 	offset := direccionFisica % tamanioPagina
 
@@ -66,23 +70,23 @@ func ObtenerDatosMemoria(direccionFisica int) globals.ExitoLecturaPagina {
 
 	pseudocodigoEnBytes := make([]byte, bytesRestantes)
 
-	globals.MutexMemoriaPrincipal.Lock()
-	copy(pseudocodigoEnBytes, globals.MemoriaPrincipal[direccionFisica:direccionFisica+bytesRestantes])
-	globals.MutexMemoriaPrincipal.Unlock()
+	g.MutexMemoriaPrincipal.Lock()
+	copy(pseudocodigoEnBytes, g.MemoriaPrincipal[direccionFisica:direccionFisica+bytesRestantes])
+	g.MutexMemoriaPrincipal.Unlock()
 
 	pseudocodigoEnString := string(pseudocodigoEnBytes)
 
-	datosLectura := globals.ExitoLecturaPagina{
-		Exito:           true,
+	datosLectura = g.ExitoLecturaPagina{
+		Exito:           nil,
 		PseudoCodigo:    pseudocodigoEnString,
 		DireccionFisica: direccionFisica,
 	}
 
-	return datosLectura
+	return
 }
 
 func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes []byte) {
-	tamanioPagina := globals.MemoryConfig.PagSize
+	tamanioPagina := g.MemoryConfig.PagSize
 	numeroPagina := direccionFisica / tamanioPagina
 
 	inicioFrame := numeroPagina * tamanioPagina
@@ -93,16 +97,20 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 		panic("Segment Fault - Lectura fuera del marco asignado")
 	}
 
-	globals.MutexMemoriaPrincipal.Lock()
-	copy(globals.MemoriaPrincipal[direccionFisica:], datosEnBytes)
-	globals.MutexMemoriaPrincipal.Unlock()
+	g.MutexMemoriaPrincipal.Lock()
+	copy(g.MemoriaPrincipal[direccionFisica:], datosEnBytes)
+	g.MutexMemoriaPrincipal.Unlock()
 
-	globals.MutexProcesosPorPID.Lock()
-	proceso := globals.ProcesosPorPID[pid]
-	globals.MutexProcesosPorPID.Unlock()
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[pid]
+	g.MutexProcesosPorPID.Unlock()
 
 	indices := CrearIndicePara(numeroPagina)
-	entrada := BuscarEntradaPagina(proceso, indices)
+	entrada, err := BuscarEntradaPagina(proceso, indices)
+	if err != nil {
+		logger.Error("No se pudo encontrar la entrada de pagina")
+		panic("AAAAAAAAAAAAAAAAAAAAAAAAA") // TODO: ver que hacer con este error
+	}
 	if entrada != nil {
 		entrada.FueModificado = true
 		entrada.EstaEnUso = true
@@ -111,33 +119,36 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	IncrementarMetrica(proceso, IncrementarEscrituraDeMemoria)
 }
 
-func RealizarDumpMemoria(pid int) string {
-	globals.MutexProcesosPorPID.Lock()
-	proceso := globals.ProcesosPorPID[pid]
-	globals.MutexProcesosPorPID.Unlock()
+func RealizarDumpMemoria(pid int) (resultado string) {
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[pid]
+	g.MutexProcesosPorPID.Unlock()
 	if proceso == nil {
 		logger.Fatal("No existe el proceso solicitado para DUMP")
 		// TODO:
 	}
 
-	resultado := fmt.Sprintf("## Dump De Memoria Para PID: %d\n\n", pid)
+	resultado = fmt.Sprintf("## Dump De Memoria Para PID: %d\n\n", pid)
 
-	tamanioProceso := 10000 // tamanioMaximoProceso / globals.TamanioMaximoFrame
+	tamanioProceso := 10000 // tamanioMaximoProceso / g.TamanioMaximoFrame
 	for numeroPagina := 0; numeroPagina < tamanioProceso; numeroPagina++ {
 		indices := CrearIndicePara(numeroPagina)
-		entrada := BuscarEntradaPagina(proceso, indices)
-
+		entrada, err := BuscarEntradaPagina(proceso, indices)
+		if err != nil {
+			continue
+			// TODO: ver que hacer
+		}
 		if entrada == nil || !entrada.EstaPresente {
 			continue
 		}
 		frame := entrada.NumeroFrame
-		globals.MutexMemoriaPrincipal.Lock()
-		datos := globals.MemoriaPrincipal[frame]
-		globals.MutexMemoriaPrincipal.Unlock()
+		g.MutexMemoriaPrincipal.Lock()
+		datos := g.MemoriaPrincipal[frame]
+		g.MutexMemoriaPrincipal.Unlock()
 		datosEnString := string(datos)
 		resultado += fmt.Sprintf("Pagina: %d | Frame: %d | Datos: %s\n", numeroPagina, frame, datosEnString)
 	}
-	return resultado
+	return
 }
 
 func ParsearContenido(dumpFile *os.File, contenido string) {
@@ -148,7 +159,7 @@ func ParsearContenido(dumpFile *os.File, contenido string) {
 } //TODO: rever
 
 func MemoriaDump(w http.ResponseWriter, r *http.Request) {
-	var dump globals.DatosParaDump
+	var dump g.DatosParaDump
 
 	if err := data.LeerJson(w, r, &dump); err != nil {
 		logger.Error("Error al recibir JSON: %v", err)
@@ -156,7 +167,7 @@ func MemoriaDump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dumpFileName := fmt.Sprintf("%s/<%d>-<%s>.dmp", globals.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
+	dumpFileName := fmt.Sprintf("%s/<%d>-<%s>.dmp", g.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
 	logger.Info("## Se creo el file: %d ", dumpFileName)
 	dumpFile, err := os.OpenFile(dumpFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {

@@ -14,4 +14,4 @@
 
 Contabilizar las instrucciones solicitadas con obtenerInstrucciones
 
-Hay que atajar errores y logear de todo lo nuevo
+Hay que atajar errores (cambiar salida de tipos) y logear de todo lo nuevo

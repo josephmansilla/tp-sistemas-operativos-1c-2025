@@ -2,7 +2,7 @@ package administracion
 
 import (
 	"encoding/json"
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 	"time"
@@ -12,9 +12,9 @@ func PasarSwapEntradaPagina(numeroFrame int) {}
 
 func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoSwap := time.Duration(globals.MemoryConfig.SwapDelay) * time.Second
+	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
 
-	var mensaje globals.SuspensionProceso
+	var mensaje g.SuspensionProceso
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
 		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
@@ -24,14 +24,14 @@ func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	// PasarSwapEntradaPagina(numeroFrame)
 	// LiberarEntradaPagina(numeroFrame)
 
-	proceso := globals.ProcesoSuspendido{}
+	proceso := g.ProcesoSuspendido{}
 
 	logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", mensaje.PID, proceso.DireccionFisica, proceso.TamanioProceso)
 
-	respuesta := globals.ExitoDesuspensionProceso{}
+	respuesta := g.ExitoDesuspensionProceso{}
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
-	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
@@ -53,9 +53,9 @@ func LiberarEspacioEnSwap(numeroFrame int) {}
 
 func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoSwap := time.Duration(globals.MemoryConfig.SwapDelay) * time.Second
+	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
 
-	var mensaje globals.DesuspensionProceso
+	var mensaje g.DesuspensionProceso
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
 		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
@@ -66,13 +66,13 @@ func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	//LiberarEspacioEnSwap(numeroFrame)
 	// TODO: ActualizarEstructurasNecesarias
 
-	time.Sleep(time.Duration(globals.MemoryConfig.SwapDelay) * time.Second)
+	time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Second)
 	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>")
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
-	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
 
-	respuesta := globals.ExitoDesuspensionProceso{}
+	respuesta := g.ExitoDesuspensionProceso{}
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)

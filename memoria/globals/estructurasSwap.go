@@ -17,9 +17,9 @@ type SuspensionProceso struct {
 }
 
 type ExitoSuspensionProceso struct {
-	Exito           bool `json:"exito"`
-	DireccionFisica int  `json:"direccion_fisica"`
-	TamanioProceso  int  `json:"tamanio_proceso"`
+	Exito           error `json:"exito"`
+	DireccionFisica int   `json:"direccion_fisica"`
+	TamanioProceso  int   `json:"tamanio_proceso"`
 }
 
 type DesuspensionProceso struct {
@@ -27,7 +27,7 @@ type DesuspensionProceso struct {
 }
 
 type ExitoDesuspensionProceso struct {
-	Exito           bool `json:"exito"`
-	DireccionFisica int  `json:"direccion_fisica"`
-	TamanioProceso  int  `json:"tamanio_proceso"`
+	Exito           error `json:"exito"`
+	DireccionFisica int   `json:"direccion_fisica"`
+	TamanioProceso  int   `json:"tamanio_proceso"`
 }

@@ -2,7 +2,7 @@ package administracion
 
 import (
 	"encoding/json"
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 	"sync"
@@ -13,35 +13,40 @@ func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string)
 		// TODO
 		logger.Error("No hay memoria")
 	}
-	nuevoProceso := globals.Proceso{
+	nuevoProceso := g.Proceso{
 		PID:       pid,
 		TablaRaiz: InicializarTablaRaiz(),
 		Metricas:  InicializarMetricas(),
 	}
-	err := AsignarDatosAPaginacion(&nuevoProceso, LecturaPseudocodigo(archivoPseudocodigo))
+	pseudo, err := LecturaPseudocodigo(archivoPseudocodigo)
+	if err != nil {
+		logger.Error("Error al leer el pseudocodigo: %v", err)
+	}
+
+	err = AsignarDatosAPaginacion(&nuevoProceso, pseudo)
 	if err != nil {
 		logger.Error("Error al asignarDatosAPaginacion %v", err)
 	}
 	OcuparProcesoEnVectorMapeable(pid, nuevoProceso)
 }
 
-func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso globals.Proceso) {
-	globals.MutexProcesosPorPID.Lock()
-	globals.ProcesosPorPID[pid] = &nuevoProceso
-	globals.MutexProcesosPorPID.Unlock()
+func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso g.Proceso) {
+	g.MutexProcesosPorPID.Lock()
+	g.ProcesosPorPID[pid] = &nuevoProceso
+	g.MutexProcesosPorPID.Unlock()
 }
 
 func CargarEntradaMemoria(numeroFrame int, pid int, datosEnBytes []byte) {
-	direccionFisica := numeroFrame * globals.MemoryConfig.PagSize
-	globals.MutexMemoriaPrincipal.Lock()
+	direccionFisica := numeroFrame * g.MemoryConfig.PagSize
+	g.MutexMemoriaPrincipal.Lock()
 	for indice := 0; indice < len(datosEnBytes); indice++ {
-		globals.MemoriaPrincipal[direccionFisica] = datosEnBytes[indice]
+		g.MemoriaPrincipal[direccionFisica] = datosEnBytes[indice]
 	}
-	globals.MutexMemoriaPrincipal.Unlock()
+	g.MutexMemoriaPrincipal.Unlock()
 }
 
 func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
-	var mensaje globals.DatosRespuestaDeKernel
+	var mensaje g.DatosRespuestaDeKernel
 
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
@@ -55,7 +60,7 @@ func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## PID: <%d> - Proceso Creado - Tamaño: <%d>", pid, tamanioProceso)
 
-	respuesta := globals.RespuestaMemoria{
+	respuesta := g.RespuestaMemoria{
 		Exito:   true,
 		Mensaje: "Proceso creado correctamente en memoria",
 	}
@@ -66,12 +71,13 @@ func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Respuesta devuelta"))
-} //TODO:
+}
+
 // TODO: RESPONDER CON EL NUMERO DE PAGINA DE 1ER NIVEL DEL PROCESO???
 
 func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 
-	var mensaje globals.DatosFinalizacionProceso
+	var mensaje g.DatosFinalizacionProceso
 
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
@@ -81,10 +87,10 @@ func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 
 	pid := mensaje.PID
 	// LiberarMemoria(pid) // TODO: pendiente
-	globals.MutexProcesosPorPID.Lock()
-	proceso := globals.ProcesosPorPID[pid]
-	delete(globals.ProcesosPorPID, pid)
-	globals.MutexProcesosPorPID.Unlock()
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[pid]
+	delete(g.ProcesosPorPID, pid)
+	g.MutexProcesosPorPID.Unlock()
 
 	metricas := proceso.Metricas
 
@@ -96,7 +102,7 @@ func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 		metricas.InstruccionesSolicitadas, metricas.BajadasSwap+metricas.SubidasMP,
 		metricas.LecturasDeMemoria, metricas.EscriturasDeMemoria)
 
-	respuesta := globals.RespuestaMemoria{
+	respuesta := g.RespuestaMemoria{
 		Exito:   true,
 		Mensaje: "Proceso creado correctamente en memoria",
 	}
@@ -111,8 +117,8 @@ func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 
 // METRICAS PROCESOS
 
-func InicializarMetricas() globals.MetricasProceso {
-	metricas := globals.MetricasProceso{
+func InicializarMetricas() g.MetricasProceso {
+	metricas := g.MetricasProceso{
 		AccesosTablasPaginas:     0,
 		InstruccionesSolicitadas: 0,
 		BajadasSwap:              0,
@@ -123,7 +129,7 @@ func InicializarMetricas() globals.MetricasProceso {
 	return metricas
 }
 
-func IncrementarMetrica(proceso *globals.Proceso, funcMetrica globals.OperacionMetrica) {
+func IncrementarMetrica(proceso *g.Proceso, funcMetrica g.OperacionMetrica) {
 	var mutexMetrica sync.Mutex
 
 	mutexMetrica.Lock()
@@ -131,7 +137,7 @@ func IncrementarMetrica(proceso *globals.Proceso, funcMetrica globals.OperacionM
 	mutexMetrica.Unlock()
 }
 
-func InformarMetricasProceso(metricasDelProceso globals.MetricasProceso) {
+func InformarMetricasProceso(metricasDelProceso g.MetricasProceso) {
 
 	logger.Info("## AccesosTablasPaginas: %d", metricasDelProceso.AccesosTablasPaginas)
 	logger.Info("## InstruccionesSolicitadas: %d", metricasDelProceso.InstruccionesSolicitadas)
@@ -142,21 +148,21 @@ func InformarMetricasProceso(metricasDelProceso globals.MetricasProceso) {
 
 }
 
-func IncrementarAccesosTablasPaginas(metrica *globals.MetricasProceso) {
+func IncrementarAccesosTablasPaginas(metrica *g.MetricasProceso) {
 	metrica.AccesosTablasPaginas++
 }
-func IncrementarInstruccionesSolicitadas(metrica *globals.MetricasProceso) {
+func IncrementarInstruccionesSolicitadas(metrica *g.MetricasProceso) {
 	metrica.InstruccionesSolicitadas++
 }
-func IncrementarBajadasSwap(metrica *globals.MetricasProceso) {
+func IncrementarBajadasSwap(metrica *g.MetricasProceso) {
 	metrica.BajadasSwap++
 }
-func IncrementarSubidasMP(metrica *globals.MetricasProceso) {
+func IncrementarSubidasMP(metrica *g.MetricasProceso) {
 	metrica.SubidasMP++
 }
-func IncrementarLecturaDeMemoria(metrica *globals.MetricasProceso) {
+func IncrementarLecturaDeMemoria(metrica *g.MetricasProceso) {
 	metrica.LecturasDeMemoria++
 }
-func IncrementarEscrituraDeMemoria(metrica *globals.MetricasProceso) {
+func IncrementarEscrituraDeMemoria(metrica *g.MetricasProceso) {
 	metrica.EscriturasDeMemoria++
 }

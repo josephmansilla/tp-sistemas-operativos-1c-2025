@@ -2,108 +2,100 @@ package administracion
 
 import (
 	"encoding/json"
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	"fmt"
+	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"log"
 	"net/http"
 	"time"
 )
 
-func InicializarTablaRaiz() globals.TablaPaginas {
-	cantidadEntradasPorTabla := globals.MemoryConfig.EntriesPerPage
-	return make(globals.TablaPaginas, cantidadEntradasPorTabla)
+func InicializarTablaRaiz() g.TablaPaginas {
+	cantidadEntradasPorTabla := g.MemoryConfig.EntriesPerPage
+	return make(g.TablaPaginas, cantidadEntradasPorTabla)
 }
 
-func CrearIndicePara(nroPagina int) []int {
+func CrearIndicePara(nroPagina int) (indices []int) {
 
-	entradas := make([]int, globals.CantidadNiveles)
+	indices = make([]int, g.CantidadNiveles)
 	divisor := 1
 
-	for i := globals.CantidadNiveles - 1; i >= 0; i-- {
-		entradas[i] = (nroPagina / divisor) % globals.EntradasPorPagina
-		divisor *= globals.EntradasPorPagina
+	for i := g.CantidadNiveles - 1; i >= 0; i-- {
+		indices[i] = (nroPagina / divisor) % g.EntradasPorPagina
+		divisor *= g.EntradasPorPagina
 	}
-
-	return entradas
+	return
 }
 
-func BuscarEntradaPagina(procesoBuscado *globals.Proceso, indices []int) *globals.EntradaPagina {
-	//	cantidadNiveles := globals.MemoryConfig.NumberOfLevels TODO: DEBERIA SER LO MISMO LA LONG DE INDICES Y LA CANT DE NIVELES
+func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDeseada *g.EntradaPagina, err error) {
+	err = nil
+
 	tamanioIndices := len(indices)
 	if tamanioIndices == 0 {
 		logger.Error("Índice vacío")
-		return nil
+		return nil, fmt.Errorf("el indice indicado es vacío: %w", logger.ErrIsEmpty)
 	}
 
 	tablaApuntada := procesoBuscado.TablaRaiz[indices[0]]
 	if tablaApuntada == nil {
-		logger.Fatal("La tabla no existe")
-		return nil
+		logger.Fatal("La tabla no existe o nunca fue inicializada")
+		return nil, fmt.Errorf("la tabla no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
 	}
 	// TODO: optaria por dejar cantidad niveles
 	for i := 1; i <= tamanioIndices-1; i++ {
 		if tablaApuntada.Subtabla == nil {
-			logger.Error("La subtabla no está en memoria")
+			logger.Error("La subtabla no existe o nunca fue inicializada")
 			// TODO: buscar de swap la tabla
-			return nil
+			return nil, fmt.Errorf("la subtabla no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
 		}
 		tablaApuntada = tablaApuntada.Subtabla[indices[i]]
 	}
 	if tablaApuntada == nil {
-		logger.Error("La tabla no está en memoria")
-		// TODO: buscar de swap la tabla
-		return nil
+		logger.Error("La tabla no exite o no fue nunca inicializada")
+		return nil, fmt.Errorf("la tabla no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
 	}
 	if tablaApuntada.EntradasPaginas == nil {
-		logger.Error("La entrada no está en memoria")
-		// TODO: buscar de swap la entrada
-		return nil
+		logger.Error("La entrada no fue nunca inicializada")
+		return nil, fmt.Errorf("la entrada nunca fue inicializada %w", logger.ErrNoInstance)
 	}
 
-	entradaDeseada := tablaApuntada.EntradasPaginas[indices[tamanioIndices-1]]
+	entradaDeseada = tablaApuntada.EntradasPaginas[indices[tamanioIndices-1]]
 	logger.Info("Se encontró la entrada de número: %d", entradaDeseada.NumeroFrame)
 
 	if entradaDeseada.EstaPresente == false {
 		logger.Error("No se encuentra presente en memoria el frame")
-		// TODO: Debería sacarse de SWAP
-		return nil
+		// TODO: Debería sacarse de SWAP y cargarse en memoria
+		return entradaDeseada, nil
 	}
 
 	IncrementarMetrica(procesoBuscado, IncrementarAccesosTablasPaginas)
-	return entradaDeseada
+	return
 }
 
 func ObtenerEntradaPagina(pid int, indices []int) int {
-	globals.MutexProcesosPorPID.Lock()
-	procesoBuscado, err := globals.ProcesosPorPID[pid]
-	globals.MutexProcesosPorPID.Unlock()
-
-	if !err {
+	g.MutexProcesosPorPID.Lock()
+	procesoBuscado, errPro := g.ProcesosPorPID[pid]
+	g.MutexProcesosPorPID.Unlock()
+	if !errPro {
 		logger.Error("Processo Buscado no existe")
 		return -1
 	}
-	entradaPagina := BuscarEntradaPagina(procesoBuscado, indices)
-	if entradaPagina == nil {
-		// TODO: si se la rta de buscar en swap sigue siendo nil entonces no existe por algun error raro
-		logger.Error("No se encontró la entrada de página para el PID: %d", pid)
+	entradaPagina, errPag := BuscarEntradaPagina(procesoBuscado, indices)
+	if errPag != nil {
+		logger.Error("Error al buscar la entrada de página")
 		return -1
-	}
-	if !entradaPagina.EstaPresente {
-		logger.Error("La entrada de página de número %d y de PID: %d no se encuentra presente ", entradaPagina.NumeroFrame, pid)
-		return -1
-		// TODO: aca podemos deberiamos sacarlo de swap (segunda verificacion que bueno veremos si queda)
 	}
 	return entradaPagina.NumeroFrame
 }
 
 func AsignarNumeroEntradaPagina() int {
 	numeroEntradaLibre := -1
-	tamanioMaximo := globals.MemoryConfig.MemorySize
+	tamanioMaximo := g.MemoryConfig.MemorySize
 
 	for numeroFrame := 0; numeroFrame < tamanioMaximo; numeroFrame++ {
-		globals.MutexEstructuraFramesLibres.Lock()
-		bool := globals.FramesLibres[numeroFrame]
-		globals.MutexEstructuraFramesLibres.Unlock()
+		g.MutexEstructuraFramesLibres.Lock()
+		bool := g.FramesLibres[numeroFrame]
+		g.MutexEstructuraFramesLibres.Unlock()
 
 		if bool == true {
 			numeroEntradaLibre = numeroFrame
@@ -118,27 +110,27 @@ func AsignarNumeroEntradaPagina() int {
 }
 
 func MarcarOcupadoFrame(numeroFrame int) {
-	globals.MutexEstructuraFramesLibres.Lock()
-	globals.FramesLibres[numeroFrame] = false
-	globals.MutexEstructuraFramesLibres.Unlock()
+	g.MutexEstructuraFramesLibres.Lock()
+	g.FramesLibres[numeroFrame] = false
+	g.MutexEstructuraFramesLibres.Unlock()
 
-	globals.MutexCantidadFramesLibres.Lock()
-	globals.CantidadFramesLibres--
-	globals.MutexCantidadFramesLibres.Unlock()
+	g.MutexCantidadFramesLibres.Lock()
+	g.CantidadFramesLibres--
+	g.MutexCantidadFramesLibres.Unlock()
 }
 
 func LiberarEntradaPagina(numeroFrameALiberar int) {
-	globals.MutexEstructuraFramesLibres.Lock()
-	globals.FramesLibres[numeroFrameALiberar] = true
-	globals.MutexEstructuraFramesLibres.Unlock()
+	g.MutexEstructuraFramesLibres.Lock()
+	g.FramesLibres[numeroFrameALiberar] = true
+	g.MutexEstructuraFramesLibres.Unlock()
 
-	globals.MutexCantidadFramesLibres.Lock()
-	globals.CantidadFramesLibres++
-	globals.MutexCantidadFramesLibres.Unlock()
+	g.MutexCantidadFramesLibres.Lock()
+	g.CantidadFramesLibres++
+	g.MutexCantidadFramesLibres.Unlock()
 }
 
-func AsignarDatosAPaginacion(proceso *globals.Proceso, informacionEnBytes []byte) error {
-	tamanioPagina := globals.MemoryConfig.PagSize
+func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) error {
+	tamanioPagina := g.MemoryConfig.PagSize
 	totalBytes := len(informacionEnBytes)
 
 	for offset := 0; offset < totalBytes; offset += tamanioPagina {
@@ -154,7 +146,7 @@ func AsignarDatosAPaginacion(proceso *globals.Proceso, informacionEnBytes []byte
 			break
 		}
 
-		entradaPagina := &globals.EntradaPagina{
+		entradaPagina := &g.EntradaPagina{
 			NumeroFrame:   numeroPagina,
 			EstaPresente:  true,
 			EstaEnUso:     true,
@@ -168,29 +160,33 @@ func AsignarDatosAPaginacion(proceso *globals.Proceso, informacionEnBytes []byte
 	return nil
 }
 
-func InsertarEntradaPaginaEnTabla(tablaRaiz globals.TablaPaginas, numeroPagina int, entrada *globals.EntradaPagina) {
+func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, entrada *g.EntradaPagina) {
 	indices := CrearIndicePara(numeroPagina)
 
 	actual := tablaRaiz[indices[0]]
 
 	for i := 1; i < len(indices)-1; i++ {
 		if actual.Subtabla == nil {
-			actual.Subtabla = make(map[int]*globals.TablaPagina)
+			actual.Subtabla = make(map[int]*g.TablaPagina)
 		}
 		actual = actual.Subtabla[indices[i]]
 	}
 	if actual.EntradasPaginas == nil {
-		actual.EntradasPaginas = make(map[int]*globals.EntradaPagina)
+		actual.EntradasPaginas = make(map[int]*g.EntradaPagina)
 	}
 	actual.EntradasPaginas[indices[len(indices)-1]] = entrada
 }
 
-func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string) globals.ExitoEscrituraPagina {
-	stringEnBytes := LecturaPseudocodigo(datosEscritura)
+func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string) g.ExitoEscrituraPagina {
+	stringEnBytes, err := LecturaPseudocodigo(datosEscritura)
+	if err != nil {
+		logger.Error("Los datos a escribir son vacios: %v", err)
+
+	}
 	ModificarEstadoEntradaEscritura(pid, direccionFisica, stringEnBytes)
 
-	exito := globals.ExitoEscrituraPagina{
-		Exito:           true,
+	exito := g.ExitoEscrituraPagina{
+		Exito:           nil,
 		DireccionFisica: direccionFisica,
 		Mensaje:         "Proceso fue modificado correctamente en memoria",
 	}
@@ -198,16 +194,16 @@ func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string)
 	return exito
 }
 
-func LeerEspacioEntrada(pid int, direccionFisica int) globals.ExitoLecturaPagina {
-	datosLectura := ObtenerDatosMemoria(direccionFisica)
+func LeerEspacioEntrada(pid int, direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
+	datosLectura = ObtenerDatosMemoria(direccionFisica)
 	ModificarEstadoEntradaLectura(pid)
 	return datosLectura
 }
 
 func ModificarEstadoEntradaLectura(pid int) {
-	globals.MutexProcesosPorPID.Lock()
-	proceso := globals.ProcesosPorPID[pid]
-	globals.MutexProcesosPorPID.Unlock()
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[pid]
+	g.MutexProcesosPorPID.Unlock()
 	IncrementarMetrica(proceso, IncrementarLecturaDeMemoria)
 	logger.Info("## Modificacion del estado entrada exitosa")
 }
@@ -235,9 +231,9 @@ func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) int {
 
 func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoSwap := time.Duration(globals.MemoryConfig.MemoryDelay) * time.Second
+	retrasoSwap := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
-	var mensaje globals.LecturaPagina
+	var mensaje g.LecturaPagina
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
 		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
@@ -250,10 +246,10 @@ func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## Leer Página Completa - Dir. Física: <%d>", direccionFisica)
 
-	time.Sleep(time.Duration(globals.MemoryConfig.MemoryDelay) * time.Second)
+	time.Sleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Second)
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
-	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
@@ -268,9 +264,9 @@ func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 
 func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoMemoria := time.Duration(globals.MemoryConfig.MemoryDelay) * time.Second
+	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
-	var mensaje globals.EscrituraPagina
+	var mensaje g.EscrituraPagina
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
 		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
@@ -282,7 +278,7 @@ func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	datosASobreEscribir := mensaje.DatosASobreEscribir
 	direccionFisica := mensaje.DireccionFisica
 
-	if tamanioNecesario > globals.MemoryConfig.PagSize {
+	if tamanioNecesario > g.MemoryConfig.PagSize {
 		log.Fatal("No se puede cargar en una pagina este tamaño")
 		// TODO: FATAL ...
 	}
@@ -290,10 +286,10 @@ func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## PID: <%d> - Actualizar Página Completa - Dir. Física: <%d>", pid, direccionFisica)
 
-	time.Sleep(time.Duration(globals.MemoryConfig.SwapDelay) * time.Second)
+	time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Second)
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
-	globals.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
+	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
