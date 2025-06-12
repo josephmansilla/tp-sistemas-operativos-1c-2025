@@ -134,7 +134,7 @@ func RealizarDumpMemoria(pid int) (resultado string) {
 
 	resultado = fmt.Sprintf("## Dump De Memoria Para PID: %d\n\n", pid)
 
-	var entradas []EntradaDump
+	var entradas []g.EntradaDump
 
 	entradas = RecolectarEntradasProceso(*proceso)
 
@@ -160,10 +160,10 @@ func RealizarDumpMemoria(pid int) (resultado string) {
 	return
 }
 
-func RecolectarEntradasProceso(proceso g.Proceso) (resultados []EntradaDump) {
+func RecolectarEntradasProceso(proceso g.Proceso) (resultados []g.EntradaDump) {
 	cantidadEntradas := g.MemoryConfig.EntriesPerPage
 	var wg sync.WaitGroup
-	canal := make(chan EntradaDump, cantidadEntradas)
+	canal := make(chan g.EntradaDump, cantidadEntradas)
 
 	for _, subtabla := range proceso.TablaRaiz {
 		wg.Add(1)
@@ -189,7 +189,7 @@ func RecolectarEntradasProceso(proceso g.Proceso) (resultados []EntradaDump) {
 	return
 }
 
-func RecorrerTablaPaginaDeFormaConcurrente(tabla *g.TablaPagina, canal chan EntradaDump) {
+func RecorrerTablaPaginaDeFormaConcurrente(tabla *g.TablaPagina, canal chan g.EntradaDump) {
 
 	if tabla.Subtabla != nil {
 		for _, subTabla := range tabla.Subtabla {
@@ -199,7 +199,7 @@ func RecorrerTablaPaginaDeFormaConcurrente(tabla *g.TablaPagina, canal chan Entr
 	}
 	for i, entrada := range tabla.EntradasPaginas {
 		if tabla.EntradasPaginas[i].EstaPresente {
-			canal <- EntradaDump{
+			canal <- g.EntradaDump{
 				DireccionFisica: g.MemoryConfig.PagSize * entrada.NumeroFrame,
 				NumeroFrame:     entrada.NumeroFrame,
 			}
@@ -207,7 +207,7 @@ func RecorrerTablaPaginaDeFormaConcurrente(tabla *g.TablaPagina, canal chan Entr
 	}
 }
 
-func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]EntradaDump) {
+func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]g.EntradaDump) {
 
 	if tabla.Subtabla != nil {
 		for _, subTabla := range tabla.Subtabla {
@@ -217,7 +217,7 @@ func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]EntradaDump) {
 	}
 	for i, entrada := range tabla.EntradasPaginas {
 		if tabla.EntradasPaginas[i].EstaPresente {
-			*resultados = append(*resultados, EntradaDump{
+			*resultados = append(*resultados, g.EntradaDump{
 				DireccionFisica: g.MemoryConfig.PagSize * entrada.NumeroFrame,
 				NumeroFrame:     entrada.NumeroFrame,
 			})
