@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
+	"sync"
 )
 
 func InicializarMemoriaPrincipal() {
@@ -119,36 +121,113 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	IncrementarMetrica(proceso, IncrementarEscrituraDeMemoria)
 }
 
+type EntradaDump struct {
+	DireccionFisica int `json:"direccion_fisica"`
+	NumeroFrame     int `json:"numero_frame"`
+}
+
 func RealizarDumpMemoria(pid int) (resultado string) {
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
+
 	if proceso == nil {
 		logger.Fatal("No existe el proceso solicitado para DUMP")
+		return "Proceso no encontrado 😭🙏"
 		// TODO:
 	}
 
 	resultado = fmt.Sprintf("## Dump De Memoria Para PID: %d\n\n", pid)
 
-	tamanioProceso := 10000 // tamanioMaximoProceso / g.TamanioMaximoFrame
-	for numeroPagina := 0; numeroPagina < tamanioProceso; numeroPagina++ {
-		indices := CrearIndicePara(numeroPagina)
-		entrada, err := BuscarEntradaPagina(proceso, indices)
-		if err != nil {
+	var entradas []EntradaDump
+
+	entradas = RecolectarEntradasProceso(*proceso)
+
+	tamanioPagina := g.MemoryConfig.PagSize
+	for _, e := range entradas {
+		inicio := e.NumeroFrame * tamanioPagina
+		fin := inicio + tamanioPagina
+
+		if fin > len(g.MemoriaPrincipal) {
+			logger.Error("Acceso fuera de rango al hacer dump del frame %d con PID: %d", e.NumeroFrame, pid)
 			continue
 			// TODO: ver que hacer
 		}
-		if entrada == nil || !entrada.EstaPresente {
-			continue
-		}
-		frame := entrada.NumeroFrame
+
 		g.MutexMemoriaPrincipal.Lock()
-		datos := g.MemoriaPrincipal[frame]
+		datos := g.MemoriaPrincipal[inicio:fin]
 		g.MutexMemoriaPrincipal.Unlock()
+
 		datosEnString := string(datos)
-		resultado += fmt.Sprintf("Pagina: %d | Frame: %d | Datos: %s\n", numeroPagina, frame, datosEnString)
+		resultado += fmt.Sprintf("Direccion Fisica: %d | Frame: %d | Datos: %q\n", e.DireccionFisica, e.NumeroFrame, datosEnString)
 	}
+
 	return
+}
+
+func RecolectarEntradasProceso(proceso g.Proceso) (resultados []EntradaDump) {
+	cantidadEntradas := g.MemoryConfig.EntriesPerPage
+	var wg sync.WaitGroup
+	canal := make(chan EntradaDump, cantidadEntradas)
+
+	for _, subtabla := range proceso.TablaRaiz {
+		wg.Add(1)
+		go func(st *g.TablaPagina) {
+			defer wg.Done()
+			RecorrerTablaPaginaDeFormaConcurrente(st, canal)
+		}(subtabla)
+	}
+
+	go func() {
+		wg.Wait()
+		close(canal)
+	}()
+
+	for entrada := range canal {
+		resultados = append(resultados, entrada)
+	}
+	// TODO: NO ES NECESARIO Y LO PUEDO BORRAR QUEDA PENDIENTE DEJARLO O NO
+	sort.Slice(resultados, func(i, j int) bool {
+		return resultados[i].DireccionFisica < resultados[j].DireccionFisica
+	})
+
+	return
+}
+
+func RecorrerTablaPaginaDeFormaConcurrente(tabla *g.TablaPagina, canal chan EntradaDump) {
+
+	if tabla.Subtabla != nil {
+		for _, subTabla := range tabla.Subtabla {
+			RecorrerTablaPaginaDeFormaConcurrente(subTabla, canal)
+		}
+		return
+	}
+	for i, entrada := range tabla.EntradasPaginas {
+		if tabla.EntradasPaginas[i].EstaPresente {
+			canal <- EntradaDump{
+				DireccionFisica: g.MemoryConfig.PagSize * entrada.NumeroFrame,
+				NumeroFrame:     entrada.NumeroFrame,
+			}
+		}
+	}
+}
+
+func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]EntradaDump) {
+
+	if tabla.Subtabla != nil {
+		for _, subTabla := range tabla.Subtabla {
+			RecorrerTablaPagina(subTabla, resultados)
+		}
+		return
+	}
+	for i, entrada := range tabla.EntradasPaginas {
+		if tabla.EntradasPaginas[i].EstaPresente {
+			*resultados = append(*resultados, EntradaDump{
+				DireccionFisica: g.MemoryConfig.PagSize * entrada.NumeroFrame,
+				NumeroFrame:     entrada.NumeroFrame,
+			})
+		}
+	}
 }
 
 func ParsearContenido(dumpFile *os.File, contenido string) {
