@@ -121,11 +121,6 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	IncrementarMetrica(proceso, IncrementarEscrituraDeMemoria)
 }
 
-type EntradaDump struct {
-	DireccionFisica int `json:"direccion_fisica"`
-	NumeroFrame     int `json:"numero_frame"`
-}
-
 func RealizarDumpMemoria(pid int) (resultado string) {
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
@@ -228,6 +223,21 @@ func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]EntradaDump) {
 			})
 		}
 	}
+}
+
+// TODO: para probar
+func DumpGlobal() (resultado string) {
+	g.MutexProcesosPorPID.Lock()
+	for pid := range g.ProcesosPorPID {
+		g.MutexProcesosPorPID.Unlock()
+
+		resultado += RealizarDumpMemoria(pid) + "\n"
+
+		g.MutexProcesosPorPID.Lock()
+	}
+	g.MutexProcesosPorPID.Unlock()
+
+	return
 }
 
 func ParsearContenido(dumpFile *os.File, contenido string) {

@@ -13,4 +13,4 @@ type EstadoMemoria struct {
 	CantidadFramesLibres int
 	CantidadBytesUsados  int
 	CantidadBytesTotales int
-}
+} //TODO: ver si dejar
