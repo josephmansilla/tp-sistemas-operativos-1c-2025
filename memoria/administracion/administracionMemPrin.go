@@ -3,10 +3,7 @@ package administracion
 import (
 	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
-	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
-	"log"
-	"net/http"
 	"os"
 	"sort"
 	"sync"
@@ -48,11 +45,11 @@ func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
 
 func LecturaPseudocodigo(archivoPseudocodigo string) (stringEnBytes []byte, err error) {
 	err = nil
-	string := archivoPseudocodigo
-	if string == "" {
-		return nil, fmt.Errorf("El string es vacio: %w")
+	pseudo := archivoPseudocodigo
+	if pseudo == "" {
+		return nil, fmt.Errorf("el string es vacio")
 	}
-	stringEnBytes = []byte(string)
+	stringEnBytes = []byte(pseudo)
 	return
 } //TODO: testear
 
@@ -223,7 +220,7 @@ func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]g.EntradaDump) {
 			})
 		}
 	}
-}
+} //TODO: a usar despus
 
 // TODO: para probar
 func DumpGlobal() (resultado string) {
@@ -247,32 +244,10 @@ func ParsearContenido(dumpFile *os.File, contenido string) {
 	}
 } //TODO: rever
 
-func MemoriaDump(w http.ResponseWriter, r *http.Request) {
-	var dump g.DatosParaDump
+func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionLectura g.ExitoLecturaMemoria) {
+	return
+}
 
-	if err := data.LeerJson(w, r, &dump); err != nil {
-		logger.Error("Error al recibir JSON: %v", err)
-		http.Error(w, "Error procesando datos del Kernel", http.StatusInternalServerError)
-		return
-	}
-
-	dumpFileName := fmt.Sprintf("%s/<%d>-<%s>.dmp", g.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
-	logger.Info("## Se creo el file: %d ", dumpFileName)
-	dumpFile, err := os.OpenFile(dumpFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
-	if err != nil {
-		fmt.Printf("Error al crear archivo de log para <%d-%s>: %v\n", dump.PID, dump.TimeStamp, err)
-		os.Exit(1)
-	}
-	log.SetOutput(dumpFile)
-	defer dumpFile.Close()
-
-	logger.Info("## PID: <%d>  - Memory Dump solicitado", dump.PID)
-
-	contenido := RealizarDumpMemoria(dump.PID)
-	// TODO: verificacion esta vacio
-	ParsearContenido(dumpFile, contenido)
-
-	logger.Info("## Archivo Dump fue creado con EXITO")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Dump Realizado"))
+func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionEscritura g.ExitoEscrituraMemoria) {
+	return
 }

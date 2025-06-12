@@ -94,10 +94,10 @@ func AsignarNumeroEntradaPagina() int {
 
 	for numeroFrame := 0; numeroFrame < tamanioMaximo; numeroFrame++ {
 		g.MutexEstructuraFramesLibres.Lock()
-		bool := g.FramesLibres[numeroFrame]
+		booleano := g.FramesLibres[numeroFrame]
 		g.MutexEstructuraFramesLibres.Unlock()
 
-		if bool == true {
+		if booleano == true {
 			numeroEntradaLibre = numeroFrame
 			MarcarOcupadoFrame(numeroEntradaLibre)
 
@@ -127,7 +127,7 @@ func LiberarEntradaPagina(numeroFrameALiberar int) {
 	g.MutexCantidadFramesLibres.Lock()
 	g.CantidadFramesLibres++
 	g.MutexCantidadFramesLibres.Unlock()
-}
+} //TODO: implementar
 
 func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) error {
 	tamanioPagina := g.MemoryConfig.PagSize
@@ -226,7 +226,7 @@ func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) int {
 		return numeroFramePagina
 	}
 
-	return (-1) // EN CASO DE ERROR
+	return -1 // EN CASO DE ERROR
 }
 
 func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {

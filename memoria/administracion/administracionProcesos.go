@@ -1,10 +1,8 @@
 package administracion
 
 import (
-	"encoding/json"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
-	"net/http"
 	"sync"
 )
 
@@ -43,76 +41,6 @@ func CargarEntradaMemoria(numeroFrame int, pid int, datosEnBytes []byte) {
 		g.MemoriaPrincipal[direccionFisica] = datosEnBytes[indice]
 	}
 	g.MutexMemoriaPrincipal.Unlock()
-}
-
-func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
-	var mensaje g.DatosRespuestaDeKernel
-
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
-		return
-	}
-
-	pid := mensaje.PID
-	tamanioProceso := mensaje.TamanioMemoria
-	InicializarProceso(pid, tamanioProceso, mensaje.Pseudocodigo)
-
-	logger.Info("## PID: <%d> - Proceso Creado - Tamaño: <%d>", pid, tamanioProceso)
-
-	respuesta := g.RespuestaMemoria{
-		Exito:   true,
-		Mensaje: "Proceso creado correctamente en memoria",
-	}
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
-	}
-
-	json.NewEncoder(w).Encode(respuesta)
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Respuesta devuelta"))
-}
-
-// TODO: RESPONDER CON EL NUMERO DE PAGINA DE 1ER NIVEL DEL PROCESO???
-
-func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
-
-	var mensaje g.DatosFinalizacionProceso
-
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
-		return
-	}
-
-	pid := mensaje.PID
-	// LiberarMemoria(pid) // TODO: pendiente
-	g.MutexProcesosPorPID.Lock()
-	proceso := g.ProcesosPorPID[pid]
-	delete(g.ProcesosPorPID, pid)
-	g.MutexProcesosPorPID.Unlock()
-
-	metricas := proceso.Metricas
-
-	// TODO: revisar logger
-	logger.Info("## PID: <%d>  - Proceso Destruido - "+
-		"Métricas - Acc.T.Pag: <%d>; Inst.Sol.: <%d>; "+
-		"SWAP: <ñññ%d>; Mem. Prin.: <ñññ>; Lec.Mem.: <&d>; "+
-		"Esc.Mem.: <Esc.Mem.>", pid, metricas.AccesosTablasPaginas,
-		metricas.InstruccionesSolicitadas, metricas.BajadasSwap+metricas.SubidasMP,
-		metricas.LecturasDeMemoria, metricas.EscriturasDeMemoria)
-
-	respuesta := g.RespuestaMemoria{
-		Exito:   true,
-		Mensaje: "Proceso creado correctamente en memoria",
-	}
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
-	}
-
-	json.NewEncoder(w).Encode(respuesta)
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Respuesta devuelta"))
 }
 
 // METRICAS PROCESOS

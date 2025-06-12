@@ -2,10 +2,15 @@ package conexiones
 
 import (
 	"encoding/json"
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	"fmt"
+	adm "github.com/sisoputnfrba/tp-golang/memoria/administracion"
+	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"log"
 	"net/http"
+	"os"
+	"time"
 )
 
 // FUNCION PARA RECIBIR LOS MENSAJES PROVENIENTES DEL KERNEL
@@ -35,13 +40,13 @@ import (
 }*/
 
 func ObtenerEspacioLibre(w http.ResponseWriter, r *http.Request) {
-	globals.MutexCantidadFramesLibres.Lock()
-	cantFramesLibres := globals.CantidadFramesLibres
-	globals.MutexCantidadFramesLibres.Unlock()
+	g.MutexCantidadFramesLibres.Lock()
+	cantFramesLibres := g.CantidadFramesLibres
+	g.MutexCantidadFramesLibres.Unlock()
 
-	espacioLibre := cantFramesLibres * globals.MemoryConfig.PagSize
+	espacioLibre := cantFramesLibres * g.MemoryConfig.PagSize
 
-	respuesta := globals.RespuestaEspacioLibre{EspacioLibre: espacioLibre}
+	respuesta := g.RespuestaEspacioLibre{EspacioLibre: espacioLibre}
 
 	logger.Info("## Espacio libre devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
 
@@ -54,11 +59,11 @@ func ObtenerEspacioLibre(w http.ResponseWriter, r *http.Request) {
 }
 
 func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
-	var mensaje globals.DatosRespuestaDeKernel
+	var mensaje g.DatosRespuestaDeKernel
 
 	data.LeerJson(w, r, &mensaje)
 
-	globals.RespuestaKernel = globals.DatosRespuestaDeKernel{
+	g.RespuestaKernel = g.DatosRespuestaDeKernel{
 		Pseudocodigo:   mensaje.Pseudocodigo,
 		TamanioMemoria: mensaje.TamanioMemoria,
 		PID:            mensaje.PID,
@@ -70,7 +75,7 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Tamanio de Memoria Pedido: %d\n", mensaje.TamanioMemoria)
 
 	// RESPUESTA AL KERNEL
-	respuesta := globals.RespuestaMemoria{
+	respuesta := g.RespuestaMemoria{
 		Exito:   true,
 		Mensaje: "Proceso creado correctamente en memoria",
 	}
@@ -78,6 +83,176 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(respuesta)
 } // TODO: CAMBIAR CON INICIALIZACIONPROCESO
+
+func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
+	var mensaje g.DatosRespuestaDeKernel
+
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+		return
+	}
+
+	pid := mensaje.PID
+	tamanioProceso := mensaje.TamanioMemoria
+	adm.InicializarProceso(pid, tamanioProceso, mensaje.Pseudocodigo)
+
+	logger.Info("## PID: <%d> - Proceso Creado - Tamaño: <%d>", pid, tamanioProceso)
+
+	respuesta := g.RespuestaMemoria{
+		Exito:   true,
+		Mensaje: "Proceso creado correctamente en memoria",
+	}
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
+}
+
+// TODO: RESPONDER CON EL NUMERO DE PAGINA DE 1ER NIVEL DEL PROCESO???
+
+func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
+
+	var mensaje g.DatosFinalizacionProceso
+
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+		return
+	}
+
+	pid := mensaje.PID
+	// LiberarMemoria(pid) // TODO: pendiente
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[pid]
+	delete(g.ProcesosPorPID, pid)
+	g.MutexProcesosPorPID.Unlock()
+
+	metricas := proceso.Metricas
+
+	// TODO: revisar logger
+	logger.Info("## PID: <%d>  - Proceso Destruido - "+
+		"Métricas - Acc.T.Pag: <%d>; Inst.Sol.: <%d>; "+
+		"SWAP: <ñññ%d>; Mem. Prin.: <ñññ>; Lec.Mem.: <&d>; "+
+		"Esc.Mem.: <Esc.Mem.>", pid, metricas.AccesosTablasPaginas,
+		metricas.InstruccionesSolicitadas, metricas.BajadasSwap+metricas.SubidasMP,
+		metricas.LecturasDeMemoria, metricas.EscriturasDeMemoria)
+
+	respuesta := g.RespuestaMemoria{
+		Exito:   true,
+		Mensaje: "Proceso creado correctamente en memoria",
+	}
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
+}
+
+func LeerEspacioUsuario(w http.ResponseWriter, r *http.Request) {
+	inicio := time.Now()
+	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
+
+	var mensaje g.LecturaMemoria
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+		return
+	}
+
+	pid := mensaje.PID
+	direccionFisica := mensaje.DireccionFisica
+	tamanioALeer := mensaje.TamanioARecorrer
+
+	respuesta := adm.LeerEspacioMemoria(pid, direccionFisica, tamanioALeer)
+
+	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
+
+	time.Sleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Second)
+
+	tiempoTranscurrido := time.Now().Sub(inicio)
+	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
+
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	logger.Info("## Lectura en espacio de memoria Éxitosa")
+
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
+}
+
+func EscribirEspacioUsuario(w http.ResponseWriter, r *http.Request) {
+	inicio := time.Now()
+	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
+
+	var mensaje g.EscrituraMemoria
+	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	if err != nil {
+		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+		return
+	}
+
+	pid := mensaje.PID
+	direccionFisica := mensaje.DireccionFisica
+	tamanioALeer := mensaje.TamanioARecorrer
+
+	respuesta := adm.EscribirEspacioMemoria(pid, direccionFisica, tamanioALeer)
+
+	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
+
+	time.Sleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Second)
+
+	tiempoTranscurrido := time.Now().Sub(inicio)
+	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
+
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar mock de espacio: %v", err)
+	}
+
+	logger.Info("## Escritura en espacio de memoria Éxitosa")
+
+	json.NewEncoder(w).Encode(respuesta)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Respuesta devuelta"))
+}
+
+func MemoriaDump(w http.ResponseWriter, r *http.Request) {
+	var dump g.DatosParaDump
+
+	if err := data.LeerJson(w, r, &dump); err != nil {
+		logger.Error("Error al recibir JSON: %v", err)
+		http.Error(w, "Error procesando datos del Kernel", http.StatusInternalServerError)
+		return
+	}
+
+	dumpFileName := fmt.Sprintf("%s/<%d>-<%s>.dmp", g.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
+	logger.Info("## Se creo el file: %d ", dumpFileName)
+	dumpFile, err := os.OpenFile(dumpFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	if err != nil {
+		fmt.Printf("Error al crear archivo de log para <%d-%s>: %v\n", dump.PID, dump.TimeStamp, err)
+		os.Exit(1)
+	}
+	log.SetOutput(dumpFile)
+	defer dumpFile.Close()
+
+	logger.Info("## PID: <%d>  - Memory Dump solicitado", dump.PID)
+
+	contenido := adm.RealizarDumpMemoria(dump.PID)
+	// TODO: verificacion esta vacio
+	adm.ParsearContenido(dumpFile, contenido)
+
+	logger.Info("## Archivo Dump fue creado con EXITO")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Dump Realizado"))
+}
 
 // Mapa global: PID → Lista de instrucciones
 var InstruccionesPorPID map[int][]string = make(map[int][]string)

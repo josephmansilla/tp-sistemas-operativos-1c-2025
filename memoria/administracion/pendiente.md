@@ -4,7 +4,6 @@
 
 ### Manejo de Paginación
 1) Enviar Tabla Entera
-2) Hacer que obtenerInstruccion obtenga directamente de los datos en memoria
 
 ### Memoria Principal
 
