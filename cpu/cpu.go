@@ -24,7 +24,6 @@ func main() {
 	}
 	log.SetOutput(logFile)
 
-	// "SOY UN GORDO QUE NO QUIERO ANDAR"
 	/*err = logger.SetLevel(globals.ClientConfig.LogLevel)
 	if err != nil {
 		logger.Fatal("No se pudo leer el log-level - %v", err.Error())

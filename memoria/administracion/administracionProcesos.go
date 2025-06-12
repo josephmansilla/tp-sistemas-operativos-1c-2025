@@ -80,7 +80,7 @@ func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pid := mensaje.PID
-	LiberarMemoria(pid) // TODO: pendiente
+	// LiberarMemoria(pid) // TODO: pendiente
 	globals.MutexProcesosPorPID.Lock()
 	proceso := globals.ProcesosPorPID[pid]
 	delete(globals.ProcesosPorPID, pid)
