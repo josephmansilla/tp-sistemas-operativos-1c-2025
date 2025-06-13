@@ -24,6 +24,29 @@ type RespuestaEspacioLibre struct {
 	EspacioLibre int `json:"espacio_libre"`
 }
 
-type DatosFinalizacionProceso struct {
+type LecturaProceso struct {
+	PID              int `json:"pid"`
+	DireccionFisica  int `json:"direccion_fisica"`
+	TamanioARecorrer int `json:"tamanio_a_recorrer"`
+}
+
+type ExitoLecturaMemoria struct {
+	Exito        error  `json:"exito"`
+	DatosAEnviar string `json:"datos_a_enviar"`
+}
+
+type EscrituraProceso struct {
+	PID              int 	`json:"pid"`
+	DireccionFisica  int 	`json:"direccion_fisica"`
+	TamanioARecorrer int 	`json:"tamanio_a_recorrer"`
+	DatosAEscribir	 string `json:"datos_a_escribir"`
+}
+
+type FinalizacionProceso struct {
 	PID int `json:"pid"`
+}
+
+type ExitoEdicionMemoria struct {
+	Exito    error `json:"exito"`
+	Booleano bool  `json:"booleano"`
 }

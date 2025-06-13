@@ -94,10 +94,10 @@ func AsignarNumeroEntradaPagina() int {
 
 	for numeroFrame := 0; numeroFrame < tamanioMaximo; numeroFrame++ {
 		g.MutexEstructuraFramesLibres.Lock()
-		bool := g.FramesLibres[numeroFrame]
+		booleano := g.FramesLibres[numeroFrame]
 		g.MutexEstructuraFramesLibres.Unlock()
 
-		if bool == true {
+		if booleano == true {
 			numeroEntradaLibre = numeroFrame
 			MarcarOcupadoFrame(numeroEntradaLibre)
 
@@ -127,7 +127,7 @@ func LiberarEntradaPagina(numeroFrameALiberar int) {
 	g.MutexCantidadFramesLibres.Lock()
 	g.CantidadFramesLibres++
 	g.MutexCantidadFramesLibres.Unlock()
-}
+} //TODO: implementar
 
 func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) error {
 	tamanioPagina := g.MemoryConfig.PagSize
@@ -208,6 +208,37 @@ func ModificarEstadoEntradaLectura(pid int) {
 	logger.Info("## Modificacion del estado entrada exitosa")
 }
 
+func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
+	err = nil
+
+	if tabla.Subtabla != nil {
+		for indice, subtabla := range tabla.Subtabla {
+			err := LiberarTablaPaginas(subtabla, pid)
+			if err != nil {
+				return err
+			}
+			tabla.Subtabla[indice] = nil
+		}
+		tabla.Subtabla = nil
+	}
+	if tabla.EntradasPaginas != nil {
+		for _, entrada := range tabla.EntradasPaginas {
+			if entrada.EstaPresente {
+				tamanioPagina := g.MemoryConfig.PagSize
+				direccionFisica := entrada.NumeroFrame * tamanioPagina
+				g.CambiarEstadoFrame(pid)
+				err = RemoverEspacioMemoria(direccionFisica, direccionFisica+tamanioPagina)
+				if err != nil {
+					logger.Error("Error al remover espacio del frame: \"%d\" ; %v", entrada.NumeroFrame, err)
+				}
+			}
+			// TODO : si está en swap tambien hay que remover
+		}
+		tabla.EntradasPaginas = nil
+	}
+	return
+}
+
 func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) int {
 
 	//TODO
@@ -226,10 +257,10 @@ func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) int {
 		return numeroFramePagina
 	}
 
-	return (-1) // EN CASO DE ERROR
+	return -1 // EN CASO DE ERROR
 }
 
-func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
+func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
@@ -262,7 +293,7 @@ func LeerPaginaCompleta(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Respuesta devuelta"))
 }
 
-func ActualizarPaginaCompleta(w http.ResponseWriter, r *http.Request) {
+func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 

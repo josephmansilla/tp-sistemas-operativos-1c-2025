@@ -1,10 +1,10 @@
 package administracion
 
 import (
-	"encoding/json"
+	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
-	"net/http"
+	"sort"
 	"sync"
 )
 
@@ -36,89 +36,159 @@ func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso g.Proceso) {
 	g.MutexProcesosPorPID.Unlock()
 }
 
-func CargarEntradaMemoria(numeroFrame int, pid int, datosEnBytes []byte) {
-	direccionFisica := numeroFrame * g.MemoryConfig.PagSize
-	g.MutexMemoriaPrincipal.Lock()
-	for indice := 0; indice < len(datosEnBytes); indice++ {
-		g.MemoriaPrincipal[direccionFisica] = datosEnBytes[indice]
+func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
+	var proceso *g.Proceso
+	metricas = g.MetricasProceso{}
+	err = nil
+
+	proceso, err = EliminarDeSlice(pid)
+	if err != nil {
+		return metricas, err
 	}
-	g.MutexMemoriaPrincipal.Unlock()
+	metricas = proceso.Metricas
+	for _, tabla := range proceso.TablaRaiz {
+		LiberarTablaPaginas(tabla, pid)
+	}
+	logger.Info("Se liberó todo para el PID: %d", pid)
+	return
 }
 
-func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
-	var mensaje g.DatosRespuestaDeKernel
-
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
-		return
-	}
-
-	pid := mensaje.PID
-	tamanioProceso := mensaje.TamanioMemoria
-	InicializarProceso(pid, tamanioProceso, mensaje.Pseudocodigo)
-
-	logger.Info("## PID: <%d> - Proceso Creado - Tamaño: <%d>", pid, tamanioProceso)
-
-	respuesta := g.RespuestaMemoria{
-		Exito:   true,
-		Mensaje: "Proceso creado correctamente en memoria",
-	}
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
-	}
-
-	json.NewEncoder(w).Encode(respuesta)
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Respuesta devuelta"))
-}
-
-// TODO: RESPONDER CON EL NUMERO DE PAGINA DE 1ER NIVEL DEL PROCESO???
-
-func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
-
-	var mensaje g.DatosFinalizacionProceso
-
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
-		return
-	}
-
-	pid := mensaje.PID
-	// LiberarMemoria(pid) // TODO: pendiente
+func EliminarDeSlice(pid int) (proceso *g.Proceso, err error) {
+	err = nil
 	g.MutexProcesosPorPID.Lock()
-	proceso := g.ProcesosPorPID[pid]
+	proceso = g.ProcesosPorPID[pid]
 	delete(g.ProcesosPorPID, pid)
 	g.MutexProcesosPorPID.Unlock()
-
-	metricas := proceso.Metricas
-
-	// TODO: revisar logger
-	logger.Info("## PID: <%d>  - Proceso Destruido - "+
-		"Métricas - Acc.T.Pag: <%d>; Inst.Sol.: <%d>; "+
-		"SWAP: <ñññ%d>; Mem. Prin.: <ñññ>; Lec.Mem.: <&d>; "+
-		"Esc.Mem.: <Esc.Mem.>", pid, metricas.AccesosTablasPaginas,
-		metricas.InstruccionesSolicitadas, metricas.BajadasSwap+metricas.SubidasMP,
-		metricas.LecturasDeMemoria, metricas.EscriturasDeMemoria)
-
-	respuesta := g.RespuestaMemoria{
-		Exito:   true,
-		Mensaje: "Proceso creado correctamente en memoria",
-	}
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
+	if proceso == nil {
+		logger.Error("El proceso no está en el Slice de procesos mapeado por PID")
+		return proceso, fmt.Errorf("no hay una instancia de pid \"%d\" en el slice de procesos por PID %v", pid, logger.ErrNoInstance)
 	}
 
-	json.NewEncoder(w).Encode(respuesta)
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Respuesta devuelta"))
+	return
+}
+
+func RealizarDumpMemoria(pid int) (resultado string) {
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[pid]
+	g.MutexProcesosPorPID.Unlock()
+
+	if proceso == nil {
+		logger.Fatal("No existe el proceso solicitado para DUMP")
+		return "Proceso no encontrado 😭🙏"
+		// TODO:
+	}
+
+	resultado = fmt.Sprintf("## Dump De Memoria Para PID: %d\n\n", pid)
+
+	var entradas []g.EntradaDump
+
+	entradas = RecolectarEntradasProceso(*proceso)
+
+	tamanioPagina := g.MemoryConfig.PagSize
+	for _, e := range entradas {
+		inicio := e.NumeroFrame * tamanioPagina
+		fin := inicio + tamanioPagina
+
+		if fin > len(g.MemoriaPrincipal) {
+			logger.Error("Acceso fuera de rango al hacer dump del frame %d con PID: %d", e.NumeroFrame, pid)
+			continue
+			// TODO: ver que hacer
+		}
+
+		g.MutexMemoriaPrincipal.Lock()
+		datos := g.MemoriaPrincipal[inicio:fin]
+		g.MutexMemoriaPrincipal.Unlock()
+
+		datosEnString := string(datos)
+		resultado += fmt.Sprintf("Direccion Fisica: %d | Frame: %d | Datos: %q\n", e.DireccionFisica, e.NumeroFrame, datosEnString)
+	}
+
+	return
+}
+func RecolectarEntradasProceso(proceso g.Proceso) (resultados []g.EntradaDump) {
+	cantidadEntradas := g.MemoryConfig.EntriesPerPage
+	var wg sync.WaitGroup
+	canal := make(chan g.EntradaDump, cantidadEntradas)
+
+	for _, subtabla := range proceso.TablaRaiz {
+		wg.Add(1)
+		go func(st *g.TablaPagina) {
+			defer wg.Done()
+			RecorrerTablaPaginaDeFormaConcurrente(st, canal)
+		}(subtabla)
+	}
+
+	go func() {
+		wg.Wait()
+		close(canal)
+	}()
+
+	for entrada := range canal {
+		resultados = append(resultados, entrada)
+	}
+	// TODO: NO ES NECESARIO Y LO PUEDO BORRAR QUEDA PENDIENTE DEJARLO O NO
+	sort.Slice(resultados, func(i, j int) bool {
+		return resultados[i].DireccionFisica < resultados[j].DireccionFisica
+	})
+
+	return
+}
+
+func RecorrerTablaPaginaDeFormaConcurrente(tabla *g.TablaPagina, canal chan g.EntradaDump) {
+
+	if tabla.Subtabla != nil {
+		for _, subTabla := range tabla.Subtabla {
+			RecorrerTablaPaginaDeFormaConcurrente(subTabla, canal)
+		}
+		return
+	}
+	for i, entrada := range tabla.EntradasPaginas {
+		if tabla.EntradasPaginas[i].EstaPresente {
+			canal <- g.EntradaDump{
+				DireccionFisica: g.MemoryConfig.PagSize * entrada.NumeroFrame,
+				NumeroFrame:     entrada.NumeroFrame,
+			}
+		}
+	}
+}
+
+func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]g.EntradaDump) {
+
+	if tabla.Subtabla != nil {
+		for _, subTabla := range tabla.Subtabla {
+			RecorrerTablaPagina(subTabla, resultados)
+		}
+		return
+	}
+	for i, entrada := range tabla.EntradasPaginas {
+		if tabla.EntradasPaginas[i].EstaPresente {
+			*resultados = append(*resultados, g.EntradaDump{
+				DireccionFisica: g.MemoryConfig.PagSize * entrada.NumeroFrame,
+				NumeroFrame:     entrada.NumeroFrame,
+			})
+		}
+	}
+} //TODO: a usar despues
+
+// TODO: para probar
+func DumpGlobal() (resultado string) {
+	g.MutexProcesosPorPID.Lock()
+	for pid := range g.ProcesosPorPID {
+		g.MutexProcesosPorPID.Unlock()
+
+		resultado += RealizarDumpMemoria(pid) + "\n"
+
+		g.MutexProcesosPorPID.Lock()
+	}
+	g.MutexProcesosPorPID.Unlock()
+
+	return
 }
 
 // METRICAS PROCESOS
 
-func InicializarMetricas() g.MetricasProceso {
-	metricas := g.MetricasProceso{
+func InicializarMetricas() (metricas g.MetricasProceso) {
+	metricas = g.MetricasProceso{
 		AccesosTablasPaginas:     0,
 		InstruccionesSolicitadas: 0,
 		BajadasSwap:              0,
@@ -126,15 +196,13 @@ func InicializarMetricas() g.MetricasProceso {
 		LecturasDeMemoria:        0,
 		EscriturasDeMemoria:      0,
 	}
-	return metricas
+	return
 }
 
 func IncrementarMetrica(proceso *g.Proceso, funcMetrica g.OperacionMetrica) {
-	var mutexMetrica sync.Mutex
-
-	mutexMetrica.Lock()
+	g.MutexMetrica[proceso.PID].Lock()
 	funcMetrica(&proceso.Metricas)
-	mutexMetrica.Unlock()
+	g.MutexMetrica[proceso.PID].Unlock()
 }
 
 func InformarMetricasProceso(metricasDelProceso g.MetricasProceso) {
@@ -146,7 +214,7 @@ func InformarMetricasProceso(metricasDelProceso g.MetricasProceso) {
 	logger.Info("## LecturasDeMemoria: %d", metricasDelProceso.LecturasDeMemoria)
 	logger.Info("## EscriturasDeMemoria: %d", metricasDelProceso.EscriturasDeMemoria)
 
-}
+} // TODO: borrar
 
 func IncrementarAccesosTablasPaginas(metrica *g.MetricasProceso) {
 	metrica.AccesosTablasPaginas++

@@ -1,14 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/sisoputnfrba/tp-golang/memoria/administracion"
-	"github.com/sisoputnfrba/tp-golang/memoria/conexiones"
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	adm "github.com/sisoputnfrba/tp-golang/memoria/administracion"
+	conex "github.com/sisoputnfrba/tp-golang/memoria/conexiones"
+	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -29,62 +31,74 @@ func main() {
 	if err != nil {
 		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
 	}
-	err = json.Unmarshal(configData, &globals.MemoryConfig)
+	err = json.Unmarshal(configData, &g.MemoryConfig)
 	if err != nil {
-		logger.Fatal("No se pudo parsear el archivo de configuración - %v", err.Error())
+		logger.Fatal("No se pudo parsear el archivo dgguración - %v", err.Error())
 	}
-	if err = globals.MemoryConfig.Validate(); err != nil {
+	if err = g.MemoryConfig.Validate(); err != nil {
 		logger.Fatal("La configuración no es válida - %v", err.Error())
 	}
-	err = logger.SetLevel(globals.MemoryConfig.LogLevel)
+	err = logger.SetLevel(g.MemoryConfig.LogLevel)
 	if err != nil {
 		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
 	}
 
-	var portMemory = globals.MemoryConfig.PortMemory
-	globals.CantidadNiveles = globals.MemoryConfig.NumberOfLevels
-	globals.EntradasPorPagina = globals.MemoryConfig.EntriesPerPage
+	var portMemory = g.MemoryConfig.PortMemory
+	g.CantidadNiveles = g.MemoryConfig.NumberOfLevels
+	g.EntradasPorPagina = g.MemoryConfig.EntriesPerPage
 
 	logger.Info("======== Comenzo la ejecucion de Memoria ========")
 
-	fmt.Printf("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
+	logger.Info("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
 
 	// ----------------------------------------------------------
 	// --------- INICIALIZO LAS ESTRUCTURAS NECESARIAS  ---------
 	// ----------------------------------------------------------
+	logger.Error("Escribí exit para finalizar el módulo de Memoria")
+	go func() {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			texto := strings.ToLower(scanner.Text())
+			if texto == "exit" {
+				logger.Info("======== Final de Ejecución memoria ========")
+				os.Exit(0)
+			}
+		}
+	}()
 
-	administracion.InicializarMemoriaPrincipal()
+	adm.InicializarMemoriaPrincipal()
 
 	// ------------------------------------------------------
 	// ---------- ESCUCHO REQUESTS DE CPU Y KERNEL ----------
 	// ------------------------------------------------------
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/memoria/configuracion", conexiones.EnviarConfiguracionMemoria)
+	mux.HandleFunc("/memoria/configuracion", conex.EnviarConfiguracionMemoriaHandler)
 
-	mux.HandleFunc("/memoria/cpu", conexiones.RecibirMensajeDeCPU)
-	mux.HandleFunc("/memoria/kernel", conexiones.RecibirMensajeDeKernel)
-	mux.HandleFunc("/memoria/InicializacionProceso", administracion.InicializacionProceso) // TODO: HACER CONEXIONES CON KERNEL DESPUES DEL MERGE
+	mux.HandleFunc("/memoria/cpu", conex.RecibirMensajeDeCPUHandler)
+	mux.HandleFunc("/memoria/kernel", conex.RecibirMensajeDeKernelHandler)
+	mux.HandleFunc("/memoria/InicializacionProceso", conex.InicializacionProcesoHandler) // TODO: HACER CONEXIONES CON KERNEL DESPUES DEL MERGE
 
-	mux.HandleFunc("/memoria/instruccion", conexiones.ObtenerInstruccion)
+	mux.HandleFunc("/memoria/instruccion", conex.ObtenerInstruccion)
 	// TODO: deberia devoler la instruccion que piden
 
-	mux.HandleFunc("/memoria/espaciolibre", conexiones.ObtenerEspacioLibre)
-	mux.HandleFunc("/memoria/tabla", conexiones.EnviarEntradaPagina)
+	mux.HandleFunc("/memoria/espaciolibre", conex.ObtenerEspacioLibreHandler)
+	mux.HandleFunc("/memoria/tabla", conex.EnviarEntradaPaginaHandler)
 
 	// TODO: USTEDES DEBEN IMPLEMENTAR ESTAS FUNCIONES
-	mux.HandleFunc("/memoria/LeerEntradaPagina", administracion.LeerPaginaCompleta)
-	mux.HandleFunc("/memoria/ActualizarEntrada", administracion.ActualizarPaginaCompleta)
-
-	//mux.HandleFunc("/memoria/lectura", utils.LecturaEspacio)
+	mux.HandleFunc("/memoria/LeerEntradaPagina", adm.LeerPaginaCompletaHandler)
+	mux.HandleFunc("/memoria/ActualizarEntrada", adm.ActualizarPaginaCompletaHandler)
+	mux.HandleFunc("/memoria/lectura", conex.LeerEspacioUsuarioHandler)
 	// TODO: debe responder a CPU el valor de una dirección física con el delay indicado en Memory Delay
-	//mux.HandleFunc("/memoria/escritura", utils.EscrituraEspacio)
+	mux.HandleFunc("/memoria/escritura", conex.EscribirEspacioUsuarioHandler)
 	// TODO: recibe PID y tamaño, se crea escructuras, asigna frames y logear.
 	// TODO: debe indicarle al CPU que fue éxitoso con el delay indicado en Memory Delay
-	//mux.HandleFunc("/memoria/suspension", utils.SuspenderProceso)
-	//mux.HandleFunc("/memoria/desuspension", utils.DesuspenderProceso)
 
-	mux.HandleFunc("/memoria/dump", administracion.MemoriaDump)
+	mux.HandleFunc("/memoria/suspension", adm.SuspensionProcesoHandler)
+	mux.HandleFunc("/memoria/desuspension", adm.DesuspensionProcesoHandler)
+
+	mux.HandleFunc("/memoria/dump", conex.MemoriaDumpHandler)
+	mux.HandleFunc("/memoria/finalizacionProceso", conex.FinalizacionProcesoHandler)
 	// TODO: debe liberar recursos y escructuras y logear metricas
 
 	//mux.HandleFunc("/memoria/frame", utils.algo)
@@ -97,7 +111,5 @@ func main() {
 	if errListenAndServe != nil {
 		panic(errListenAndServe)
 	}
-
-	logger.Info("======== Final de Ejecución memoria ========")
 
 }
