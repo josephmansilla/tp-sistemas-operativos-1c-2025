@@ -24,6 +24,7 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	// PasarSwapEntradaPagina(numeroFrame)
 	// LiberarEntradaPagina(numeroFrame)
 
+	// TODO cambiar
 	proceso := g.ProcesoSuspendido{}
 
 	logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", mensaje.PID, proceso.DireccionFisica, proceso.TamanioProceso)

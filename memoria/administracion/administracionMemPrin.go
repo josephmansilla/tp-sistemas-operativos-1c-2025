@@ -16,10 +16,8 @@ func InicializarMemoriaPrincipal() {
 
 	g.FramesLibres = make([]bool, cantidadFrames)
 	ConfigurarFrames(cantidadFrames)
-
+	
 	g.InstanciarEstructurasGlobales()
-	g.InstanciarEstructurasSemaforos()
-	g.InstanciarEstructurasSwap()
 
 	g.MutexMetrica = make([]sync.Mutex, g.MemoryConfig.MemorySize*1000) // TODO: tamanioTotalmente arbitrario
 
