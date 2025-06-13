@@ -116,29 +116,26 @@ func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
 
 func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 
-	var mensaje g.DatosFinalizacionProceso
+	var mensaje g.FinalizacionProceso
 
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
 		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
 		return
 	}
-
+	var metricas g.MetricasProceso
 	pid := mensaje.PID
-	// LiberarMemoria(pid) // TODO: pendiente
-	g.MutexProcesosPorPID.Lock()
-	proceso := g.ProcesosPorPID[pid]
-	delete(g.ProcesosPorPID, pid)
-	g.MutexProcesosPorPID.Unlock()
 
-	metricas := proceso.Metricas
+	metricas, err = adm.LiberarMemoriaProceso(pid)
+	if err != nil {
+		logger.Error("Hubo un error al eliminar el proceso %v", err)
+	}
 
-	// TODO: revisar logger
 	logger.Info("## PID: <%d>  - Proceso Destruido - "+
 		"Métricas - Acc.T.Pag: <%d>; Inst.Sol.: <%d>; "+
-		"SWAP: <ñññ%d>; Mem. Prin.: <ñññ>; Lec.Mem.: <&d>; "+
+		"SWAP: <%d>; Mem. Prin.: <%d>; Lec.Mem.: <&d>; "+
 		"Esc.Mem.: <Esc.Mem.>", pid, metricas.AccesosTablasPaginas,
-		metricas.InstruccionesSolicitadas, metricas.BajadasSwap+metricas.SubidasMP,
+		metricas.InstruccionesSolicitadas, metricas.BajadasSwap, metricas.SubidasMP,
 		metricas.LecturasDeMemoria, metricas.EscriturasDeMemoria)
 
 	respuesta := g.RespuestaMemoria{
@@ -158,7 +155,7 @@ func LeerEspacioUsuario(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
-	var mensaje g.LecturaMemoria
+	var mensaje g.AccesoAMemoria
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
 		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
@@ -193,7 +190,7 @@ func EscribirEspacioUsuario(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
-	var mensaje g.EscrituraMemoria
+	var mensaje g.AccesoAMemoria
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
 		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)

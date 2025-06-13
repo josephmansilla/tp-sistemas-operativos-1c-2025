@@ -19,6 +19,8 @@ func InicializarMemoriaPrincipal() {
 	g.FramesLibres = make([]bool, cantidadFrames)
 	ConfigurarFrames(cantidadFrames)
 
+	g.MutexMetrica = make([]sync.Mutex, g.MemoryConfig.MemorySize*1000) // TODO: tamanioTotalmente arbitrario
+
 	logger.Info("Tamanio Memoria Principal de %d", g.MemoryConfig.MemorySize)
 	logger.Info("Memoria Principal Inicializada con %d con %d frames de %d.",
 		tamanioMemoriaPrincipal, cantidadFrames, tamanioPagina)
@@ -63,8 +65,8 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 	bytesRestantes := tamanioPagina - offset
 
 	if direccionFisica+bytesRestantes > finFrame {
-		logger.Fatal("¡¡¡¡¡¡¡¡¡¡Segment Fault!!!!!!!!!!!!")
-		panic("Segment Fault - Lectura fuera del marco asignado")
+		logger.Fatal("Se está leyendo afuera del frame")
+		// TODO:		panic("Segment Fault - Lectura fuera del marco asignado")
 	}
 
 	pseudocodigoEnBytes := make([]byte, bytesRestantes)
@@ -244,10 +246,86 @@ func ParsearContenido(dumpFile *os.File, contenido string) {
 	}
 } //TODO: rever
 
+func RemoverEspacioMemoria(inicio int, limite int) (err error) {
+	espacioVacio := make([]byte, limite-inicio)
+	if inicio < 0 || limite > len(g.MemoriaPrincipal) {
+		logger.Error("El inicio es menor a cero o el limite excede el tamaño de la memoria principal")
+		return fmt.Errorf("el formato de las direcciones a borrar son incorrectas %v", logger.ErrBadRequest)
+	}
+
+	g.MutexMemoriaPrincipal.Lock()
+	copy(g.MemoriaPrincipal[inicio:limite], espacioVacio)
+	g.MutexMemoriaPrincipal.Unlock()
+
+	return nil
+}
+
+func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
+	var proceso *g.Proceso
+	metricas = g.MetricasProceso{}
+	err = nil
+
+	proceso, err = EliminarDeSlice(pid)
+	if err != nil {
+		return metricas, err
+	}
+	metricas = proceso.Metricas
+	for _, tabla := range proceso.TablaRaiz {
+		LiberarTablaPaginas(tabla, pid)
+	}
+	logger.Info("Se liberó todo para el PID: %d", pid)
+	return
+}
+
+func EliminarDeSlice(pid int) (proceso *g.Proceso, err error) {
+	err = nil
+	g.MutexProcesosPorPID.Lock()
+	proceso = g.ProcesosPorPID[pid]
+	delete(g.ProcesosPorPID, pid)
+	g.MutexProcesosPorPID.Unlock()
+	if proceso == nil {
+		logger.Error("El proceso no está en el Slice de procesos mapeado por PID")
+		return proceso, fmt.Errorf("no hay una instancia de pid \"%d\" en el slice de procesos por PID %v", pid, logger.ErrNoInstance)
+	}
+
+	return
+}
+
+func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
+	err = nil
+
+	if tabla.Subtabla != nil {
+		for indice, subtabla := range tabla.Subtabla {
+			err := LiberarTablaPaginas(subtabla, pid)
+			if err != nil {
+				return err
+			}
+			tabla.Subtabla[indice] = nil
+		}
+		tabla.Subtabla = nil
+	}
+	if tabla.EntradasPaginas != nil {
+		for _, entrada := range tabla.EntradasPaginas {
+			if entrada.EstaPresente {
+				tamanioPagina := g.MemoryConfig.PagSize
+				direccionFisica := entrada.NumeroFrame * tamanioPagina
+				g.CambiarEstadoFrame(pid)
+				err = RemoverEspacioMemoria(direccionFisica, direccionFisica+tamanioPagina)
+				if err != nil {
+					logger.Error("Error al remover espacio del frame: \"%d\" ; %v", entrada.NumeroFrame, err)
+				}
+			}
+			// TODO : si está en swap tambien hay que remover
+		}
+		tabla.EntradasPaginas = nil
+	}
+	return
+}
+
 func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionLectura g.ExitoLecturaMemoria) {
 	return
 }
 
-func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionEscritura g.ExitoEscrituraMemoria) {
+func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionEscritura g.ExitoEdicionMemoria) {
 	return
 }

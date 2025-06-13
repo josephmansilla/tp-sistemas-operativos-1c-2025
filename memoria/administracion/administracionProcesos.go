@@ -3,7 +3,6 @@ package administracion
 import (
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
-	"sync"
 )
 
 func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string) {
@@ -45,8 +44,8 @@ func CargarEntradaMemoria(numeroFrame int, pid int, datosEnBytes []byte) {
 
 // METRICAS PROCESOS
 
-func InicializarMetricas() g.MetricasProceso {
-	metricas := g.MetricasProceso{
+func InicializarMetricas() (metricas g.MetricasProceso) {
+	metricas = g.MetricasProceso{
 		AccesosTablasPaginas:     0,
 		InstruccionesSolicitadas: 0,
 		BajadasSwap:              0,
@@ -54,15 +53,13 @@ func InicializarMetricas() g.MetricasProceso {
 		LecturasDeMemoria:        0,
 		EscriturasDeMemoria:      0,
 	}
-	return metricas
+	return
 }
 
 func IncrementarMetrica(proceso *g.Proceso, funcMetrica g.OperacionMetrica) {
-	var mutexMetrica sync.Mutex
-
-	mutexMetrica.Lock()
+	g.MutexMetrica[proceso.PID].Lock()
 	funcMetrica(&proceso.Metricas)
-	mutexMetrica.Unlock()
+	g.MutexMetrica[proceso.PID].Unlock()
 }
 
 func InformarMetricasProceso(metricasDelProceso g.MetricasProceso) {
@@ -74,7 +71,7 @@ func InformarMetricasProceso(metricasDelProceso g.MetricasProceso) {
 	logger.Info("## LecturasDeMemoria: %d", metricasDelProceso.LecturasDeMemoria)
 	logger.Info("## EscriturasDeMemoria: %d", metricasDelProceso.EscriturasDeMemoria)
 
-}
+} // TODO: borrar
 
 func IncrementarAccesosTablasPaginas(metrica *g.MetricasProceso) {
 	metrica.AccesosTablasPaginas++

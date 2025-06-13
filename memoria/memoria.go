@@ -85,6 +85,7 @@ func main() {
 	//mux.HandleFunc("/memoria/desuspension", utils.DesuspenderProceso)
 
 	mux.HandleFunc("/memoria/dump", conex.MemoriaDump)
+	mux.HandleFunc("/memoria/finalizacionProceso", conex.FinalizacionProceso)
 	// TODO: debe liberar recursos y escructuras y logear metricas
 
 	//mux.HandleFunc("/memoria/frame", utils.algo)
