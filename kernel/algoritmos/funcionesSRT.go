@@ -15,4 +15,6 @@ func SeleccionarSRT() *pcb.PCB {
 		}
 	}
 	return menor
+	
+	//TODO: FALTA DESALOJAR
 }

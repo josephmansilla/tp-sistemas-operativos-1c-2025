@@ -64,28 +64,6 @@ func PlanificadorLargoPlazo() {
 	go ManejadorFinalizacionProcesos()
 }
 
-/*
-TODO:
-Se tendrá una cola NEW que será administrada
-mediante un algoritmo definido por archivo de configuración.
-Estos algoritmos son:
-FIFO y Proceso mas chico primero (siendo mas chico el que menos memoria solicite).
-*/
-
-/*
-func creacionDeProcesoFifo(){
-	//memoria dice si
-	//mandar a ready FIRST() de colaNew
-
-	//memoria dice no
-}
-
-func creacionDeProcesoSJF(){
-	//memoria dice si
-	//mandar a ready MASCHICO() de colaNew
-
-}*/
-
 func ManejadorCreacionProcesos() {
 	logger.Info("Esperando solicitudes de INIT_PROC para creación de procesos")
 	for {
@@ -168,11 +146,11 @@ func agregarProcesoAReady(pid int) {
 	Utils.MutexNuevo.Unlock()
 
 	logger.Info("## (<%d>) Pasa de estado NEW a estado READY", pcbPtr.PID)
-	//SIGNAL A CORTO PLAZO QUE PASO A READY
-	//MANDO PID
-	Utils.NotificarDespachador <- pcbPtr.PID
 
-	// 4) Señal al planificador largo para continuar
+	// 4) Señal al planificador de corto plazo
+	Utils.NotificarDespachador <- pcbPtr.PID //MANDO PID
+
+	// 5) Señal al planificador largo para continuar
 	Utils.SemProcessCreateOK <- struct{}{}
 
 	//MUESTRO LA COLA DE READY PARA VER SI SE AGREGAN CORRECTAMENTE
