@@ -10,7 +10,7 @@ import (
 
 func PasarSwapEntradaPagina(numeroFrame int) {}
 
-func SuspenderProceso(w http.ResponseWriter, r *http.Request) {
+func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
 
@@ -51,7 +51,7 @@ func SacarEntradaPaginaSwap(numeroFrame int) {}
 
 func LiberarEspacioEnSwap(numeroFrame int) {}
 
-func DesuspenderProceso(w http.ResponseWriter, r *http.Request) {
+func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
 

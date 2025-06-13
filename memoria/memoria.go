@@ -88,14 +88,14 @@ func main() {
 	// TODO: USTEDES DEBEN IMPLEMENTAR ESTAS FUNCIONES
 	mux.HandleFunc("/memoria/LeerEntradaPagina", adm.LeerPaginaCompleta)
 	mux.HandleFunc("/memoria/ActualizarEntrada", adm.ActualizarPaginaCompleta)
-
-	//mux.HandleFunc("/memoria/lectura", utils.LecturaEspacio)
+	mux.HandleFunc("/memoria/lectura", conex.LeerEspacioUsuarioHandler)
 	// TODO: debe responder a CPU el valor de una dirección física con el delay indicado en Memory Delay
-	//mux.HandleFunc("/memoria/escritura", utils.EscrituraEspacio)
+	mux.HandleFunc("/memoria/escritura", conex.EscribirEspacioUsuarioHandler)
 	// TODO: recibe PID y tamaño, se crea escructuras, asigna frames y logear.
 	// TODO: debe indicarle al CPU que fue éxitoso con el delay indicado en Memory Delay
-	//mux.HandleFunc("/memoria/suspension", utils.SuspenderProceso)
-	//mux.HandleFunc("/memoria/desuspension", utils.DesuspenderProceso)
+
+	mux.HandleFunc("/memoria/suspension", adm.SuspensionProcesoHandler)
+	mux.HandleFunc("/memoria/desuspension", adm.DesuspensionProcesoHandler)
 
 	mux.HandleFunc("/memoria/dump", conex.MemoriaDumpHandler)
 	mux.HandleFunc("/memoria/finalizacionProceso", conex.FinalizacionProcesoHandler)
