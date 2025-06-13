@@ -20,8 +20,8 @@ func intentarInicializarDesdeSuspReady() bool {
 	}
 
 	proceso := algoritmos.ColaSuspendidoReady.First()
-	exito, err := comunicacion.SolicitarEspacioEnMemoria(proceso.FileName, proceso.ProcessSize)
-	if err != nil || !exito {
+	espacio := comunicacion.SolicitarEspacioEnMemoria(proceso.FileName, proceso.ProcessSize)
+	if espacio < proceso.ProcessSize {
 		logger.Info("No se pudo inicializar proceso desde SUSP.READY PID <%d>", proceso.PID)
 		return false
 	}

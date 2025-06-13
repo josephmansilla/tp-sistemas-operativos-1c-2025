@@ -28,15 +28,23 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 		TiempoEstado:   time.Now(),
 	}
 
-	// Paso 2: Agregar a la cola NEW
+	//Paso 2: Agregar el primero a la cola NEW
 	algoritmos.ColaNuevo.Add(&pcbNuevo)
 	pcb.CambiarEstado(&pcbNuevo, pcb.EstadoNew)
 	logger.Info("## (<%d>) Se crea el Primer proceso - Estado: <%s>", pcbNuevo.PID, pcbNuevo.Estado)
 
-	//PASO 3: Mandar archivo pseudocodigo a Memoria
+	//PASO 3: Intentar crear en Memoria
+	espacio := comunicacion.SolicitarEspacioEnMemoria(fileName, tamanio)
+	if espacio < tamanio {
+		logger.Info("Memoria sin espacio. Abortando")
+		return
+	}
+
+	//PASO 4: Mandar archivo pseudocodigo a Memoria
 	comunicacion.EnviarArchivoMemoria(fileName, tamanio, pid)
 }
 
+// ARRANCAR LARGO PLAZO Y PRIMER PROCESO AL PRESIONAR ENTER
 func PlanificadorLargoPlazo() {
 	logger.Info("Iniciando el planificador de largo plazo")
 
@@ -57,6 +65,14 @@ func PlanificadorLargoPlazo() {
 }
 
 /*
+TODO:
+Se tendrá una cola NEW que será administrada
+mediante un algoritmo definido por archivo de configuración.
+Estos algoritmos son:
+FIFO y Proceso mas chico primero (siendo mas chico el que menos memoria solicite).
+*/
+
+/*
 func creacionDeProcesoFifo(){
 	//memoria dice si
 	//mandar a ready FIRST() de colaNew
@@ -72,44 +88,47 @@ func creacionDeProcesoSJF(){
 
 func ManejadorCreacionProcesos() {
 	logger.Info("Esperando solicitudes de INIT_PROC para creación de procesos")
-
 	for {
+		//SIGNAL llega PROCESO a COLA NEW
 		// Recibir args [filename, size, pid]
 		args := <-Utils.ChannelProcessArguments
 		fileName := args[0]
 		size, _ := strconv.Atoi(args[1])
 		pid, _ := strconv.Atoi(args[2])
 		logger.Info("Solicitud INIT_PROC recibida: filename=%s, size=%d, pid=%d", fileName, size, pid)
-		go func(fn string, sz, p int) {
 
-			// Intentar crear en Memoria
-			/*ok, err := comunicacion.SolicitarCreacionEnMemoria(fn, sz)
-			if err != nil {
-				logger.Warn("Error al consultar Memoria para PID %d: %v", p, err)
+		/*
+			Al llegar un nuevo proceso a esta cola
+			y la misma esté vacía
+			y no se tengan procesos en la cola de SUSP READY,
+			se enviará un pedido a Memoria para inicializar el mismo.
+		*/
+
+		go func(fn string, sz, p int) {
+			if !algoritmos.ColaNuevo.IsEmpty() || !algoritmos.ColaSuspendidoReady.IsEmpty() {
+				//CAMINO NEGATIVO
 			}
-			if !ok {
+
+			//Intentar crear en Memoria
+			espacio := comunicacion.SolicitarEspacioEnMemoria(fn, sz)
+			if espacio < size {
 				logger.Info("Memoria sin espacio, pid=%d queda pendiente", p)
 				// Esperar señal de que un proceso finalizó
 				<-Utils.InitProcess
 				logger.Info("Recibida señal de espacio libre, reintentando pid=%d", p)
-				ok, err = comunicacion.SolicitarCreacionEnMemoria(fn, sz)
-				if err != nil || !ok {
+				espacio = comunicacion.SolicitarEspacioEnMemoria(fn, sz)
+				if espacio < size {
 					logger.Error("Reintento falló para pid=%d, abortando", p)
 					return
 				}
-			}*///CUANDO PEPE HAGA ESO YA SE PUEDE DESCOMENTAR
+			}
 
-			//DICE QUE NO
-			//MANDAR NEW
-
-			//DICE QUE SI
-			//SWITCH FIFO O SJF
-
-			// Pasar de NEW a READY
+			//DICE QUE SI, HAY ESPACIO
+			//MANDAR PROCESO A READY
 			agregarProcesoAReady(p)
 			comunicacion.EnviarArchivoMemoria(fileName, size, pid)
 
-			return //este return hay que sacarlo cuando pepe complete lo suyo
+			//return //este return hay que sacarlo cuando pepe complete lo suyo
 		}(fileName, size, pid)
 	}
 }
@@ -118,8 +137,8 @@ func reintentarCreacion(pid int, fileName string, processSize int) {
 	for {
 		logger.Info("<PID: %v> Esperando liberacion de memoria", pid)
 		<-Utils.InitProcess
-		exito, err := comunicacion.SolicitarEspacioEnMemoria(fileName, processSize)
-		if err == nil && exito {
+		espacio := comunicacion.SolicitarEspacioEnMemoria(fileName, processSize)
+		if espacio > processSize {
 			agregarProcesoAReady(pid)
 			Utils.MutexPuedoCrearProceso.Unlock()
 			break
@@ -131,28 +150,32 @@ func agregarProcesoAReady(pid int) {
 	// 1) Buscar el PCB en NEW con mutex
 	Utils.MutexNuevo.Lock()
 	pcbPtr := BuscarPCBPorPID(pid)
+	Utils.MutexNuevo.Unlock()
 	if pcbPtr == nil {
-		Utils.MutexNuevo.Unlock()
 		logger.Error("agregarProcesoAReady: PCB pid=%d no existe en NEW", pid)
 		return
 	}
 
 	// 2) Agregar a READY
 	Utils.MutexReady.Lock()
-	pcb.CambiarEstado(pcbPtr, pcb.EstadoExecute)
+	pcb.CambiarEstado(pcbPtr, pcb.EstadoReady)
 	algoritmos.ColaReady.Add(pcbPtr)
 	Utils.MutexReady.Unlock()
 
-	logger.Info("## (<%d>) Pasa de estado NEW a estado READY", pcbPtr.PID)
-	Utils.NotificarDespachador <- pcbPtr.PID //SIGNAL QUE PASO A READY. MANDO PID
-
 	// 3) Remover de NEW
+	Utils.MutexNuevo.Lock()
 	algoritmos.ColaNuevo.Remove(pcbPtr)
 	Utils.MutexNuevo.Unlock()
 
-	// 4) Señal al planificador para continuar
+	logger.Info("## (<%d>) Pasa de estado NEW a estado READY", pcbPtr.PID)
+	//SIGNAL A CORTO PLAZO QUE PASO A READY
+	//MANDO PID
+	Utils.NotificarDespachador <- pcbPtr.PID
+
+	// 4) Señal al planificador largo para continuar
 	Utils.SemProcessCreateOK <- struct{}{}
-	//MUESTOR LA COLA DE READY PARA VER SI SE AGREGAN CORRECTAMENTE
+
+	//MUESTRO LA COLA DE READY PARA VER SI SE AGREGAN CORRECTAMENTE
 	MostrarColaReady()
 	//MUESTRO LA COLA NEW PARA VER SI ESTAN VACIAS
 	MostrarColaNew()
@@ -247,22 +270,22 @@ func intentarInicializarDesdeNew() {
 		return
 	}
 
-	pcb := algoritmos.ColaNuevo.First()
-	exito, err := comunicacion.SolicitarEspacioEnMemoria(pcb.FileName, pcb.ProcessSize)
-	if err != nil || !exito {
-		logger.Info("No se pudo inicializar proceso desde NEW PID <%d>", pcb.PID)
+	proceso := algoritmos.ColaNuevo.First()
+	espacio := comunicacion.SolicitarEspacioEnMemoria(proceso.FileName, proceso.ProcessSize)
+	if espacio < proceso.ProcessSize {
+		logger.Info("No se pudo inicializar proceso desde NEW PID <%d>", proceso.PID)
 		return
 	}
 	Utils.MutexNuevo.Lock()
-	algoritmos.ColaNuevo.Remove(pcb)
+	algoritmos.ColaNuevo.Remove(proceso)
 	Utils.MutexNuevo.Unlock()
 
 	Utils.MutexReady.Lock()
-	algoritmos.ColaReady.Add(pcb)
+	algoritmos.ColaReady.Add(proceso)
 	Utils.MutexReady.Unlock()
-	Utils.NotificarDespachador <- pcb.PID
+	Utils.NotificarDespachador <- proceso.PID
 
-	logger.Info("PID <%d> pasó de NEW a READY", pcb.PID)
+	logger.Info("PID <%d> pasó de NEW a READY", proceso.PID)
 }
 
 func BuscarPCBPorPID(pid int) *pcb.PCB {
@@ -283,8 +306,8 @@ func MostrarPCBsEnNew() {
 		return
 	}
 
-	for _, pcb := range algoritmos.ColaReady.Values() {
-		logger.Info("- esto son los PCB en NEW CON PID: %d", pcb.PID)
+	for _, proceso := range algoritmos.ColaReady.Values() {
+		logger.Info("- esto son los PCB en NEW CON PID: %d", proceso.PID)
 	}
 }
 
@@ -297,8 +320,8 @@ func MostrarColaReady() {
 	}
 
 	logger.Info("Contenido de la cola READY:")
-	for _, pcb := range lista {
-		logger.Info(" - PCB EN COLA READY con PID: %d", pcb.PID)
+	for _, proceso := range lista {
+		logger.Info(" - PCB EN COLA READY con PID: %d", proceso.PID)
 	}
 }
 
@@ -311,7 +334,7 @@ func MostrarColaNew() {
 	}
 
 	logger.Info("Contenido de la cola New:")
-	for _, pcb := range lista {
-		logger.Info(" - PCB EN COLA New con PID: %d", pcb.PID)
+	for _, proceso := range lista {
+		logger.Info(" - PCB EN COLA New con PID: %d", proceso.PID)
 	}
 }
