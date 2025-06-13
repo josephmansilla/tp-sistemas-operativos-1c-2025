@@ -29,12 +29,11 @@ type Hilo struct {
 }
 
 type RespuestaMemoria struct {
-	Exito   bool   `json:"exito"`
-	Mensaje string `json:"mensaje"`
+	EspacioLibre int `json:"espacio_libre"`
 }
 
 // ENVIAR ARCHIVO DE PSEUDOCODIGO Y TAMAÑO
-func SolicitarEspacioEnMemoria(fileName string, tamanio int) (bool, error) {
+func SolicitarEspacioEnMemoria(fileName string, tamanio int) int {
 	url := fmt.Sprintf("http://%s:%d/memoria/espaciolibre", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
 
 	mensaje := MensajeAMemoria{
@@ -45,7 +44,6 @@ func SolicitarEspacioEnMemoria(fileName string, tamanio int) (bool, error) {
 	resp, err := data.EnviarDatosConRespuesta(url, mensaje)
 	if err != nil {
 		logger.Error("Error enviando pseudocódigo a Memoria: %s", err.Error())
-		return false, err
 	}
 	defer resp.Body.Close()
 
@@ -53,11 +51,10 @@ func SolicitarEspacioEnMemoria(fileName string, tamanio int) (bool, error) {
 	err = json.NewDecoder(resp.Body).Decode(&rta)
 	if err != nil {
 		logger.Error("Error al decodificar respuesta de Memoria: %s", err.Error())
-		return false, err
 	}
 
-	logger.Info("Respuesta de Memoria: %s", rta.Mensaje)
-	return rta.Exito, nil
+	logger.Info("Memoria dice => Espacio libre: %d", rta.EspacioLibre)
+	return rta.EspacioLibre
 }
 
 // ENVIAR ARCHIVO DE PSEUDOCODIGO Y TAMAÑO
