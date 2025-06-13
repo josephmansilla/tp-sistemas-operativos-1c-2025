@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
+func RecibirMensajeDeCPUHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.DatosDeCPU
 	data.LeerJson(w, r, &mensaje)
 
@@ -66,7 +66,7 @@ func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(respuesta)
 }
 
-func EnviarConfiguracionMemoria(w http.ResponseWriter, r *http.Request) {
+func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
 	// Leer el PID desde el cuerpo del request
 	var pidData struct {
 		PID int `json:"pid"`
@@ -121,7 +121,7 @@ func CargarInstrucciones(pid int, nombreArchivo string) {
 	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", pid, len(InstruccionesPorPID[pid]))
 }
 
-func EnviarEntradaPagina(w http.ResponseWriter, r *http.Request) {
+func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje globals.MensajePedidoTablaCPU
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {

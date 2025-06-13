@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	adm "github.com/sisoputnfrba/tp-golang/memoria/administracion"
@@ -9,6 +10,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -47,11 +49,22 @@ func main() {
 
 	logger.Info("======== Comenzo la ejecucion de Memoria ========")
 
-	fmt.Printf("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
+	logger.Info("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
 
 	// ----------------------------------------------------------
 	// --------- INICIALIZO LAS ESTRUCTURAS NECESARIAS  ---------
 	// ----------------------------------------------------------
+	logger.Error("Escribí exit para finalizar el módulo de Memoria")
+	go func() {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			texto := strings.ToLower(scanner.Text())
+			if texto == "exit" {
+				logger.Info("======== Final de Ejecución memoria ========")
+				os.Exit(0)
+			}
+		}
+	}()
 
 	adm.InicializarMemoriaPrincipal()
 
@@ -60,17 +73,17 @@ func main() {
 	// ------------------------------------------------------
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/memoria/configuracion", conex.EnviarConfiguracionMemoria)
+	mux.HandleFunc("/memoria/configuracion", conex.EnviarConfiguracionMemoriaHandler)
 
-	mux.HandleFunc("/memoria/cpu", conex.RecibirMensajeDeCPU)
-	mux.HandleFunc("/memoria/kernel", conex.RecibirMensajeDeKernel)
-	mux.HandleFunc("/memoria/InicializacionProceso", conex.InicializacionProceso) // TODO: HACER CONEXIONES CON KERNEL DESPUES DEL MERGE
+	mux.HandleFunc("/memoria/cpu", conex.RecibirMensajeDeCPUHandler)
+	mux.HandleFunc("/memoria/kernel", conex.RecibirMensajeDeKernelHandler)
+	mux.HandleFunc("/memoria/InicializacionProceso", conex.InicializacionProcesoHandler) // TODO: HACER CONEXIONES CON KERNEL DESPUES DEL MERGE
 
 	mux.HandleFunc("/memoria/instruccion", conex.ObtenerInstruccion)
 	// TODO: deberia devoler la instruccion que piden
 
-	mux.HandleFunc("/memoria/espaciolibre", conex.ObtenerEspacioLibre)
-	mux.HandleFunc("/memoria/tabla", conex.EnviarEntradaPagina)
+	mux.HandleFunc("/memoria/espaciolibre", conex.ObtenerEspacioLibreHandler)
+	mux.HandleFunc("/memoria/tabla", conex.EnviarEntradaPaginaHandler)
 
 	// TODO: USTEDES DEBEN IMPLEMENTAR ESTAS FUNCIONES
 	mux.HandleFunc("/memoria/LeerEntradaPagina", adm.LeerPaginaCompleta)
@@ -84,8 +97,8 @@ func main() {
 	//mux.HandleFunc("/memoria/suspension", utils.SuspenderProceso)
 	//mux.HandleFunc("/memoria/desuspension", utils.DesuspenderProceso)
 
-	mux.HandleFunc("/memoria/dump", conex.MemoriaDump)
-	mux.HandleFunc("/memoria/finalizacionProceso", conex.FinalizacionProceso)
+	mux.HandleFunc("/memoria/dump", conex.MemoriaDumpHandler)
+	mux.HandleFunc("/memoria/finalizacionProceso", conex.FinalizacionProcesoHandler)
 	// TODO: debe liberar recursos y escructuras y logear metricas
 
 	//mux.HandleFunc("/memoria/frame", utils.algo)
@@ -98,7 +111,5 @@ func main() {
 	if errListenAndServe != nil {
 		panic(errListenAndServe)
 	}
-
-	logger.Info("======== Final de Ejecución memoria ========")
 
 }

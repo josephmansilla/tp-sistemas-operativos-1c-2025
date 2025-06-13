@@ -39,7 +39,7 @@ import (
 	json.NewEncoder(w).Encode(respuesta)
 }*/
 
-func ObtenerEspacioLibre(w http.ResponseWriter, r *http.Request) {
+func ObtenerEspacioLibreHandler(w http.ResponseWriter, r *http.Request) {
 	g.MutexCantidadFramesLibres.Lock()
 	cantFramesLibres := g.CantidadFramesLibres
 	g.MutexCantidadFramesLibres.Unlock()
@@ -58,7 +58,7 @@ func ObtenerEspacioLibre(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ESPACIO DEVUELTO"))
 }
 
-func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
+func RecibirMensajeDeKernelHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje g.DatosRespuestaDeKernel
 
 	data.LeerJson(w, r, &mensaje)
@@ -84,7 +84,7 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(respuesta)
 } // TODO: CAMBIAR CON INICIALIZACIONPROCESO
 
-func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
+func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje g.DatosRespuestaDeKernel
 
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
@@ -114,7 +114,7 @@ func InicializacionProceso(w http.ResponseWriter, r *http.Request) {
 
 // TODO: RESPONDER CON EL NUMERO DE PAGINA DE 1ER NIVEL DEL PROCESO???
 
-func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
+func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 	var mensaje g.FinalizacionProceso
 
@@ -151,7 +151,7 @@ func FinalizacionProceso(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Respuesta devuelta"))
 }
 
-func LeerEspacioUsuario(w http.ResponseWriter, r *http.Request) {
+func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
@@ -186,7 +186,7 @@ func LeerEspacioUsuario(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Respuesta devuelta"))
 }
 
-func EscribirEspacioUsuario(w http.ResponseWriter, r *http.Request) {
+func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
@@ -221,7 +221,7 @@ func EscribirEspacioUsuario(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Respuesta devuelta"))
 }
 
-func MemoriaDump(w http.ResponseWriter, r *http.Request) {
+func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 	var dump g.DatosParaDump
 
 	if err := data.LeerJson(w, r, &dump); err != nil {

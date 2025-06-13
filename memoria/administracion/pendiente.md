@@ -7,8 +7,7 @@
 
 ### Memoria Principal
 
-1) Eliminación de un proceso
-2) Lectura de un espacio
+1) Leer y escribir espacio de usuario
 
 
 Contabilizar las instrucciones solicitadas con obtenerInstrucciones
