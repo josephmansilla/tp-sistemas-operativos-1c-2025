@@ -3,8 +3,6 @@
 2) Desuspensión de un proceso
 
 ### Manejo de Paginación
-1) Enviar Tabla Entera ?? dudo que se haga
-
 
 Contabilizar las instrucciones solicitadas con obtenerInstrucciones
 
