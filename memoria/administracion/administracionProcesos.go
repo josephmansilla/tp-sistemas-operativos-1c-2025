@@ -13,7 +13,7 @@ func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string)
 		// TODO
 		logger.Error("No hay memoria")
 	}
-	nuevoProceso := g.Proceso{
+	nuevoProceso := &g.Proceso{
 		PID:       pid,
 		TablaRaiz: InicializarTablaRaiz(),
 		Metricas:  InicializarMetricas(),
@@ -23,17 +23,11 @@ func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string)
 		logger.Error("Error al leer el pseudocodigo: %v", err)
 	}
 
-	err = AsignarDatosAPaginacion(&nuevoProceso, pseudo)
+	err = AsignarDatosAPaginacion(nuevoProceso, pseudo)
 	if err != nil {
 		logger.Error("Error al asignarDatosAPaginacion %v", err)
 	}
 	OcuparProcesoEnVectorMapeable(pid, nuevoProceso)
-}
-
-func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso g.Proceso) {
-	g.MutexProcesosPorPID.Lock()
-	g.ProcesosPorPID[pid] = &nuevoProceso
-	g.MutexProcesosPorPID.Unlock()
 }
 
 func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
@@ -41,7 +35,7 @@ func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
 	metricas = g.MetricasProceso{}
 	err = nil
 
-	proceso, err = EliminarDeSlice(pid)
+	proceso, err = DesocuparProcesoEnVectorMapeable(pid)
 	if err != nil {
 		return metricas, err
 	}
@@ -53,7 +47,13 @@ func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
 	return
 }
 
-func EliminarDeSlice(pid int) (proceso *g.Proceso, err error) {
+func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso *g.Proceso) {
+	g.MutexProcesosPorPID.Lock()
+	g.ProcesosPorPID[pid] = nuevoProceso
+	g.MutexProcesosPorPID.Unlock()
+}
+
+func DesocuparProcesoEnVectorMapeable(pid int) (proceso *g.Proceso, err error) {
 	err = nil
 	g.MutexProcesosPorPID.Lock()
 	proceso = g.ProcesosPorPID[pid]

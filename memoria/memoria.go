@@ -44,8 +44,6 @@ func main() {
 	}
 
 	var portMemory = g.MemoryConfig.PortMemory
-	g.CantidadNiveles = g.MemoryConfig.NumberOfLevels
-	g.EntradasPorPagina = g.MemoryConfig.EntriesPerPage
 
 	logger.Info("======== Comenzo la ejecucion de Memoria ========")
 

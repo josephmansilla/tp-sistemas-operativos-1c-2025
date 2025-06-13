@@ -1,7 +1,5 @@
 package globals
 
-var ProcesosSuspendidos map[int]ProcesoSuspendido
-
 type ProcesoSuspendido struct {
 	// 	PID 			int `json:"pid"` TODO: este voy a usar para mapear el vector
 	DireccionFisica string `json:"direccion_fisica"`

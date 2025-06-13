@@ -16,13 +16,15 @@ func InicializarTablaRaiz() g.TablaPaginas {
 }
 
 func CrearIndicePara(nroPagina int) (indices []int) {
+	cantidadNiveles := g.MemoryConfig.NumberOfLevels
+	cantidadEntradasPorTabla := g.MemoryConfig.EntriesPerPage
 
-	indices = make([]int, g.CantidadNiveles)
+	indices = make([]int, cantidadNiveles)
 	divisor := 1
 
-	for i := g.CantidadNiveles - 1; i >= 0; i-- {
-		indices[i] = (nroPagina / divisor) % g.EntradasPorPagina
-		divisor *= g.EntradasPorPagina
+	for i := cantidadNiveles - 1; i >= 0; i-- {
+		indices[i] = (nroPagina / divisor) % cantidadEntradasPorTabla
+		divisor *= cantidadEntradasPorTabla
 	}
 	return
 }
