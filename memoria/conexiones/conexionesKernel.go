@@ -155,7 +155,7 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
-	var mensaje g.AccesoAMemoria
+	var mensaje g.LecturaProceso
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
 		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
@@ -166,7 +166,10 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	direccionFisica := mensaje.DireccionFisica
 	tamanioALeer := mensaje.TamanioARecorrer
 
-	respuesta := adm.LeerEspacioMemoria(pid, direccionFisica, tamanioALeer)
+	respuesta, err := adm.LeerEspacioMemoria(pid, direccionFisica, tamanioALeer)
+	if err != nil {
+		// TODO:::::: -------------------------------------------------------------
+	}
 
 	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
 
@@ -190,7 +193,7 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
-	var mensaje g.AccesoAMemoria
+	var mensaje g.EscrituraProceso
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
 		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
@@ -200,10 +203,14 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	pid := mensaje.PID
 	direccionFisica := mensaje.DireccionFisica
 	tamanioALeer := mensaje.TamanioARecorrer
+	datos := mensaje.DatosAEscribir
 
-	respuesta := adm.EscribirEspacioMemoria(pid, direccionFisica, tamanioALeer)
+	respuesta, err := adm.EscribirEspacioMemoria(pid, direccionFisica, tamanioALeer, datos)
+	if err != nil {
+		// TODO : ======================================
+	}
 
-	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
+	logger.Info("## PID: <%d> - <Escritura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
 
 	time.Sleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Second)
 
@@ -244,7 +251,7 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 
 	contenido := adm.RealizarDumpMemoria(dump.PID)
 	// TODO: verificacion esta vacio
-	adm.ParsearContenido(dumpFile, contenido)
+	g.ParsearContenido(dumpFile, contenido)
 
 	logger.Info("## Archivo Dump fue creado con EXITO")
 	w.WriteHeader(http.StatusOK)

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
-	"os"
-	"sort"
 	"sync"
 )
 
@@ -109,7 +107,7 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	indices := CrearIndicePara(numeroPagina)
 	entrada, err := BuscarEntradaPagina(proceso, indices)
 	if err != nil {
-		logger.Error("No se pudo encontrar la entrada de pagina")
+		logger.Error("No se pudo encontrar la entrada de pagina: %v", err)
 		panic("AAAAAAAAAAAAAAAAAAAAAAAAA") // TODO: ver que hacer con este error
 	}
 	if entrada != nil {
@@ -119,132 +117,6 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 
 	IncrementarMetrica(proceso, IncrementarEscrituraDeMemoria)
 }
-
-func RealizarDumpMemoria(pid int) (resultado string) {
-	g.MutexProcesosPorPID.Lock()
-	proceso := g.ProcesosPorPID[pid]
-	g.MutexProcesosPorPID.Unlock()
-
-	if proceso == nil {
-		logger.Fatal("No existe el proceso solicitado para DUMP")
-		return "Proceso no encontrado 😭🙏"
-		// TODO:
-	}
-
-	resultado = fmt.Sprintf("## Dump De Memoria Para PID: %d\n\n", pid)
-
-	var entradas []g.EntradaDump
-
-	entradas = RecolectarEntradasProceso(*proceso)
-
-	tamanioPagina := g.MemoryConfig.PagSize
-	for _, e := range entradas {
-		inicio := e.NumeroFrame * tamanioPagina
-		fin := inicio + tamanioPagina
-
-		if fin > len(g.MemoriaPrincipal) {
-			logger.Error("Acceso fuera de rango al hacer dump del frame %d con PID: %d", e.NumeroFrame, pid)
-			continue
-			// TODO: ver que hacer
-		}
-
-		g.MutexMemoriaPrincipal.Lock()
-		datos := g.MemoriaPrincipal[inicio:fin]
-		g.MutexMemoriaPrincipal.Unlock()
-
-		datosEnString := string(datos)
-		resultado += fmt.Sprintf("Direccion Fisica: %d | Frame: %d | Datos: %q\n", e.DireccionFisica, e.NumeroFrame, datosEnString)
-	}
-
-	return
-}
-
-func RecolectarEntradasProceso(proceso g.Proceso) (resultados []g.EntradaDump) {
-	cantidadEntradas := g.MemoryConfig.EntriesPerPage
-	var wg sync.WaitGroup
-	canal := make(chan g.EntradaDump, cantidadEntradas)
-
-	for _, subtabla := range proceso.TablaRaiz {
-		wg.Add(1)
-		go func(st *g.TablaPagina) {
-			defer wg.Done()
-			RecorrerTablaPaginaDeFormaConcurrente(st, canal)
-		}(subtabla)
-	}
-
-	go func() {
-		wg.Wait()
-		close(canal)
-	}()
-
-	for entrada := range canal {
-		resultados = append(resultados, entrada)
-	}
-	// TODO: NO ES NECESARIO Y LO PUEDO BORRAR QUEDA PENDIENTE DEJARLO O NO
-	sort.Slice(resultados, func(i, j int) bool {
-		return resultados[i].DireccionFisica < resultados[j].DireccionFisica
-	})
-
-	return
-}
-
-func RecorrerTablaPaginaDeFormaConcurrente(tabla *g.TablaPagina, canal chan g.EntradaDump) {
-
-	if tabla.Subtabla != nil {
-		for _, subTabla := range tabla.Subtabla {
-			RecorrerTablaPaginaDeFormaConcurrente(subTabla, canal)
-		}
-		return
-	}
-	for i, entrada := range tabla.EntradasPaginas {
-		if tabla.EntradasPaginas[i].EstaPresente {
-			canal <- g.EntradaDump{
-				DireccionFisica: g.MemoryConfig.PagSize * entrada.NumeroFrame,
-				NumeroFrame:     entrada.NumeroFrame,
-			}
-		}
-	}
-}
-
-func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]g.EntradaDump) {
-
-	if tabla.Subtabla != nil {
-		for _, subTabla := range tabla.Subtabla {
-			RecorrerTablaPagina(subTabla, resultados)
-		}
-		return
-	}
-	for i, entrada := range tabla.EntradasPaginas {
-		if tabla.EntradasPaginas[i].EstaPresente {
-			*resultados = append(*resultados, g.EntradaDump{
-				DireccionFisica: g.MemoryConfig.PagSize * entrada.NumeroFrame,
-				NumeroFrame:     entrada.NumeroFrame,
-			})
-		}
-	}
-} //TODO: a usar despus
-
-// TODO: para probar
-func DumpGlobal() (resultado string) {
-	g.MutexProcesosPorPID.Lock()
-	for pid := range g.ProcesosPorPID {
-		g.MutexProcesosPorPID.Unlock()
-
-		resultado += RealizarDumpMemoria(pid) + "\n"
-
-		g.MutexProcesosPorPID.Lock()
-	}
-	g.MutexProcesosPorPID.Unlock()
-
-	return
-}
-
-func ParsearContenido(dumpFile *os.File, contenido string) {
-	_, err := dumpFile.WriteString(contenido)
-	if err != nil {
-		logger.Error("Error al escribir contenido en el archivo dump: %v", err)
-	}
-} //TODO: rever
 
 func RemoverEspacioMemoria(inicio int, limite int) (err error) {
 	espacioVacio := make([]byte, limite-inicio)
@@ -260,72 +132,147 @@ func RemoverEspacioMemoria(inicio int, limite int) (err error) {
 	return nil
 }
 
-func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
-	var proceso *g.Proceso
-	metricas = g.MetricasProceso{}
+func SeleccionarEntradas(pid int, direccionFisica int, tamanioALeer int, entradasNecesarias int) (entradas []g.EntradaPagina, err error) {
+	tamanioPagina := g.MemoryConfig.PagSize
+	paginaInicio := direccionFisica / tamanioPagina
 	err = nil
 
-	proceso, err = EliminarDeSlice(pid)
-	if err != nil {
-		return metricas, err
-	}
-	metricas = proceso.Metricas
-	for _, tabla := range proceso.TablaRaiz {
-		LiberarTablaPaginas(tabla, pid)
-	}
-	logger.Info("Se liberó todo para el PID: %d", pid)
-	return
-}
-
-func EliminarDeSlice(pid int) (proceso *g.Proceso, err error) {
-	err = nil
 	g.MutexProcesosPorPID.Lock()
-	proceso = g.ProcesosPorPID[pid]
-	delete(g.ProcesosPorPID, pid)
+	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
 	if proceso == nil {
-		logger.Error("El proceso no está en el Slice de procesos mapeado por PID")
-		return proceso, fmt.Errorf("no hay una instancia de pid \"%d\" en el slice de procesos por PID %v", pid, logger.ErrNoInstance)
+		return nil, fmt.Errorf("no existe el proceso con el PID: %d ; %v", pid, logger.ErrNoInstance)
 	}
 
-	return
-}
+	for i := 0; i < entradasNecesarias; i++ {
+		numeroPagina := paginaInicio + i
+		indices := CrearIndicePara(numeroPagina)
 
-func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
-	err = nil
-
-	if tabla.Subtabla != nil {
-		for indice, subtabla := range tabla.Subtabla {
-			err := LiberarTablaPaginas(subtabla, pid)
-			if err != nil {
-				return err
-			}
-			tabla.Subtabla[indice] = nil
+		entrada, err := BuscarEntradaPagina(proceso, indices)
+		if err != nil {
+			return nil, fmt.Errorf("error al buscar la entrada de pagina: %d de PID %d; %v", numeroPagina, pid, err)
 		}
-		tabla.Subtabla = nil
-	}
-	if tabla.EntradasPaginas != nil {
-		for _, entrada := range tabla.EntradasPaginas {
-			if entrada.EstaPresente {
-				tamanioPagina := g.MemoryConfig.PagSize
-				direccionFisica := entrada.NumeroFrame * tamanioPagina
-				g.CambiarEstadoFrame(pid)
-				err = RemoverEspacioMemoria(direccionFisica, direccionFisica+tamanioPagina)
-				if err != nil {
-					logger.Error("Error al remover espacio del frame: \"%d\" ; %v", entrada.NumeroFrame, err)
-				}
-			}
-			// TODO : si está en swap tambien hay que remover
+		if entrada == nil {
+			return nil, fmt.Errorf("error al encontrar la entrada de pagina: %d de PID %d; %v", numeroPagina, pid, err)
 		}
-		tabla.EntradasPaginas = nil
+		if !entrada.EstaPresente {
+			// TODO: BUSCAR DE SWAPPPP ====================================================
+		}
+		entradas = append(entradas, *entrada)
 	}
+
 	return
 }
 
-func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionLectura g.ExitoLecturaMemoria) {
-	return
+func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionLectura g.ExitoLecturaMemoria, err error) {
+	confirmacionLectura = g.ExitoLecturaMemoria{Exito: err, DatosAEnviar: ""}
+
+	entradasNecesarias, err := g.CalcularCantidadEntradasATraer(tamanioALeer)
+	if err != nil {
+		return confirmacionLectura, err
+	}
+
+	entradas, err := SeleccionarEntradas(pid, direccionFisica, tamanioALeer, entradasNecesarias)
+	if err != nil {
+		return confirmacionLectura, err
+	}
+
+	bytesRestantes := tamanioALeer
+	cant := len(entradas)
+	datos := make([]byte, tamanioALeer)
+
+	for i, entrada := range entradas {
+		inicioLectura, finLectura, err := LogicaRecorrerMemoria(i, cant, entrada, direccionFisica, bytesRestantes)
+		if err != nil {
+			return confirmacionLectura, err
+		}
+
+		g.MutexMemoriaPrincipal.Lock()
+		datos = append(datos, g.MemoriaPrincipal[inicioLectura:finLectura]...)
+		g.MutexMemoriaPrincipal.Unlock()
+
+		bytesRestantes -= finLectura - inicioLectura
+		if bytesRestantes <= 0 {
+			break
+		}
+	}
+	return g.ExitoLecturaMemoria{Exito: nil, DatosAEnviar: string(datos)}, nil
 }
 
-func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionEscritura g.ExitoEdicionMemoria) {
-	return
+func LogicaRecorrerMemoria(i int, cantEntradas int, entrada g.EntradaPagina, dirF int, bytesRestantes int) (inicio int, limite int, err error) {
+	tamTotal := g.MemoryConfig.MemorySize
+	tamPag := g.MemoryConfig.PagSize
+	offsetLogico := dirF % tamPag
+
+	base := entrada.NumeroFrame * tamPag
+
+	if i == 0 { // PARA EL PRIMER FRAME
+		var delta int
+		if bytesRestantes <= tamPag { // EN CASO DE QUE LOS BYTESRESTANTES SEAN MENORES A LA ENTRADA
+			delta = bytesRestantes
+		} else {
+			delta = tamPag
+		}
+		inicio = base + offsetLogico // BASE DE LA ENTRADA + POSIBLE DESPLAZAMIENTO
+		limite = min(base+tamPag, inicio+delta)
+		// ELIJO ENTRE EL LIMITE DE LA ENTRADA O EN CASO DE QUE SE CUMPLA EL PRIMER IF: HASTA UN LIMITE MENOR
+		// QUE EL LIMITE DE LA ENTRADA
+	} else if i == cantEntradas-1 { // PARA EL ÙLTIMO FRAME
+		inicio = base
+		limite = inicio + bytesRestantes
+	} else { // PARA LOS CASOS INTERMEDIOS: NO DEBERÌAN ENTRAR SI LOS BYTES RESANTE ESTÀN CORRECTAMENTE CALCULADOS
+		inicio = base
+		limite = base + tamPag
+	}
+
+	if inicio >= tamTotal || limite > tamTotal {
+		err = logger.ErrSegmentFault
+		return 0, 0, err
+	}
+
+	return inicio, limite, nil
 }
+
+func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int, datosAEscribir string) (confirmacionEscritura g.ExitoEdicionMemoria, err error) {
+	confirmacionEscritura = g.ExitoEdicionMemoria{Exito: err, Booleano: false}
+
+	entradasNecesarias, err := g.CalcularCantidadEntradasATraer(tamanioALeer)
+	if err != nil {
+		return confirmacionEscritura, err
+	}
+
+	entradas, err := SeleccionarEntradas(pid, direccionFisica, tamanioALeer, entradasNecesarias)
+	if err != nil {
+		return confirmacionEscritura, err
+	}
+
+	datosEnBytes := []byte(datosAEscribir)
+	cant := len(entradas)
+	bytesRestantes := tamanioALeer
+	bytesEscritos := 0
+
+	for i, entrada := range entradas {
+		inicioEscritura, finEscritura, err := LogicaRecorrerMemoria(i, cant, entrada, direccionFisica, bytesRestantes)
+		cantBytes := finEscritura - inicioEscritura
+		if err != nil {
+			return confirmacionEscritura, err
+		}
+
+		inicioDatos := bytesEscritos
+		finDatos := inicioDatos + cantBytes
+
+		g.MutexMemoriaPrincipal.Lock()
+		copy(g.MemoriaPrincipal[inicioEscritura:finEscritura], datosEnBytes[inicioDatos:finDatos])
+		g.MutexMemoriaPrincipal.Unlock()
+
+		entrada.FueModificado = true
+
+		bytesEscritos += cantBytes
+		bytesRestantes -= cantBytes
+		if bytesRestantes <= 0 {
+			break
+		}
+	}
+	return g.ExitoEdicionMemoria{Exito: err, Booleano: true}, nil
+
+} //TODO: err handling

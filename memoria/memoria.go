@@ -86,8 +86,8 @@ func main() {
 	mux.HandleFunc("/memoria/tabla", conex.EnviarEntradaPaginaHandler)
 
 	// TODO: USTEDES DEBEN IMPLEMENTAR ESTAS FUNCIONES
-	mux.HandleFunc("/memoria/LeerEntradaPagina", adm.LeerPaginaCompleta)
-	mux.HandleFunc("/memoria/ActualizarEntrada", adm.ActualizarPaginaCompleta)
+	mux.HandleFunc("/memoria/LeerEntradaPagina", adm.LeerPaginaCompletaHandler)
+	mux.HandleFunc("/memoria/ActualizarEntrada", adm.ActualizarPaginaCompletaHandler)
 	mux.HandleFunc("/memoria/lectura", conex.LeerEspacioUsuarioHandler)
 	// TODO: debe responder a CPU el valor de una dirección física con el delay indicado en Memory Delay
 	mux.HandleFunc("/memoria/escritura", conex.EscribirEspacioUsuarioHandler)
