@@ -25,11 +25,11 @@ type PCB struct {
 	ME             map[string]int
 	MT             map[string]float64 // Tiempo en milisegundos con decimales por cada estado
 	FileName       string             // nombre de archivo de pseudoCodigo
-	ProcessSize    int
-	EstimadoRafaga float64 // Para SJF/SRT
-	RafagaRestante int     // Para SRT
-	Estado         string
-	TiempoEstado   time.Time //Saber cuanto estuvo en un estado reciente
+	ProcessSize    int                //tamaño en memoria
+	EstimadoRafaga float64            // Para SJF/SRT
+	RafagaRestante int                // Para SRT
+	Estado         string             //Estado actual
+	TiempoEstado   time.Time          //Saber cuanto estuvo en un estado reciente
 }
 
 //Ej ME: "ready": 3 → el proceso estuvo 3 veces en el estado listo.

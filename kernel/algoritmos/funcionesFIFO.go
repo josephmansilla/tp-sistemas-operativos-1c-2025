@@ -55,7 +55,6 @@ func (c *Cola[T]) Size() int {
 	return len(c.elements)
 }
 
-// TODO: Bonito pero quizás no está bueno que cualquiera pueda hacer cualquier cosa con la cola
 func (c *Cola[T]) Do(f func(T)) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()

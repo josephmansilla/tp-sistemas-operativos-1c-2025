@@ -108,11 +108,20 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 		}
 		logger.Info("## (<%d>) Se crea el proceso - Estado: NEW", pid)
 
-		// Encolar en NEW con protección
-		Utils.MutexNuevo.Lock()
-		algoritmos.ColaNuevo.Add(&pcbNuevo)
-		Utils.MutexNuevo.Unlock()
-		logger.Debug("PCB <%d> añadido a NEW", pid)
+		// Encolar en NEW segun algoritmo de ingreso
+		switch globals.KConfig.ReadyIngressAlgorithm {
+		case "FIFO":
+			Utils.MutexNuevo.Lock()
+			algoritmos.ColaNuevo.Add(&pcbNuevo)
+			Utils.MutexNuevo.Unlock()
+			logger.Info("PCB <%d> añadido a NEW", pid)
+		case "PMCP":
+			algoritmos.AddPMCP(&pcbNuevo)
+			logger.Info("PCB <%d> añadido a NEW", pid)
+		default:
+			logger.Error("Algoritmo de ingreso desconocido")
+			return
+		}
 
 		// Notificar al planificador de largo plazo
 		args := []string{
