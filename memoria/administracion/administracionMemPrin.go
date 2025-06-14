@@ -67,14 +67,17 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, taman
 	cantidadInstrucciones := 0
 
 	for scanner.Scan() {
-		linea := scanner.Text()
-		logger.Info("Línea leída: %s", linea)
-		stringEnBytes = append(stringEnBytes, []byte(linea)...)
+		lineaEnString := scanner.Text()
+		logger.Info("Línea leída: %s", lineaEnString)
+		lineaEnBytes := []byte(lineaEnString)
 
-		if strings.TrimSpace(linea) == "EOF" {
+		stringEnBytes = append(stringEnBytes, lineaEnBytes...)
+		proceso.OffsetInstrucciones[cantidadInstrucciones] = len(stringEnBytes)
+		cantidadInstrucciones++ // TODO: si los tests cuentan al EOF como instruccion queda así
+
+		if strings.TrimSpace(lineaEnString) == "EOF" {
 			break
 		}
-		cantidadInstrucciones++
 	}
 	if err := scanner.Err(); err != nil {
 		logger.Error("Error al leer el archivo: %s", err)

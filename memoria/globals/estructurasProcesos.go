@@ -1,9 +1,10 @@
 package globals
 
 type Proceso struct {
-	PID       int             `json:"pid"`
-	TablaRaiz TablaPaginas    `json:"tabla_paginas"`
-	Metricas  MetricasProceso `json:"metricas_proceso"`
+	PID                 int             `json:"pid"`
+	TablaRaiz           TablaPaginas    `json:"tabla_paginas"`
+	Metricas            MetricasProceso `json:"metricas_proceso"`
+	OffsetInstrucciones map[int]int     `json:"offset_instrucciones"`
 }
 
 type Ocupante struct {

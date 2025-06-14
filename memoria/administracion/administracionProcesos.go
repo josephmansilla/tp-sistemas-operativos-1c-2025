@@ -15,9 +15,10 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 		// return err
 	}
 	nuevoProceso := &g.Proceso{
-		PID:       pid,
-		TablaRaiz: InicializarTablaRaiz(),
-		Metricas:  InicializarMetricas(),
+		PID:                 pid,
+		TablaRaiz:           InicializarTablaRaiz(),
+		Metricas:            InicializarMetricas(),
+		OffsetInstrucciones: make(map[int]int),
 	}
 	pseudo, err := LecturaPseudocodigo(nuevoProceso, nombreArchPseudocodigo, tamanioProceso)
 	if err != nil {
