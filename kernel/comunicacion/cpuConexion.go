@@ -76,3 +76,26 @@ func EnviarContextoCPU(id string, pcb *pcb.PCB) {
 		return
 	}
 }
+
+func AvisarDesalojoCPU(id string, pcb *pcb.PCB) {
+	globals.CPUMu.Lock()
+	cpuData, ok := globals.CPUs[id]
+	for !ok {
+		globals.CPUCond.Wait()
+		cpuData, ok = globals.CPUs[id]
+	}
+	globals.CPUMu.Unlock()
+
+	url := fmt.Sprintf("http://%s:%d/cpu/interrupcion", cpuData.Ip, cpuData.Puerto)
+
+	mensaje := MensajeACPU{
+		PID: pcb.PID,
+	}
+	logger.Info("Enviando INTERRUPCION PID <%d> y PC <%d> a CPU", mensaje.PID, mensaje.PC)
+
+	err := data.EnviarDatos(url, mensaje)
+	if err != nil {
+		logger.Info("Error enviando INTERRUPCION a CPU: %s", err.Error())
+		return
+	}
+}

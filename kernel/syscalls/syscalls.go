@@ -105,6 +105,8 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 			MT:             make(map[string]float64),
 			EstimadoRafaga: estimado,
 			RafagaRestante: 0,
+			TiempoEstado:   time.Now(),
+			CpuID:          "",
 		}
 		logger.Info("## (<%d>) Se crea el proceso - Estado: NEW", pid)
 
