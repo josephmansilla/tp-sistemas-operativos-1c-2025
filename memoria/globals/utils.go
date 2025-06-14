@@ -14,6 +14,10 @@ func ParsearContenido(dumpFile *os.File, contenido string) {
 	}
 } //TODO: rever
 
+func ConversionEnBytes(stringazo string) []byte {
+	return []byte(stringazo)
+}
+
 func CalcularEjecutarSleep(tiempoTranscurrido time.Duration, retraso time.Duration) {
 	tiempoRestante := retraso - tiempoTranscurrido
 	if tiempoRestante < retraso {

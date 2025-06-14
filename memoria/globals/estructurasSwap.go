@@ -1,14 +1,23 @@
 package globals
 
-var ProcesosSuspendidos map[int]ProcesoSuspendido
+type SwapProceso struct {
+	PID                   int `json:"pid"`
+	Inicio                int `json:"inicio"`
+	Fin                   int `json:"fin"`
+	EntradasSwap          int `json:"entradas_swap"`
+	EntradasTotales       int `json:"entradas_totales"`
+	TamanioTotalBytes     int `json:"tamanio_total_bytes"`
+	TamanioTotalSwapBytes int `json:"tamanio_total_swap_bytes"`
+	PunteroLectura        int `json:"puntero_lectura"`
+	PunteroEstructura     int `json:"puntero_estructura"`
+	UltimoAcceso          int `json:"ultimo_acceso"`
+}
 
-type ProcesoSuspendido struct {
-	// 	PID 			int `json:"pid"` TODO: este voy a usar para mapear el vector
-	DireccionFisica string `json:"direccion_fisica"`
-	TamanioProceso  string `json:"tamanio_proceso"`
-	Base            int    `json:"base"`
-	Limite          int    `json:"limite"`
-	// TODO: ver que mas agrego
+type EntradaSwap struct {
+	NumeroPagina int    `json:"numero_pagina"`
+	OffsetSwap   int    `json:"offset_swap"`
+	FrameSwap    []byte `json:"frame_swap"`
+	Presente     bool   `json:"presente"`
 }
 
 type SuspensionProceso struct {

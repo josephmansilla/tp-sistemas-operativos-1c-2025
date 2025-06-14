@@ -8,40 +8,38 @@ import (
 	"sync"
 )
 
-func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string) {
+func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo string) {
 	if !TieneTamanioNecesario(tamanioProceso) {
-		// TODO
+		// TODO: MANDAMOS A SWAP UN PROCESO?
 		logger.Error("No hay memoria")
+		// return err
 	}
-	nuevoProceso := g.Proceso{
+	nuevoProceso := &g.Proceso{
 		PID:       pid,
 		TablaRaiz: InicializarTablaRaiz(),
 		Metricas:  InicializarMetricas(),
 	}
-	pseudo, err := LecturaPseudocodigo(archivoPseudocodigo)
+	pseudo, err := LecturaPseudocodigo(nuevoProceso, nombreArchPseudocodigo, tamanioProceso)
 	if err != nil {
 		logger.Error("Error al leer el pseudocodigo: %v", err)
 	}
 
-	err = AsignarDatosAPaginacion(&nuevoProceso, pseudo)
+	err = AsignarDatosAPaginacion(nuevoProceso, pseudo)
 	if err != nil {
 		logger.Error("Error al asignarDatosAPaginacion %v", err)
 	}
-	OcuparProcesoEnVectorMapeable(pid, nuevoProceso)
-}
 
-func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso g.Proceso) {
 	g.MutexProcesosPorPID.Lock()
-	g.ProcesosPorPID[pid] = &nuevoProceso
+	g.ProcesosPorPID[pid] = nuevoProceso
 	g.MutexProcesosPorPID.Unlock()
-}
+} // TODO: le falta el err handling
 
 func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
 	var proceso *g.Proceso
 	metricas = g.MetricasProceso{}
 	err = nil
 
-	proceso, err = EliminarDeSlice(pid)
+	proceso, err = DesocuparProcesoEnVectorMapeable(pid)
 	if err != nil {
 		return metricas, err
 	}
@@ -53,7 +51,7 @@ func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
 	return
 }
 
-func EliminarDeSlice(pid int) (proceso *g.Proceso, err error) {
+func DesocuparProcesoEnVectorMapeable(pid int) (proceso *g.Proceso, err error) {
 	err = nil
 	g.MutexProcesosPorPID.Lock()
 	proceso = g.ProcesosPorPID[pid]
@@ -91,8 +89,8 @@ func RealizarDumpMemoria(pid int) (resultado string) {
 
 		if fin > len(g.MemoriaPrincipal) {
 			logger.Error("Acceso fuera de rango al hacer dump del frame %d con PID: %d", e.NumeroFrame, pid)
+			fin = len(g.MemoriaPrincipal) - 1
 			continue
-			// TODO: ver que hacer
 		}
 
 		g.MutexMemoriaPrincipal.Lock()
@@ -126,11 +124,12 @@ func RecolectarEntradasProceso(proceso g.Proceso) (resultados []g.EntradaDump) {
 	for entrada := range canal {
 		resultados = append(resultados, entrada)
 	}
+
 	// TODO: NO ES NECESARIO Y LO PUEDO BORRAR QUEDA PENDIENTE DEJARLO O NO
 	sort.Slice(resultados, func(i, j int) bool {
 		return resultados[i].DireccionFisica < resultados[j].DireccionFisica
 	})
-
+	// TODO:
 	return
 }
 
@@ -170,7 +169,6 @@ func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]g.EntradaDump) {
 	}
 } //TODO: a usar despues
 
-// TODO: para probar
 func DumpGlobal() (resultado string) {
 	g.MutexProcesosPorPID.Lock()
 	for pid := range g.ProcesosPorPID {
@@ -185,8 +183,6 @@ func DumpGlobal() (resultado string) {
 	return
 }
 
-// METRICAS PROCESOS
-
 func InicializarMetricas() (metricas g.MetricasProceso) {
 	metricas = g.MetricasProceso{
 		AccesosTablasPaginas:     0,
@@ -199,38 +195,27 @@ func InicializarMetricas() (metricas g.MetricasProceso) {
 	return
 }
 
-func IncrementarMetrica(proceso *g.Proceso, funcMetrica g.OperacionMetrica) {
+func IncrementarMetrica(proceso *g.Proceso, cantidad int, funcMetrica g.OperacionMetrica) {
 	g.MutexMetrica[proceso.PID].Lock()
-	funcMetrica(&proceso.Metricas)
+	funcMetrica(&proceso.Metricas, cantidad)
 	g.MutexMetrica[proceso.PID].Unlock()
-}
+} // TODO: ES REALMENTE NECESARIO?
 
-func InformarMetricasProceso(metricasDelProceso g.MetricasProceso) {
-
-	logger.Info("## AccesosTablasPaginas: %d", metricasDelProceso.AccesosTablasPaginas)
-	logger.Info("## InstruccionesSolicitadas: %d", metricasDelProceso.InstruccionesSolicitadas)
-	logger.Info("## BajadasSwap: %d", metricasDelProceso.BajadasSwap)
-	logger.Info("## SubidasMP: %d", metricasDelProceso.SubidasMP)
-	logger.Info("## LecturasDeMemoria: %d", metricasDelProceso.LecturasDeMemoria)
-	logger.Info("## EscriturasDeMemoria: %d", metricasDelProceso.EscriturasDeMemoria)
-
-} // TODO: borrar
-
-func IncrementarAccesosTablasPaginas(metrica *g.MetricasProceso) {
-	metrica.AccesosTablasPaginas++
+func IncrementarAccesosTablasPaginas(metrica *g.MetricasProceso, cantidad int) {
+	metrica.AccesosTablasPaginas += cantidad
 }
-func IncrementarInstruccionesSolicitadas(metrica *g.MetricasProceso) {
-	metrica.InstruccionesSolicitadas++
+func IncrementarInstruccionesSolicitadas(metrica *g.MetricasProceso, cantidad int) {
+	metrica.InstruccionesSolicitadas += cantidad
 }
-func IncrementarBajadasSwap(metrica *g.MetricasProceso) {
-	metrica.BajadasSwap++
+func IncrementarBajadasSwap(metrica *g.MetricasProceso, cantidad int) {
+	metrica.BajadasSwap += cantidad
 }
-func IncrementarSubidasMP(metrica *g.MetricasProceso) {
-	metrica.SubidasMP++
+func IncrementarSubidasMP(metrica *g.MetricasProceso, cantidad int) {
+	metrica.SubidasMP += cantidad
 }
-func IncrementarLecturaDeMemoria(metrica *g.MetricasProceso) {
-	metrica.LecturasDeMemoria++
+func IncrementarLecturaDeMemoria(metrica *g.MetricasProceso, cantidad int) {
+	metrica.LecturasDeMemoria += cantidad
 }
-func IncrementarEscrituraDeMemoria(metrica *g.MetricasProceso) {
-	metrica.EscriturasDeMemoria++
+func IncrementarEscrituraDeMemoria(metrica *g.MetricasProceso, cantidad int) {
+	metrica.EscriturasDeMemoria += cantidad
 }

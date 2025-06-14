@@ -7,10 +7,6 @@ type DatosDeCPU struct {
 	PC  int `json:"pc"`
 }
 
-type DatosParaCPU struct {
-	// TODO
-}
-
 type ContextoDeCPU struct {
 	PID int `json:"pid"`
 	PC  int `json:"pc"`

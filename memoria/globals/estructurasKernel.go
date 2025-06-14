@@ -2,8 +2,6 @@ package globals
 
 var RespuestaKernel DatosRespuestaDeKernel
 
-// var Kernel DatosConsultaDeKernel
-
 type DatosConsultaDeKernel struct {
 	PID            int `json:"pid"`
 	TamanioMemoria int `json:"tamanio_memoria"`
@@ -36,10 +34,10 @@ type ExitoLecturaMemoria struct {
 }
 
 type EscrituraProceso struct {
-	PID              int 	`json:"pid"`
-	DireccionFisica  int 	`json:"direccion_fisica"`
-	TamanioARecorrer int 	`json:"tamanio_a_recorrer"`
-	DatosAEscribir	 string `json:"datos_a_escribir"`
+	PID              int    `json:"pid"`
+	DireccionFisica  int    `json:"direccion_fisica"`
+	TamanioARecorrer int    `json:"tamanio_a_recorrer"`
+	DatosAEscribir   string `json:"datos_a_escribir"`
 }
 
 type FinalizacionProceso struct {

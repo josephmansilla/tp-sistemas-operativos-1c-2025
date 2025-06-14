@@ -1,9 +1,12 @@
 package administracion
 
 import (
+	"bufio"
 	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"os"
+	"strings"
 	"sync"
 )
 
@@ -16,6 +19,8 @@ func InicializarMemoriaPrincipal() {
 
 	g.FramesLibres = make([]bool, cantidadFrames)
 	ConfigurarFrames(cantidadFrames)
+
+	g.InstanciarEstructurasGlobales()
 
 	g.MutexMetrica = make([]sync.Mutex, g.MemoryConfig.MemorySize*1000) // TODO: tamanioTotalmente arbitrario
 
@@ -43,15 +48,44 @@ func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
 	return
 } //TODO: testear
 
-func LecturaPseudocodigo(archivoPseudocodigo string) (stringEnBytes []byte, err error) {
-	err = nil
-	pseudo := archivoPseudocodigo
-	if pseudo == "" {
+func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, tamanioMaximo int) ([]byte, error) {
+	if direccionPseudocodigo == "" {
 		return nil, fmt.Errorf("el string es vacio")
 	}
-	stringEnBytes = []byte(pseudo)
-	return
-} //TODO: testear
+	ruta := "../pruebas/" + direccionPseudocodigo
+	file, err := os.Open(ruta)
+	if err != nil {
+		logger.Error("Error al abrir el archivo: %s\n", err)
+		return nil, err
+	}
+	defer file.Close()
+
+	logger.Info("Se leyó el archivo")
+	scanner := bufio.NewScanner(file)
+
+	stringEnBytes := make([]byte, 0, tamanioMaximo)
+	cantidadInstrucciones := 0
+
+	for scanner.Scan() {
+		linea := scanner.Text()
+		logger.Info("Línea leída: %s", linea)
+		stringEnBytes = append(stringEnBytes, []byte(linea)...)
+
+		if strings.TrimSpace(linea) == "EOF" {
+			break
+		}
+		cantidadInstrucciones++
+	}
+	if err := scanner.Err(); err != nil {
+		logger.Error("Error al leer el archivo: %s", err)
+	}
+
+	IncrementarMetrica(proceso, cantidadInstrucciones, IncrementarInstruccionesSolicitadas)
+
+	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", proceso.PID, cantidadInstrucciones)
+
+	return stringEnBytes, nil
+}
 
 func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
 	tamanioPagina := g.MemoryConfig.PagSize
@@ -92,9 +126,8 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	finFrame := inicioFrame + tamanioPagina
 
 	if direccionFisica+len(datosEnBytes) > finFrame {
-		logger.Fatal("¡¡¡¡¡¡¡¡¡¡Segment Fault!!!!!!!!!!!!")
-		panic("Segment Fault - Lectura fuera del marco asignado")
-	}
+		logger.Fatal("Segment Fault - Escritura fuera del marco asignado")
+	} // ERR HANDLING DIFERENTE PORFA
 
 	g.MutexMemoriaPrincipal.Lock()
 	copy(g.MemoriaPrincipal[direccionFisica:], datosEnBytes)
@@ -115,7 +148,7 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 		entrada.EstaEnUso = true
 	}
 
-	IncrementarMetrica(proceso, IncrementarEscrituraDeMemoria)
+	IncrementarMetrica(proceso, 1, IncrementarEscrituraDeMemoria)
 }
 
 func RemoverEspacioMemoria(inicio int, limite int) (err error) {
@@ -246,13 +279,14 @@ func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int, dato
 		return confirmacionEscritura, err
 	}
 
+	direccionParaAcceder := direccionFisica
 	datosEnBytes := []byte(datosAEscribir)
 	cant := len(entradas)
 	bytesRestantes := tamanioALeer
 	bytesEscritos := 0
 
 	for i, entrada := range entradas {
-		inicioEscritura, finEscritura, err := LogicaRecorrerMemoria(i, cant, entrada, direccionFisica, bytesRestantes)
+		inicioEscritura, finEscritura, err := LogicaRecorrerMemoria(i, cant, entrada, direccionParaAcceder, bytesRestantes)
 		cantBytes := finEscritura - inicioEscritura
 		if err != nil {
 			return confirmacionEscritura, err
@@ -272,6 +306,7 @@ func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int, dato
 		if bytesRestantes <= 0 {
 			break
 		}
+		direccionParaAcceder += cantBytes
 	}
 	return g.ExitoEdicionMemoria{Exito: err, Booleano: true}, nil
 

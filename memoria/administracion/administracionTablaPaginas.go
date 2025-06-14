@@ -16,13 +16,15 @@ func InicializarTablaRaiz() g.TablaPaginas {
 }
 
 func CrearIndicePara(nroPagina int) (indices []int) {
+	cantidadNiveles := g.MemoryConfig.NumberOfLevels
+	cantidadEntradasPorTabla := g.MemoryConfig.EntriesPerPage
 
-	indices = make([]int, g.CantidadNiveles)
+	indices = make([]int, cantidadNiveles)
 	divisor := 1
 
-	for i := g.CantidadNiveles - 1; i >= 0; i-- {
-		indices[i] = (nroPagina / divisor) % g.EntradasPorPagina
-		divisor *= g.EntradasPorPagina
+	for i := cantidadNiveles - 1; i >= 0; i-- {
+		indices[i] = (nroPagina / divisor) % cantidadEntradasPorTabla
+		divisor *= cantidadEntradasPorTabla
 	}
 	return
 }
@@ -41,11 +43,10 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 		logger.Fatal("La tabla no existe o nunca fue inicializada")
 		return nil, fmt.Errorf("la tabla no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
 	}
-	// TODO: optaria por dejar cantidad niveles
+
 	for i := 1; i <= tamanioIndices-1; i++ {
 		if tablaApuntada.Subtabla == nil {
 			logger.Error("La subtabla no existe o nunca fue inicializada")
-			// TODO: buscar de swap la tabla
 			return nil, fmt.Errorf("la subtabla no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
 		}
 		tablaApuntada = tablaApuntada.Subtabla[indices[i]]
@@ -68,9 +69,9 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 		return entradaDeseada, nil
 	}
 
-	IncrementarMetrica(procesoBuscado, IncrementarAccesosTablasPaginas)
+	IncrementarMetrica(procesoBuscado, 1, IncrementarAccesosTablasPaginas)
 	return
-}
+} // TODO: Testear casos, pero por importancia, no porque tenga dudas
 
 func ObtenerEntradaPagina(pid int, indices []int) int {
 	g.MutexProcesosPorPID.Lock()
@@ -86,11 +87,11 @@ func ObtenerEntradaPagina(pid int, indices []int) int {
 		return -1
 	}
 	return entradaPagina.NumeroFrame
-}
+} // TODO: HACER ERROR HANDLING
 
 func AsignarNumeroEntradaPagina() int {
 	numeroEntradaLibre := -1
-	tamanioMaximo := g.MemoryConfig.MemorySize
+	tamanioMaximo := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
 
 	for numeroFrame := 0; numeroFrame < tamanioMaximo; numeroFrame++ {
 		g.MutexEstructuraFramesLibres.Lock()
@@ -106,8 +107,8 @@ func AsignarNumeroEntradaPagina() int {
 		}
 	}
 	return numeroEntradaLibre
-	// TODO
-}
+
+} // TODO: ERR HANDLING
 
 func MarcarOcupadoFrame(numeroFrame int) {
 	g.MutexEstructuraFramesLibres.Lock()
@@ -127,7 +128,7 @@ func LiberarEntradaPagina(numeroFrameALiberar int) {
 	g.MutexCantidadFramesLibres.Lock()
 	g.CantidadFramesLibres++
 	g.MutexCantidadFramesLibres.Unlock()
-} //TODO: implementar
+}
 
 func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) error {
 	tamanioPagina := g.MemoryConfig.PagSize
@@ -137,6 +138,8 @@ func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) erro
 		end := offset + tamanioPagina
 		if end > totalBytes {
 			end = totalBytes
+			// raro caso que no debería pasar pero bue,
+			// por las re dudas y que no rompa nada
 		}
 
 		fragmentoACargar := informacionEnBytes[offset:end]
@@ -144,7 +147,7 @@ func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) erro
 		if numeroPagina == -1 {
 			logger.Error("No hay marcos libres")
 			break
-		}
+		} // TODO: not enough for error handling and pretty fucking vage
 
 		entradaPagina := &g.EntradaPagina{
 			NumeroFrame:   numeroPagina,
@@ -158,7 +161,7 @@ func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) erro
 		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entradaPagina)
 	}
 	return nil
-}
+} // HACER ERR HANDLING
 
 func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, entrada *g.EntradaPagina) {
 	indices := CrearIndicePara(numeroPagina)
@@ -178,10 +181,9 @@ func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, en
 }
 
 func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string) g.ExitoEscrituraPagina {
-	stringEnBytes, err := LecturaPseudocodigo(datosEscritura)
-	if err != nil {
-		logger.Error("Los datos a escribir son vacios: %v", err)
-
+	stringEnBytes := g.ConversionEnBytes(datosEscritura)
+	if len(stringEnBytes) == 0 {
+		logger.Error("Los datos a escribir son vacios: %v", logger.ErrNoInstance)
 	}
 	ModificarEstadoEntradaEscritura(pid, direccionFisica, stringEnBytes)
 
@@ -204,7 +206,7 @@ func ModificarEstadoEntradaLectura(pid int) {
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
-	IncrementarMetrica(proceso, IncrementarLecturaDeMemoria)
+	IncrementarMetrica(proceso, 1, IncrementarLecturaDeMemoria)
 	logger.Info("## Modificacion del estado entrada exitosa")
 }
 
@@ -226,10 +228,10 @@ func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
 			if entrada.EstaPresente {
 				tamanioPagina := g.MemoryConfig.PagSize
 				direccionFisica := entrada.NumeroFrame * tamanioPagina
-				g.CambiarEstadoFrame(pid)
 				err = RemoverEspacioMemoria(direccionFisica, direccionFisica+tamanioPagina)
+				LiberarEntradaPagina(entrada.NumeroFrame)
 				if err != nil {
-					logger.Error("Error al remover espacio del frame: \"%d\" ; %v", entrada.NumeroFrame, err)
+					logger.Error("Error al remover espacio de memoria del frame: \"%d\" ; %v", entrada.NumeroFrame, err)
 				}
 			}
 			// TODO : si está en swap tambien hay que remover
@@ -237,27 +239,6 @@ func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
 		tabla.EntradasPaginas = nil
 	}
 	return
-}
-
-func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) int {
-
-	//TODO
-
-	esTablaIntermedia := false
-	numeroTablaSgteNivel := 0
-	esTablaUltNivel := false
-	numeroFramePagina := 0
-
-	if esTablaIntermedia {
-		logger.Info("## Acceso a Tabla intermedia - Núm. Tabla Siguiente: <%d>", numeroTablaSgteNivel)
-		return numeroTablaSgteNivel
-	}
-	if esTablaUltNivel {
-		logger.Info("## Acceso a última Tabla - Núm. Frame: <%d>", numeroFramePagina)
-		return numeroFramePagina
-	}
-
-	return -1 // EN CASO DE ERROR
 }
 
 func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
