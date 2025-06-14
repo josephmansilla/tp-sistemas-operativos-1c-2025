@@ -39,7 +39,7 @@ func FaseFetch(ipDestino string, puertoDestino int) {
 			break
 		}
 
-		url := fmt.Sprintf("http://%s:%d/memoria/instruccion", ipDestino, puertoDestino)
+		url := fmt.Sprintf("http://%s:%d/memoria/obtenerInstruccion", ipDestino, puertoDestino)
 
 		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 		if err != nil {

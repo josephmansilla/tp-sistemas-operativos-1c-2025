@@ -44,6 +44,11 @@ func Traducir(dirLogica int) int {
 	nroPagina := dirLogica / tamPagina
 	desplazamiento := dirLogica % tamPagina
 
+	var cache = NuevaCachePaginas()
+	cache.Agregar(1, "Contenido Pag1", true)
+	cache.Agregar(3, "Contenido Pag3", true)
+	cache.Agregar(5, "Contenido Pag5", true)
+
 	//Primero verifico si la cache esta activa
 	if Cache.EstaActiva() {
 		log.Printf("Cache Activa")
