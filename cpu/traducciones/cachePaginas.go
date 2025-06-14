@@ -23,7 +23,11 @@ type CachePaginas struct {
 }
 
 var Cache *CachePaginas
-var max = globals.ClientConfig.CacheEntries
+var max int
+
+func InitCache() {
+	max = globals.ClientConfig.CacheEntries
+}
 
 func NuevaCachePaginas() *CachePaginas {
 	if max <= 0 {

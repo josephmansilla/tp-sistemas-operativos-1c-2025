@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
+	"github.com/sisoputnfrba/tp-golang/cpu/traducciones"
 	"github.com/sisoputnfrba/tp-golang/cpu/utils"
 	"log"
 	"net/http"
@@ -40,6 +41,7 @@ func main() {
 	if globals.ClientConfig == nil {
 		log.Fatal("No se pudo cargar el archivo de configuracion")
 	}
+	traducciones.InitCache()
 
 	//Solicito la configuracion de memoria
 	err = utils.RecibirConfiguracionMemoria(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
