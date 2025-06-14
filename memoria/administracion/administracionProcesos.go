@@ -10,7 +10,7 @@ import (
 
 func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string) {
 	if !TieneTamanioNecesario(tamanioProceso) {
-		// TODO
+		// TODO: MANDAMOS A SWAP UN PROCESO?
 		logger.Error("No hay memoria")
 	}
 	nuevoProceso := &g.Proceso{
@@ -27,8 +27,9 @@ func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string)
 	if err != nil {
 		logger.Error("Error al asignarDatosAPaginacion %v", err)
 	}
+
 	OcuparProcesoEnVectorMapeable(pid, nuevoProceso)
-}
+} // TODO: le falta el err handling
 
 func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
 	var proceso *g.Proceso
@@ -47,12 +48,6 @@ func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
 	return
 }
 
-func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso *g.Proceso) {
-	g.MutexProcesosPorPID.Lock()
-	g.ProcesosPorPID[pid] = nuevoProceso
-	g.MutexProcesosPorPID.Unlock()
-}
-
 func DesocuparProcesoEnVectorMapeable(pid int) (proceso *g.Proceso, err error) {
 	err = nil
 	g.MutexProcesosPorPID.Lock()
@@ -66,6 +61,12 @@ func DesocuparProcesoEnVectorMapeable(pid int) (proceso *g.Proceso, err error) {
 
 	return
 }
+
+func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso *g.Proceso) {
+	g.MutexProcesosPorPID.Lock()
+	g.ProcesosPorPID[pid] = nuevoProceso
+	g.MutexProcesosPorPID.Unlock()
+} // TODO: ME GENERA DUDAS, AL PEDO.
 
 func RealizarDumpMemoria(pid int) (resultado string) {
 	g.MutexProcesosPorPID.Lock()
@@ -91,8 +92,8 @@ func RealizarDumpMemoria(pid int) (resultado string) {
 
 		if fin > len(g.MemoriaPrincipal) {
 			logger.Error("Acceso fuera de rango al hacer dump del frame %d con PID: %d", e.NumeroFrame, pid)
+			fin = len(g.MemoriaPrincipal) - 1
 			continue
-			// TODO: ver que hacer
 		}
 
 		g.MutexMemoriaPrincipal.Lock()
@@ -126,11 +127,12 @@ func RecolectarEntradasProceso(proceso g.Proceso) (resultados []g.EntradaDump) {
 	for entrada := range canal {
 		resultados = append(resultados, entrada)
 	}
+
 	// TODO: NO ES NECESARIO Y LO PUEDO BORRAR QUEDA PENDIENTE DEJARLO O NO
 	sort.Slice(resultados, func(i, j int) bool {
 		return resultados[i].DireccionFisica < resultados[j].DireccionFisica
 	})
-
+	// TODO:
 	return
 }
 
@@ -170,7 +172,6 @@ func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]g.EntradaDump) {
 	}
 } //TODO: a usar despues
 
-// TODO: para probar
 func DumpGlobal() (resultado string) {
 	g.MutexProcesosPorPID.Lock()
 	for pid := range g.ProcesosPorPID {
@@ -184,8 +185,6 @@ func DumpGlobal() (resultado string) {
 
 	return
 }
-
-// METRICAS PROCESOS
 
 func InicializarMetricas() (metricas g.MetricasProceso) {
 	metricas = g.MetricasProceso{
@@ -203,18 +202,7 @@ func IncrementarMetrica(proceso *g.Proceso, funcMetrica g.OperacionMetrica) {
 	g.MutexMetrica[proceso.PID].Lock()
 	funcMetrica(&proceso.Metricas)
 	g.MutexMetrica[proceso.PID].Unlock()
-}
-
-func InformarMetricasProceso(metricasDelProceso g.MetricasProceso) {
-
-	logger.Info("## AccesosTablasPaginas: %d", metricasDelProceso.AccesosTablasPaginas)
-	logger.Info("## InstruccionesSolicitadas: %d", metricasDelProceso.InstruccionesSolicitadas)
-	logger.Info("## BajadasSwap: %d", metricasDelProceso.BajadasSwap)
-	logger.Info("## SubidasMP: %d", metricasDelProceso.SubidasMP)
-	logger.Info("## LecturasDeMemoria: %d", metricasDelProceso.LecturasDeMemoria)
-	logger.Info("## EscriturasDeMemoria: %d", metricasDelProceso.EscriturasDeMemoria)
-
-} // TODO: borrar
+} // TODO: ES REALMENTE NECESARIO?
 
 func IncrementarAccesosTablasPaginas(metrica *g.MetricasProceso) {
 	metrica.AccesosTablasPaginas++

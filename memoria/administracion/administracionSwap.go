@@ -21,8 +21,8 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// PasarSwapEntradaPagina(numeroFrame)
-	// LiberarEntradaPagina(numeroFrame)
+	PasarSwapEntradaPagina(numeroFrame)
+	LiberarEntradaPagina(numeroFrame)
 
 	// TODO cambiar
 	proceso := g.ProcesoSuspendido{}
@@ -62,9 +62,9 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
 		return
 	}
-	//VerificarTamanioNecesario
-	//SacarEntradaPaginaSwap(numeroFrame)
-	//LiberarEspacioEnSwap(numeroFrame)
+	VerificarTamanioNecesario
+	SacarEntradaPaginaSwap(numeroFrame)
+	LiberarEspacioEnSwap(numeroFrame)
 	// TODO: ActualizarEstructurasNecesarias
 
 	time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Second)

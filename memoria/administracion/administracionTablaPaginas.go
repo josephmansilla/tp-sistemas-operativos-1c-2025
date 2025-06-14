@@ -43,11 +43,10 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 		logger.Fatal("La tabla no existe o nunca fue inicializada")
 		return nil, fmt.Errorf("la tabla no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
 	}
-	// TODO: optaria por dejar cantidad niveles
+
 	for i := 1; i <= tamanioIndices-1; i++ {
 		if tablaApuntada.Subtabla == nil {
 			logger.Error("La subtabla no existe o nunca fue inicializada")
-			// TODO: buscar de swap la tabla
 			return nil, fmt.Errorf("la subtabla no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
 		}
 		tablaApuntada = tablaApuntada.Subtabla[indices[i]]
@@ -72,7 +71,7 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 
 	IncrementarMetrica(procesoBuscado, IncrementarAccesosTablasPaginas)
 	return
-}
+} // TODO: Testear casos, pero por importancia, no porque tenga dudas
 
 func ObtenerEntradaPagina(pid int, indices []int) int {
 	g.MutexProcesosPorPID.Lock()
@@ -88,11 +87,11 @@ func ObtenerEntradaPagina(pid int, indices []int) int {
 		return -1
 	}
 	return entradaPagina.NumeroFrame
-}
+} // TODO: HACER ERROR HANDLING
 
 func AsignarNumeroEntradaPagina() int {
 	numeroEntradaLibre := -1
-	tamanioMaximo := g.MemoryConfig.MemorySize
+	tamanioMaximo := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
 
 	for numeroFrame := 0; numeroFrame < tamanioMaximo; numeroFrame++ {
 		g.MutexEstructuraFramesLibres.Lock()
@@ -108,8 +107,8 @@ func AsignarNumeroEntradaPagina() int {
 		}
 	}
 	return numeroEntradaLibre
-	// TODO
-}
+
+} // TODO: ERR HANDLING
 
 func MarcarOcupadoFrame(numeroFrame int) {
 	g.MutexEstructuraFramesLibres.Lock()
@@ -160,7 +159,7 @@ func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) erro
 		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entradaPagina)
 	}
 	return nil
-}
+} // HACER ERR HANDLING
 
 func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, entrada *g.EntradaPagina) {
 	indices := CrearIndicePara(numeroPagina)
@@ -239,27 +238,6 @@ func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
 		tabla.EntradasPaginas = nil
 	}
 	return
-}
-
-func AccesoTablaPaginas(w http.ResponseWriter, r *http.Request) int {
-
-	//TODO
-
-	esTablaIntermedia := false
-	numeroTablaSgteNivel := 0
-	esTablaUltNivel := false
-	numeroFramePagina := 0
-
-	if esTablaIntermedia {
-		logger.Info("## Acceso a Tabla intermedia - Núm. Tabla Siguiente: <%d>", numeroTablaSgteNivel)
-		return numeroTablaSgteNivel
-	}
-	if esTablaUltNivel {
-		logger.Info("## Acceso a última Tabla - Núm. Frame: <%d>", numeroFramePagina)
-		return numeroFramePagina
-	}
-
-	return -1 // EN CASO DE ERROR
 }
 
 func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
