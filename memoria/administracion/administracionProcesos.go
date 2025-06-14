@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string) {
+func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo string) {
 	if !TieneTamanioNecesario(tamanioProceso) {
 		// TODO: MANDAMOS A SWAP UN PROCESO?
 		logger.Error("No hay memoria")
@@ -19,7 +19,7 @@ func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string)
 		TablaRaiz: InicializarTablaRaiz(),
 		Metricas:  InicializarMetricas(),
 	}
-	pseudo, err := LecturaPseudocodigo(archivoPseudocodigo)
+	pseudo, err := LecturaPseudocodigo(nuevoProceso, nombreArchPseudocodigo, tamanioProceso)
 	if err != nil {
 		logger.Error("Error al leer el pseudocodigo: %v", err)
 	}
@@ -29,7 +29,9 @@ func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string)
 		logger.Error("Error al asignarDatosAPaginacion %v", err)
 	}
 
-	OcuparProcesoEnVectorMapeable(pid, nuevoProceso)
+	g.MutexProcesosPorPID.Lock()
+	g.ProcesosPorPID[pid] = nuevoProceso
+	g.MutexProcesosPorPID.Unlock()
 } // TODO: le falta el err handling
 
 func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
@@ -62,12 +64,6 @@ func DesocuparProcesoEnVectorMapeable(pid int) (proceso *g.Proceso, err error) {
 
 	return
 }
-
-func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso *g.Proceso) {
-	g.MutexProcesosPorPID.Lock()
-	g.ProcesosPorPID[pid] = nuevoProceso
-	g.MutexProcesosPorPID.Unlock()
-} // TODO: ME GENERA DUDAS pq es AL PEDO.
 
 func RealizarDumpMemoria(pid int) (resultado string) {
 	g.MutexProcesosPorPID.Lock()
@@ -199,27 +195,27 @@ func InicializarMetricas() (metricas g.MetricasProceso) {
 	return
 }
 
-func IncrementarMetrica(proceso *g.Proceso, funcMetrica g.OperacionMetrica) {
+func IncrementarMetrica(proceso *g.Proceso, cantidad int, funcMetrica g.OperacionMetrica) {
 	g.MutexMetrica[proceso.PID].Lock()
-	funcMetrica(&proceso.Metricas)
+	funcMetrica(&proceso.Metricas, cantidad)
 	g.MutexMetrica[proceso.PID].Unlock()
 } // TODO: ES REALMENTE NECESARIO?
 
-func IncrementarAccesosTablasPaginas(metrica *g.MetricasProceso) {
-	metrica.AccesosTablasPaginas++
+func IncrementarAccesosTablasPaginas(metrica *g.MetricasProceso, cantidad int) {
+	metrica.AccesosTablasPaginas += cantidad
 }
-func IncrementarInstruccionesSolicitadas(metrica *g.MetricasProceso) {
-	metrica.InstruccionesSolicitadas++
+func IncrementarInstruccionesSolicitadas(metrica *g.MetricasProceso, cantidad int) {
+	metrica.InstruccionesSolicitadas += cantidad
 }
-func IncrementarBajadasSwap(metrica *g.MetricasProceso) {
-	metrica.BajadasSwap++
+func IncrementarBajadasSwap(metrica *g.MetricasProceso, cantidad int) {
+	metrica.BajadasSwap += cantidad
 }
-func IncrementarSubidasMP(metrica *g.MetricasProceso) {
-	metrica.SubidasMP++
+func IncrementarSubidasMP(metrica *g.MetricasProceso, cantidad int) {
+	metrica.SubidasMP += cantidad
 }
-func IncrementarLecturaDeMemoria(metrica *g.MetricasProceso) {
-	metrica.LecturasDeMemoria++
+func IncrementarLecturaDeMemoria(metrica *g.MetricasProceso, cantidad int) {
+	metrica.LecturasDeMemoria += cantidad
 }
-func IncrementarEscrituraDeMemoria(metrica *g.MetricasProceso) {
-	metrica.EscriturasDeMemoria++
+func IncrementarEscrituraDeMemoria(metrica *g.MetricasProceso, cantidad int) {
+	metrica.EscriturasDeMemoria += cantidad
 }

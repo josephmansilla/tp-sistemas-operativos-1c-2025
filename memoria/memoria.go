@@ -71,38 +71,34 @@ func main() {
 	// ------------------------------------------------------
 
 	mux := http.NewServeMux()
+
 	mux.HandleFunc("/memoria/configuracion", conex.EnviarConfiguracionMemoriaHandler)
 
 	mux.HandleFunc("/memoria/cpu", conex.RecibirMensajeDeCPUHandler)
-	mux.HandleFunc("/memoria/kernel", conex.RecibirMensajeDeKernelHandler)
-	mux.HandleFunc("/memoria/InicializacionProceso", conex.InicializacionProcesoHandler) // TODO: HACER CONEXIONES CON KERNEL DESPUES DEL MERGE
 
-	mux.HandleFunc("/memoria/instruccion", conex.ObtenerInstruccion)
-	// TODO: deberia devoler la instruccion que piden
+	mux.HandleFunc("/memoria/inicializacionProceso", conex.InicializacionProcesoHandler)
+
+	mux.HandleFunc("/memoria/obtenerInstruccion", conex.ObtenerInstruccion)
 
 	mux.HandleFunc("/memoria/espaciolibre", conex.ObtenerEspacioLibreHandler)
+
 	mux.HandleFunc("/memoria/tabla", conex.EnviarEntradaPaginaHandler)
 
-	// TODO: USTEDES DEBEN IMPLEMENTAR ESTAS FUNCIONES
-	mux.HandleFunc("/memoria/LeerEntradaPagina", adm.LeerPaginaCompletaHandler)
-	mux.HandleFunc("/memoria/ActualizarEntrada", adm.ActualizarPaginaCompletaHandler)
+	mux.HandleFunc("/memoria/leerEntradaPagina", adm.LeerPaginaCompletaHandler)
+
+	mux.HandleFunc("/memoria/actualizarEntradaPagina", adm.ActualizarPaginaCompletaHandler)
+
 	mux.HandleFunc("/memoria/lectura", conex.LeerEspacioUsuarioHandler)
-	// TODO: debe responder a CPU el valor de una dirección física con el delay indicado en Memory Delay
+
 	mux.HandleFunc("/memoria/escritura", conex.EscribirEspacioUsuarioHandler)
-	// TODO: recibe PID y tamaño, se crea escructuras, asigna frames y logear.
-	// TODO: debe indicarle al CPU que fue éxitoso con el delay indicado en Memory Delay
 
 	mux.HandleFunc("/memoria/suspension", adm.SuspensionProcesoHandler)
+
 	mux.HandleFunc("/memoria/desuspension", adm.DesuspensionProcesoHandler)
 
 	mux.HandleFunc("/memoria/dump", conex.MemoriaDumpHandler)
+
 	mux.HandleFunc("/memoria/finalizacionProceso", conex.FinalizacionProcesoHandler)
-	// TODO: debe liberar recursos y escructuras y logear metricas
-
-	//mux.HandleFunc("/memoria/frame", utils.algo)
-	//mux.HandleFunc("memoria/pagina", utils.algo)
-
-	//mux.HandleFunc("/memoria/cpu", utils.CreacionProceso)
 
 	direccion := fmt.Sprintf(":%d", portMemory)
 	errListenAndServe := http.ListenAndServe(direccion, mux)

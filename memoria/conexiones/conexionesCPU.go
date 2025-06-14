@@ -1,15 +1,12 @@
 package conexiones
 
 import (
-	"bufio"
 	"encoding/json"
 	"github.com/sisoputnfrba/tp-golang/memoria/administracion"
 	"github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
-	"os"
-	"strings"
 )
 
 func RecibirMensajeDeCPUHandler(w http.ResponseWriter, r *http.Request) {
@@ -23,19 +20,6 @@ func RecibirMensajeDeCPUHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("PID Pedido: %d", mensaje.PID)
 	logger.Info("PC Pedido: %d", mensaje.PC)
-}
-
-func RetornarMensajeDeCPU(w http.ResponseWriter, r *http.Request) globals.DatosDeCPU {
-	var mensaje globals.DatosDeCPU
-	data.LeerJson(w, r, &mensaje)
-
-	globals.CPU = globals.DatosDeCPU{
-		PID: mensaje.PID,
-		PC:  mensaje.PC,
-	}
-	// StringInstruccion = ObtenerInstruccion(mensaje.PID, mensaje.PC)
-	// se debe devolver el string mediante un JSON por el ResponseWriter
-	return globals.CPU
 }
 
 func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
@@ -91,34 +75,6 @@ func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 	}
 
-}
-func CargarInstrucciones(pid int, nombreArchivo string) {
-	ruta := "../pruebas/" + nombreArchivo
-
-	file, err := os.Open(ruta)
-	if err != nil {
-		logger.Error("Error al abrir el archivo: %s\n", err)
-		return
-	}
-	defer file.Close()
-
-	logger.Info("Se leyó el archivo")
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		linea := scanner.Text()
-		logger.Info("Línea leída: %s", linea)
-		CargarInstruccionParaPID(pid, linea)
-		if strings.TrimSpace(linea) == "EOF" {
-			break
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		logger.Error("Error al leer el archivo: %s", err)
-	}
-
-	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", pid, len(InstruccionesPorPID[pid]))
 }
 
 func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {

@@ -1,9 +1,12 @@
 package administracion
 
 import (
+	"bufio"
 	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"os"
+	"strings"
 	"sync"
 )
 
@@ -45,15 +48,44 @@ func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
 	return
 } //TODO: testear
 
-func LecturaPseudocodigo(archivoPseudocodigo string) (stringEnBytes []byte, err error) {
-	err = nil
-	pseudo := archivoPseudocodigo
-	if pseudo == "" {
+func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, tamanioMaximo int) ([]byte, error) {
+	if direccionPseudocodigo == "" {
 		return nil, fmt.Errorf("el string es vacio")
 	}
-	stringEnBytes = []byte(pseudo)
-	return
-} //TODO: testear
+	ruta := "../pruebas/" + direccionPseudocodigo
+	file, err := os.Open(ruta)
+	if err != nil {
+		logger.Error("Error al abrir el archivo: %s\n", err)
+		return nil, err
+	}
+	defer file.Close()
+
+	logger.Info("Se leyó el archivo")
+	scanner := bufio.NewScanner(file)
+
+	stringEnBytes := make([]byte, 0, tamanioMaximo)
+	cantidadInstrucciones := 0
+
+	for scanner.Scan() {
+		linea := scanner.Text()
+		logger.Info("Línea leída: %s", linea)
+		stringEnBytes = append(stringEnBytes, []byte(linea)...)
+
+		if strings.TrimSpace(linea) == "EOF" {
+			break
+		}
+		cantidadInstrucciones++
+	}
+	if err := scanner.Err(); err != nil {
+		logger.Error("Error al leer el archivo: %s", err)
+	}
+
+	IncrementarMetrica(proceso, cantidadInstrucciones, IncrementarInstruccionesSolicitadas)
+
+	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", proceso.PID, cantidadInstrucciones)
+
+	return stringEnBytes, nil
+}
 
 func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
 	tamanioPagina := g.MemoryConfig.PagSize
@@ -116,7 +148,7 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 		entrada.EstaEnUso = true
 	}
 
-	IncrementarMetrica(proceso, IncrementarEscrituraDeMemoria)
+	IncrementarMetrica(proceso, 1, IncrementarEscrituraDeMemoria)
 }
 
 func RemoverEspacioMemoria(inicio int, limite int) (err error) {

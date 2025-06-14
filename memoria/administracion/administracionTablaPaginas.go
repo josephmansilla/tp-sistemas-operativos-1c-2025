@@ -69,7 +69,7 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 		return entradaDeseada, nil
 	}
 
-	IncrementarMetrica(procesoBuscado, IncrementarAccesosTablasPaginas)
+	IncrementarMetrica(procesoBuscado, 1, IncrementarAccesosTablasPaginas)
 	return
 } // TODO: Testear casos, pero por importancia, no porque tenga dudas
 
@@ -181,10 +181,9 @@ func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, en
 }
 
 func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string) g.ExitoEscrituraPagina {
-	stringEnBytes, err := LecturaPseudocodigo(datosEscritura)
-	if err != nil {
-		logger.Error("Los datos a escribir son vacios: %v", err)
-
+	stringEnBytes := g.ConversionEnBytes(datosEscritura)
+	if len(stringEnBytes) == 0 {
+		logger.Error("Los datos a escribir son vacios: %v", logger.ErrNoInstance)
 	}
 	ModificarEstadoEntradaEscritura(pid, direccionFisica, stringEnBytes)
 
@@ -207,7 +206,7 @@ func ModificarEstadoEntradaLectura(pid int) {
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
-	IncrementarMetrica(proceso, IncrementarLecturaDeMemoria)
+	IncrementarMetrica(proceso, 1, IncrementarLecturaDeMemoria)
 	logger.Info("## Modificacion del estado entrada exitosa")
 }
 

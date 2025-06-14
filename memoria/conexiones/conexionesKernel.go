@@ -13,32 +13,6 @@ import (
 	"time"
 )
 
-// FUNCION PARA RECIBIR LOS MENSAJES PROVENIENTES DEL KERNEL
-/*func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
-	var mensaje globals.DatosRespuestaDeKernel
-
-	data.LeerJson(w, r, &mensaje)
-
-	globals.RespuestaKernel = globals.DatosRespuestaDeKernel{
-		Pseudocodigo:   mensaje.Pseudocodigo,
-		TamanioMemoria: mensaje.TamanioMemoria,
-	}
-
-	CargarInstrucciones(mensaje.Pseudocodigo)
-
-	logger.Info("Archivo Pseudocodigo: %s\n", mensaje.Pseudocodigo)
-	logger.Info("Tamanio de Memoria Pedido: %d\n", mensaje.TamanioMemoria)
-
-	// RESPUESTA AL KERNEL
-	respuesta := globals.RespuestaMemoria{
-		Exito:   true,
-		Mensaje: "Proceso creado correctamente en memoria",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(respuesta)
-}*/
-
 func ObtenerEspacioLibreHandler(w http.ResponseWriter, r *http.Request) {
 	g.MutexCantidadFramesLibres.Lock()
 	cantFramesLibres := g.CantidadFramesLibres
@@ -57,32 +31,6 @@ func ObtenerEspacioLibreHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ESPACIO DEVUELTO"))
 }
-
-func RecibirMensajeDeKernelHandler(w http.ResponseWriter, r *http.Request) {
-	var mensaje g.DatosRespuestaDeKernel
-
-	data.LeerJson(w, r, &mensaje)
-
-	g.RespuestaKernel = g.DatosRespuestaDeKernel{
-		Pseudocodigo:   mensaje.Pseudocodigo,
-		TamanioMemoria: mensaje.TamanioMemoria,
-		PID:            mensaje.PID,
-	}
-
-	CargarInstrucciones(mensaje.PID, mensaje.Pseudocodigo)
-
-	logger.Info("Archivo Pseudocodigo: %s\n", mensaje.Pseudocodigo)
-	logger.Info("Tamanio de Memoria Pedido: %d\n", mensaje.TamanioMemoria)
-
-	// RESPUESTA AL KERNEL
-	respuesta := g.RespuestaMemoria{
-		Exito:   true,
-		Mensaje: "Proceso creado correctamente en memoria",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(respuesta)
-} // TODO: CAMBIAR CON INICIALIZACIONPROCESO
 
 func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje g.DatosRespuestaDeKernel
@@ -254,22 +202,4 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("## Archivo Dump fue creado con EXITO")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Dump Realizado"))
-}
-
-// Mapa global: PID → Lista de instrucciones
-var InstruccionesPorPID map[int][]string = make(map[int][]string)
-
-// Cargar instrucción para un PID específico
-func CargarInstruccionParaPID(pid int, instruccion string) {
-	InstruccionesPorPID[pid] = append(InstruccionesPorPID[pid], instruccion)
-	logger.Info("Se cargó una instrucción para PID %d", pid)
-}
-
-// Obtener instrucción por PID y PC
-func ObtenerInstruccionB(pid int, pc int) string {
-	instrucciones, existe := InstruccionesPorPID[pid]
-	if !existe || pc < 0 || pc >= len(instrucciones) {
-		return ""
-	}
-	return instrucciones[pc]
 }

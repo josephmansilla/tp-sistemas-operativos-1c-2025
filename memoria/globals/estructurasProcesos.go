@@ -20,7 +20,7 @@ type MetricasProceso struct {
 	EscriturasDeMemoria      int `json:"escrituras_de_memoria"`
 }
 
-type OperacionMetrica func(*MetricasProceso)
+type OperacionMetrica func(*MetricasProceso, int)
 
 type DatosParaDump struct {
 	PID       int    `json:"pid"`
