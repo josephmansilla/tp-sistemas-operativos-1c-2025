@@ -65,6 +65,7 @@ func Desalojo(procesoEntrante *pcb.PCB) {
 			procesoEntrante.PID, procesoAInterrumpir.PID, cpuAInterrumpir, tiempoEntrante, mayorTiempoRestante)
 		comunicacion.AvisarDesalojoCPU(cpuAInterrumpir, procesoAInterrumpir)
 	} else {
-		logger.Info("SRT: Proceso <%d> NO tiene menor tiempo restante que los procesos ejecutando", procesoEntrante.PID)
+		logger.Info("SRT: Proceso <%d> NO tiene menor tiempo restante que los procesos ejecutando (%.2f < %.2f)",
+			procesoEntrante.PID, tiempoEntrante, mayorTiempoRestante)
 	}
 }
