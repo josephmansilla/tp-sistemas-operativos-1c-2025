@@ -86,7 +86,7 @@ func InicializarCanales() {
 	NotificarDespachador = make(chan int, 10) // buffer 10 procesos listos
 	NotificarComienzoIO = make(chan MensajeIOChannel, 10)
 	NotificarFinIO = make(chan int, 10)
-	//ContextoInterrupcion make(chan InterruptProcess, 10)
+	ContextoInterrupcion = make(chan InterruptProcess, 10)
 }
 
 type MensajeIOChannel struct {
