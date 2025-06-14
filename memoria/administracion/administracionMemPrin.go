@@ -16,7 +16,7 @@ func InicializarMemoriaPrincipal() {
 
 	g.FramesLibres = make([]bool, cantidadFrames)
 	ConfigurarFrames(cantidadFrames)
-	
+
 	g.InstanciarEstructurasGlobales()
 
 	g.MutexMetrica = make([]sync.Mutex, g.MemoryConfig.MemorySize*1000) // TODO: tamanioTotalmente arbitrario
@@ -94,9 +94,8 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	finFrame := inicioFrame + tamanioPagina
 
 	if direccionFisica+len(datosEnBytes) > finFrame {
-		logger.Fatal("¡¡¡¡¡¡¡¡¡¡Segment Fault!!!!!!!!!!!!")
-		panic("Segment Fault - Lectura fuera del marco asignado")
-	}
+		logger.Fatal("Segment Fault - Escritura fuera del marco asignado")
+	} // ERR HANDLING DIFERENTE PORFA
 
 	g.MutexMemoriaPrincipal.Lock()
 	copy(g.MemoriaPrincipal[direccionFisica:], datosEnBytes)
@@ -248,13 +247,14 @@ func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int, dato
 		return confirmacionEscritura, err
 	}
 
+	direccionParaAcceder := direccionFisica
 	datosEnBytes := []byte(datosAEscribir)
 	cant := len(entradas)
 	bytesRestantes := tamanioALeer
 	bytesEscritos := 0
 
 	for i, entrada := range entradas {
-		inicioEscritura, finEscritura, err := LogicaRecorrerMemoria(i, cant, entrada, direccionFisica, bytesRestantes)
+		inicioEscritura, finEscritura, err := LogicaRecorrerMemoria(i, cant, entrada, direccionParaAcceder, bytesRestantes)
 		cantBytes := finEscritura - inicioEscritura
 		if err != nil {
 			return confirmacionEscritura, err
@@ -274,6 +274,7 @@ func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int, dato
 		if bytesRestantes <= 0 {
 			break
 		}
+		direccionParaAcceder += cantBytes
 	}
 	return g.ExitoEdicionMemoria{Exito: err, Booleano: true}, nil
 

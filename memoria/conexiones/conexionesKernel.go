@@ -112,8 +112,6 @@ func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Respuesta devuelta"))
 }
 
-// TODO: RESPONDER CON EL NUMERO DE PAGINA DE 1ER NIVEL DEL PROCESO???
-
 func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 	var mensaje g.FinalizacionProceso

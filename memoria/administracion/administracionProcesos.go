@@ -12,6 +12,7 @@ func InicializarProceso(pid int, tamanioProceso int, archivoPseudocodigo string)
 	if !TieneTamanioNecesario(tamanioProceso) {
 		// TODO: MANDAMOS A SWAP UN PROCESO?
 		logger.Error("No hay memoria")
+		// return err
 	}
 	nuevoProceso := &g.Proceso{
 		PID:       pid,
@@ -66,7 +67,7 @@ func OcuparProcesoEnVectorMapeable(pid int, nuevoProceso *g.Proceso) {
 	g.MutexProcesosPorPID.Lock()
 	g.ProcesosPorPID[pid] = nuevoProceso
 	g.MutexProcesosPorPID.Unlock()
-} // TODO: ME GENERA DUDAS, AL PEDO.
+} // TODO: ME GENERA DUDAS pq es AL PEDO.
 
 func RealizarDumpMemoria(pid int) (resultado string) {
 	g.MutexProcesosPorPID.Lock()

@@ -128,7 +128,7 @@ func LiberarEntradaPagina(numeroFrameALiberar int) {
 	g.MutexCantidadFramesLibres.Lock()
 	g.CantidadFramesLibres++
 	g.MutexCantidadFramesLibres.Unlock()
-} //TODO: implementar
+}
 
 func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) error {
 	tamanioPagina := g.MemoryConfig.PagSize
@@ -138,6 +138,8 @@ func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) erro
 		end := offset + tamanioPagina
 		if end > totalBytes {
 			end = totalBytes
+			// raro caso que no debería pasar pero bue,
+			// por las re dudas y que no rompa nada
 		}
 
 		fragmentoACargar := informacionEnBytes[offset:end]
@@ -145,7 +147,7 @@ func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) erro
 		if numeroPagina == -1 {
 			logger.Error("No hay marcos libres")
 			break
-		}
+		} // TODO: not enough for error handling and pretty fucking vage
 
 		entradaPagina := &g.EntradaPagina{
 			NumeroFrame:   numeroPagina,
@@ -227,10 +229,10 @@ func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
 			if entrada.EstaPresente {
 				tamanioPagina := g.MemoryConfig.PagSize
 				direccionFisica := entrada.NumeroFrame * tamanioPagina
-				g.CambiarEstadoFrame(pid)
 				err = RemoverEspacioMemoria(direccionFisica, direccionFisica+tamanioPagina)
+				LiberarEntradaPagina(entrada.NumeroFrame)
 				if err != nil {
-					logger.Error("Error al remover espacio del frame: \"%d\" ; %v", entrada.NumeroFrame, err)
+					logger.Error("Error al remover espacio de memoria del frame: \"%d\" ; %v", entrada.NumeroFrame, err)
 				}
 			}
 			// TODO : si está en swap tambien hay que remover
