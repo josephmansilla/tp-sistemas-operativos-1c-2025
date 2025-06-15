@@ -102,6 +102,7 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 	if direccionFisica+bytesRestantes > finFrame {
 		logger.Fatal("Se está leyendo afuera del frame")
 		// TODO:		panic("Segment Fault - Lectura fuera del marco asignado")
+		// TODO: tirar error pero sin panic
 	}
 
 	pseudocodigoEnBytes := make([]byte, bytesRestantes)
@@ -168,7 +169,7 @@ func RemoverEspacioMemoria(inicio int, limite int) (err error) {
 	return nil
 }
 
-func SeleccionarEntradas(pid int, direccionFisica int, tamanioALeer int, entradasNecesarias int) (entradas []g.EntradaPagina, err error) {
+func SeleccionarEntradas(pid int, direccionFisica int, entradasNecesarias int) (entradas []g.EntradaPagina, err error) {
 	tamanioPagina := g.MemoryConfig.PagSize
 	paginaInicio := direccionFisica / tamanioPagina
 	err = nil
@@ -198,7 +199,7 @@ func SeleccionarEntradas(pid int, direccionFisica int, tamanioALeer int, entrada
 	}
 
 	return
-}
+} //TODO: rever no se usa el tamanioALeer
 
 func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionLectura g.ExitoLecturaMemoria, err error) {
 	confirmacionLectura = g.ExitoLecturaMemoria{Exito: err, DatosAEnviar: ""}
@@ -208,7 +209,7 @@ func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirm
 		return confirmacionLectura, err
 	}
 
-	entradas, err := SeleccionarEntradas(pid, direccionFisica, tamanioALeer, entradasNecesarias)
+	entradas, err := SeleccionarEntradas(pid, direccionFisica, entradasNecesarias)
 	if err != nil {
 		return confirmacionLectura, err
 	}
@@ -277,7 +278,7 @@ func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int, dato
 		return confirmacionEscritura, err
 	}
 
-	entradas, err := SeleccionarEntradas(pid, direccionFisica, tamanioALeer, entradasNecesarias)
+	entradas, err := SeleccionarEntradas(pid, direccionFisica, entradasNecesarias)
 	if err != nil {
 		return confirmacionEscritura, err
 	}

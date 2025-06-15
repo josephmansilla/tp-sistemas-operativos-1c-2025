@@ -13,6 +13,7 @@ type ContextoDeCPU struct {
 }
 
 type InstruccionCPU struct {
+	Exito       error  `json:"exito"`
 	Instruccion string `json:"instruccion"`
 }
 

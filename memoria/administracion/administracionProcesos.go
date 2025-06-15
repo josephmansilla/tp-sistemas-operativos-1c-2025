@@ -200,7 +200,7 @@ func IncrementarMetrica(proceso *g.Proceso, cantidad int, funcMetrica g.Operacio
 	g.MutexMetrica[proceso.PID].Lock()
 	funcMetrica(&proceso.Metricas, cantidad)
 	g.MutexMetrica[proceso.PID].Unlock()
-} // TODO: ES REALMENTE NECESARIO?
+} // TODO: ES REALMENTE NECESARIO? -> me dijo que si
 
 func IncrementarAccesosTablasPaginas(metrica *g.MetricasProceso, cantidad int) {
 	metrica.AccesosTablasPaginas += cantidad

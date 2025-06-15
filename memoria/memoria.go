@@ -78,7 +78,7 @@ func main() {
 
 	mux.HandleFunc("/memoria/inicializacionProceso", conex.InicializacionProcesoHandler)
 
-	mux.HandleFunc("/memoria/obtenerInstruccion", conex.ObtenerInstruccion)
+	mux.HandleFunc("/memoria/obtenerInstruccion", conex.ObtenerInstruccionHandler)
 
 	mux.HandleFunc("/memoria/espaciolibre", conex.ObtenerEspacioLibreHandler)
 

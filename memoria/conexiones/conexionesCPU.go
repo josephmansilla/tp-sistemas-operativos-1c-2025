@@ -3,17 +3,17 @@ package conexiones
 import (
 	"encoding/json"
 	"github.com/sisoputnfrba/tp-golang/memoria/administracion"
-	"github.com/sisoputnfrba/tp-golang/memoria/globals"
+	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 )
 
 func RecibirMensajeDeCPUHandler(w http.ResponseWriter, r *http.Request) {
-	var mensaje globals.DatosDeCPU
+	var mensaje g.DatosDeCPU
 	data.LeerJson(w, r, &mensaje)
 
-	globals.CPU = globals.DatosDeCPU{
+	g.CPU = g.DatosDeCPU{
 		PID: mensaje.PID,
 		PC:  mensaje.PC,
 	}
@@ -22,8 +22,9 @@ func RecibirMensajeDeCPUHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("PC Pedido: %d", mensaje.PC)
 }
 
-func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
-	var mensaje globals.ContextoDeCPU
+// HACER PARA PEDIR MULTIPLES INSTRUCCIONES DE UN TIRO
+func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
+	var mensaje g.ContextoDeCPU
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
 		http.Error(w, "Error leyendo JSON del CPU\n", http.StatusBadRequest)
@@ -33,21 +34,43 @@ func ObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 	pid := mensaje.PID
 	pc := mensaje.PC
 
-	var instruccion string
-	if pc >= 0 && pc < len(InstruccionesPorPID[pid]) {
-		instruccion = InstruccionesPorPID[pid][pc]
-	} else {
-		instruccion = "" // Esto indica fin del archivo o error de PC
-	}
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[pid]
+	g.MutexProcesosPorPID.Unlock()
 
-	respuesta := globals.InstruccionCPU{
-		Instruccion: instruccion,
-	}
+	respuesta := ObtenerInstruccion(proceso, pc)
 
-	logger.Info("## PID: <%d>  - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, instruccion)
+	logger.Info("## PID: <%d>  - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, respuesta.Instruccion)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(respuesta)
+	w.Write([]byte("Insturccion devuelta"))
+}
+
+func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU) {
+	respuesta = g.InstruccionCPU{Exito: nil, Instruccion: ""}
+	cantInstrucciones := len(proceso.OffsetInstrucciones)
+
+	var base int
+	var tamanioALeer int
+
+	if pc == 0 {
+		base = 0
+		tamanioALeer = proceso.OffsetInstrucciones[pc]
+	} else if pc == cantInstrucciones {
+		return
+	} else { // Esto indica fin del archivo o error de PC
+		base = proceso.OffsetInstrucciones[pc-1]
+		tamanioALeer = proceso.OffsetInstrucciones[pc] - base
+	}
+
+	direccionFisica := base * g.MemoryConfig.PagSize
+	// TODO: falta calcular correctamente la direccion fisica con el
+	// TODO: el marco del PID correspondiente
+
+	administracion.LeerEspacioMemoria(proceso.PID, direccionFisica, tamanioALeer)
+
+	return respuesta
 }
 
 func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
@@ -63,10 +86,10 @@ func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.Info("Recibí petición de configuración desde PID: %d", pidData.PID)
 
-	mensaje := globals.ConsultaConfigMemoria{
-		TamanioPagina:    globals.MemoryConfig.PagSize,
-		EntradasPorNivel: globals.MemoryConfig.EntriesPerPage,
-		CantidadNiveles:  globals.MemoryConfig.NumberOfLevels,
+	mensaje := g.ConsultaConfigMemoria{
+		TamanioPagina:    g.MemoryConfig.PagSize,
+		EntradasPorNivel: g.MemoryConfig.EntriesPerPage,
+		CantidadNiveles:  g.MemoryConfig.NumberOfLevels,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -78,7 +101,7 @@ func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
-	var mensaje globals.MensajePedidoTablaCPU
+	var mensaje g.MensajePedidoTablaCPU
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
 		http.Error(w, "Error leyendo JSON del CPU\n", http.StatusBadRequest)
@@ -90,7 +113,7 @@ func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
 
 	marco := administracion.ObtenerEntradaPagina(pid, indices)
 
-	respuesta := globals.RespuestaTablaCPU{
+	respuesta := g.RespuestaTablaCPU{
 		NumeroMarco: marco,
 	}
 
