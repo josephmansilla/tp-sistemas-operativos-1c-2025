@@ -29,7 +29,7 @@ func InicializarMemoriaPrincipal() {
 		tamanioMemoriaPrincipal, cantidadFrames, tamanioPagina)
 }
 
-func ConfigurarFrames(cantidadFrames int) { //TODO: MAS O MENOS OBSOLETO
+func ConfigurarFrames(cantidadFrames int) {
 	g.MutexEstructuraFramesLibres.Lock()
 	for i := 0; i < cantidadFrames; i++ {
 		g.FramesLibres[i] = true
@@ -145,7 +145,7 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	entrada, err := BuscarEntradaPagina(proceso, indices)
 	if err != nil {
 		logger.Error("No se pudo encontrar la entrada de pagina: %v", err)
-		panic("AAAAAAAAAAAAAAAAAAAAAAAAA") // TODO: ver que hacer con este error
+		panic("AAAAAAAAAAAAAAAAAAAAAAAAA") // TODO: retonar error con err handling
 	}
 	if entrada != nil {
 		entrada.FueModificado = true
@@ -234,7 +234,7 @@ func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirm
 		}
 	}
 	return g.ExitoLecturaMemoria{Exito: nil, DatosAEnviar: string(datos)}, nil
-}
+} // TODO: err handling
 
 func LogicaRecorrerMemoria(i int, cantEntradas int, entrada g.EntradaPagina, dirF int, bytesRestantes int) (inicio int, limite int, err error) {
 	tamTotal := g.MemoryConfig.MemorySize

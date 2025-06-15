@@ -7,3 +7,7 @@ var MutexMemoriaPrincipal sync.Mutex
 var MutexCantidadFramesLibres sync.Mutex
 var MutexEstructuraFramesLibres sync.Mutex
 var MutexMetrica []sync.Mutex
+var MutexDump sync.Mutex
+
+// Podría ser un slice de Mutex por PID, pero es medio al pedo
+// sería conceptualmente correcto
