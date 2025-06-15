@@ -2,7 +2,7 @@ package conexiones
 
 import (
 	"encoding/json"
-	"github.com/sisoputnfrba/tp-golang/memoria/administracion"
+	adm "github.com/sisoputnfrba/tp-golang/memoria/administracion"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
@@ -22,7 +22,6 @@ func RecibirMensajeDeCPUHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("PC Pedido: %d", mensaje.PC)
 }
 
-// HACER PARA PEDIR MULTIPLES INSTRUCCIONES DE UN TIRO
 func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje g.ContextoDeCPU
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
@@ -63,12 +62,12 @@ func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU)
 		base = proceso.OffsetInstrucciones[pc-1]
 		tamanioALeer = proceso.OffsetInstrucciones[pc] - base
 	}
+	tamanioPagina := g.MemoryConfig.PagSize
+	numeroEntradaABuscar := base / tamanioPagina
+	offsetDir := base % tamanioPagina
 
-	direccionFisica := base * g.MemoryConfig.PagSize
-	// TODO: falta calcular correctamente la direccion fisica con el
-	// TODO: el marco del PID correspondiente
-
-	administracion.LeerEspacioMemoria(proceso.PID, direccionFisica, tamanioALeer)
+	direccionFisica := (adm.BuscarEntradaEspecifica(proceso.TablaRaiz, numeroEntradaABuscar) * tamanioPagina) + offsetDir
+	adm.LeerEspacioMemoria(proceso.PID, direccionFisica, tamanioALeer)
 
 	return respuesta
 }

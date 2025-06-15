@@ -73,6 +73,8 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 	return
 } // TODO: Testear casos, pero por importancia, no porque tenga dudas
 
+func BuscarEntradaPaginaEspecifica()
+
 func ObtenerEntradaPagina(pid int, indices []int) int {
 	g.MutexProcesosPorPID.Lock()
 	procesoBuscado, errPro := g.ProcesosPorPID[pid]
