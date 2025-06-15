@@ -14,6 +14,11 @@ import (
 )
 
 func main() {
+	if len(os.Args) < 1 {
+		fmt.Println("Falta el parametro: identificador del config de Memoria")
+		os.Exit(1)
+	}
+
 	// ----------------------------------------------------
 	// ----------- CARGO LOGS DE MEMORIA EN TXT ------------
 	// ----------------------------------------------------
@@ -27,8 +32,8 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DEL CONFIG ------------------
 	// ----------------------------------------------------
-	// TODO: ACA HAY QUE HACER QUE SE SELECCION EL CONFIG DESEAADO
-	configData, err := os.ReadFile("config.json")
+	configPath := fmt.Sprintf("config_%s.json", os.Args[0])
+	configData, err := os.ReadFile(configPath)
 	if err != nil {
 		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
 	}
