@@ -110,7 +110,7 @@ func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
 	pid := mensaje.PID
 	indices := mensaje.IndicesEntrada
 
-	marco := administracion.ObtenerEntradaPagina(pid, indices)
+	marco := adm.ObtenerEntradaPagina(pid, indices)
 
 	respuesta := g.RespuestaTablaCPU{
 		NumeroMarco: marco,

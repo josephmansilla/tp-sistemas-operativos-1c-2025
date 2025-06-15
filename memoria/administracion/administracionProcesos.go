@@ -170,36 +170,6 @@ func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]*g.EntradaDump) {
 	}
 } //TODO: a usar despues
 
-func BuscarEntradaEspecifica(tablaRaiz g.TablaPaginas, numeroEntrada int) (numeroFrameMemReal int) {
-	var contador int
-	for _, tabla := range tablaRaiz {
-		numeroFrameMemReal, encontrado := RecorrerTablasBuscandoEntrada(tabla, numeroEntrada, &contador)
-		if encontrado {
-			return numeroFrameMemReal
-		}
-	}
-	return -1
-}
-
-func RecorrerTablasBuscandoEntrada(tabla *g.TablaPagina, numeroEntrada int, contador *int) (int, bool) {
-	if tabla.Subtabla != nil {
-		for _, subTabla := range tabla.Subtabla {
-			numeroFrame, encontrado := RecorrerTablasBuscandoEntrada(subTabla, numeroEntrada, contador)
-			if encontrado {
-				return numeroFrame, true
-			}
-		}
-		return -1, false
-	}
-	for _, entrada := range tabla.EntradasPaginas {
-		if *contador == entrada.NumeroFrame {
-			return entrada.NumeroFrame, true
-		}
-		*contador++
-	}
-	return -1, false
-}
-
 func DumpGlobal() (resultado string) {
 	g.MutexProcesosPorPID.Lock()
 	for pid := range g.ProcesosPorPID {

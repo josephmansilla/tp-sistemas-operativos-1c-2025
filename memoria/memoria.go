@@ -27,6 +27,7 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DEL CONFIG ------------------
 	// ----------------------------------------------------
+	// TODO: ACA HAY QUE HACER QUE SE SELECCION EL CONFIG DESEAADO
 	configData, err := os.ReadFile("config.json")
 	if err != nil {
 		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
