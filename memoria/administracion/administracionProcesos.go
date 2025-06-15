@@ -10,7 +10,6 @@ import (
 
 func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo string) {
 	if !TieneTamanioNecesario(tamanioProceso) {
-		// TODO: MANDAMOS A SWAP UN PROCESO?
 		logger.Error("No hay memoria")
 		// return err
 	}
