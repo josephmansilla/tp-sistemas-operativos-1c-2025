@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	adm "github.com/sisoputnfrba/tp-golang/memoria/administracion"
 	conex "github.com/sisoputnfrba/tp-golang/memoria/conexiones"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
@@ -19,7 +18,6 @@ func main() {
 		fmt.Println("Falta el parametro: identificador del config de Memoria")
 		os.Exit(1)
 	}
-	.ID = os.Args[0]
 
 	// ----------------------------------------------------
 	// ----------- CARGO LOGS DE MEMORIA EN TXT ------------
