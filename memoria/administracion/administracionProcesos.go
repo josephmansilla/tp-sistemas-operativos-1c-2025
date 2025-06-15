@@ -4,7 +4,6 @@ import (
 	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
-	"sort"
 	"sync"
 )
 
@@ -66,18 +65,15 @@ func DesocuparProcesoEnVectorMapeable(pid int) (proceso *g.Proceso, err error) {
 	return
 }
 
-func RealizarDumpMemoria(pid int) (resultado string) {
+func RealizarDumpMemoria(pid int) (vector []string, err error) {
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
 
 	if proceso == nil {
-		logger.Fatal("No existe el proceso solicitado para DUMP")
-		return "Proceso no encontrado 😭🙏"
-		// TODO:
+		logger.Error("No existe el proceso solicitado para DUMP")
+		return vector, logger.ErrNoInstance
 	}
-
-	resultado = fmt.Sprintf("## Dump De Memoria Para PID: %d\n\n", pid)
 
 	var entradas []g.EntradaDump
 
@@ -99,7 +95,11 @@ func RealizarDumpMemoria(pid int) (resultado string) {
 		g.MutexMemoriaPrincipal.Unlock()
 
 		datosEnString := string(datos)
-		resultado += fmt.Sprintf("Direccion Fisica: %d | Frame: %d | Datos: %q\n", e.DireccionFisica, e.NumeroFrame, datosEnString)
+		resul := fmt.Sprintf("Direccion Fisica: %d | Frame: %d | Datos: %q\n", e.DireccionFisica, e.NumeroFrame, datosEnString)
+
+		g.MutexDump.Lock()
+		vector[e.NumeroFrame] = resul
+		g.MutexDump.Unlock()
 	}
 
 	return
@@ -126,11 +126,6 @@ func RecolectarEntradasProceso(proceso g.Proceso) (resultados []g.EntradaDump) {
 		resultados = append(resultados, entrada)
 	}
 
-	// TODO: NO ES NECESARIO Y LO PUEDO BORRAR QUEDA PENDIENTE DEJARLO O NO
-	sort.Slice(resultados, func(i, j int) bool {
-		return resultados[i].DireccionFisica < resultados[j].DireccionFisica
-	})
-	// TODO:
 	return
 }
 
@@ -170,7 +165,7 @@ func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]*g.EntradaDump) {
 	}
 } //TODO: a usar despues
 
-func DumpGlobal() (resultado string) {
+/*func DumpGlobal() (resultado string) {
 	g.MutexProcesosPorPID.Lock()
 	for pid := range g.ProcesosPorPID {
 		g.MutexProcesosPorPID.Unlock()
@@ -182,7 +177,7 @@ func DumpGlobal() (resultado string) {
 	g.MutexProcesosPorPID.Unlock()
 
 	return
-}
+} */
 
 func InicializarMetricas() (metricas g.MetricasProceso) {
 	metricas = g.MetricasProceso{

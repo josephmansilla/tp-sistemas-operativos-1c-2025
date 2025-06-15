@@ -8,5 +8,6 @@ var (
 	ErrNotFound        = errors.New("Not Found")
 	ErrIsEmpty         = errors.New("Empty")
 	ErrNoInstance      = errors.New("No Instance Found")
-	ErrSegmentFault	   = errors.New("Segment Fault")
+	ErrSegmentFault    = errors.New("Segment Fault")
+	ErrNoMemory        = errors.New("No memory")
 )
