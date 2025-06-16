@@ -8,6 +8,7 @@ var MutexCantidadFramesLibres sync.Mutex
 var MutexEstructuraFramesLibres sync.Mutex
 var MutexMetrica []sync.Mutex
 var MutexDump sync.Mutex
+var MutexSwapIndex sync.Mutex
 
 // Podría ser un slice de Mutex por PID, es medio al pedo
 // pero sería conceptualmente correcto

@@ -6,7 +6,9 @@ import (
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"io"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
@@ -103,7 +105,34 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 	tamanioPagina := g.MemoryConfig.PagSize
 	err = nil
 
+	file, err := os.OpenFile(g.MemoryConfig.SwapfilePath, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	pos, err := file.Seek(0, io.SeekEnd)
+	if err != nil {
+		return err
+	}
+	var info = &g.SwapProcesoInfo{
+		NumerosFrame: make([]int, 0),
+	}
 	for _, entrada := range entradas {
+		_, err = file.Write(entrada.Datos)
+		if err != nil {
+			return err
+		}
+		info.Entradas[entrada.NumeroFrame] = &g.EntradaSwapInfo{
+			NumeroFrame:    entrada.NumeroFrame,
+			Tamanio:        entrada.Tamanio,
+			PosicionInicio: int(pos),
+		}
+		info.NumerosFrame = append(info.NumerosFrame, entrada.NumeroFrame)
+
+		g.MutexSwapIndex.Lock()
+		g.SwapIndex[pid] = info
+		g.MutexSwapIndex.Unlock()
 
 		logger.Info("## PID: <%d> - <Escritura> - Dir. Física: <%d> - Tamaño: <%d>",
 			pid,
@@ -112,7 +141,7 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 		)
 	}
 
-	return
+	return nil
 }
 
 func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
@@ -161,9 +190,38 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 // ==========================================================================
 
-func CargarEntradasDeSwap(pid int) (entradas map[int]g.EntradaSwap) {
+func CargarEntradasDeSwap(pid int) (entradas map[int]g.EntradaSwap, err error) {
 
-	return
+	g.MutexSwapIndex.Lock()
+	info, existe := g.SwapIndex[pid]
+	if !existe {
+		return nil, logger.ErrNoInstance
+	}
+	g.MutexSwapIndex.Unlock()
+
+	file, err := os.Open(g.MemoryConfig.SwapfilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	entradas = make(map[int]g.EntradaSwap, len(info.NumerosFrame))
+
+	for i, entrada := range info.Entradas {
+		_, errArch := file.Seek(int64(entrada.PosicionInicio), io.SeekStart)
+		if errArch != nil {
+			return nil, err
+		}
+		datos := make([]byte, 0)
+		enviarEntrada := g.EntradaSwap{
+			NumeroFrame: info.NumerosFrame[i],
+			Datos:       datos,
+			Tamanio:     entrada.Tamanio,
+		}
+		entradas[info.NumerosFrame[i]] = enviarEntrada
+	}
+
+	return entradas, nil
 }
 
 func CargarEntradasAMemoria(pid int, entradas map[int]g.EntradaSwap) (err error) {
@@ -200,12 +258,19 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		Mensaje: "Proceso cargado a Memoria",
 	}
 
-	entradas := CargarEntradasDeSwap(mensaje.PID)
-	errEntradas := CargarEntradasAMemoria(mensaje.PID, entradas)
-	if errEntradas != nil {
-		logger.Error("Error al cargar entradas: %v", errEntradas)
+	entradas, errEntradasSwap := CargarEntradasDeSwap(mensaje.PID)
+	if errEntradasSwap != nil {
+		logger.Error("Error al cargar entradas: %v", errEntradasSwap)
 		http.Error(w, "error: %v", http.StatusConflict)
-		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradas.Error())}
+		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradasSwap.Error())}
+		return
+	}
+
+	errEntradasMem := CargarEntradasAMemoria(mensaje.PID, entradas)
+	if errEntradasMem != nil {
+		logger.Error("Error al cargar entradas: %v", errEntradasMem)
+		http.Error(w, "error: %v", http.StatusConflict)
+		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradasMem.Error())}
 		return
 	}
 

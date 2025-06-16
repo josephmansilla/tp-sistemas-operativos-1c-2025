@@ -1,21 +1,19 @@
 package globals
 
-type SwapProceso struct {
-	PID                   int `json:"pid"`
-	Inicio                int `json:"inicio"`
-	Fin                   int `json:"fin"`
-	EntradasSwap          int `json:"entradas_swap"`
-	EntradasTotales       int `json:"entradas_totales"`
-	TamanioTotalBytes     int `json:"tamanio_total_bytes"`
-	TamanioTotalSwapBytes int `json:"tamanio_total_swap_bytes"`
-	PunteroLectura        int `json:"puntero_lectura"`
-	PunteroEstructura     int `json:"puntero_estructura"`
-	UltimoAcceso          int `json:"ultimo_acceso"`
+type EntradaSwapInfo struct {
+	NumeroFrame    int `json:"numero_pagina"`
+	PosicionInicio int `json:"posicion_inicio"`
+	Tamanio        int `json:"tamanio"`
+}
+
+type SwapProcesoInfo struct {
+	Entradas     map[int]*EntradaSwapInfo `json:"entradas"`
+	NumerosFrame []int                    `json:"cantidad_entradas"`
 }
 
 type EntradaSwap struct {
 	NumeroFrame int    `json:"numero_pagina"`
-	Datos       []byte `json:"frame_swap"`
+	Datos       []byte `json:"datos"`
 	Tamanio     int    `json:"tamanio"`
 }
 
