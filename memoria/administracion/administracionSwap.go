@@ -148,7 +148,7 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
-
+	ignore := 0
 	var mensaje g.PedidoKernel
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
@@ -157,34 +157,45 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		Exito:   true,
 		Mensaje: "Proceso cargado a SWAP",
 	}
-	entradas, errEntradas := CargarEntradasDeMemoria(mensaje.PID)
-	if errEntradas != nil {
-		logger.Error("Error: %v", errEntradas)
-		http.Error(w, "error: %v", http.StatusNoContent)
-		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Errror: %s", errEntradas.Error())}
-		return
-	}
-	errSwap := CargarEntradasASwap(mensaje.PID, entradas) // REQUIERE ACTUALIZAR ESTRUCTURAS
-	if errSwap != nil {
-		logger.Error("Error: %v", errSwap)
-		http.Error(w, "error: %v", http.StatusConflict)
-		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradas.Error())}
-		return
+	g.MutexSwapBool.Lock()
+	estaProcesoEnSwap := g.EstaEnSwap[mensaje.PID]
+	g.MutexSwapBool.Unlock()
+	if estaProcesoEnSwap {
+		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: "Ya esta en SWAP"}
+		ignore = 1
 	}
 
-	g.MutexProcesosPorPID.Lock()
-	proceso := g.ProcesosPorPID[mensaje.PID]
-	g.MutexProcesosPorPID.Unlock()
-	IncrementarMetrica(proceso, 1, IncrementarBajadasSwap)
+	if ignore != 1 {
+		entradas, errEntradas := CargarEntradasDeMemoria(mensaje.PID)
+		if errEntradas != nil {
+			logger.Error("Error: %v", errEntradas)
+			http.Error(w, "error: %v", http.StatusNoContent)
+			respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Errror: %s", errEntradas.Error())}
+			return
+		}
+		errSwap := CargarEntradasASwap(mensaje.PID, entradas) // REQUIERE ACTUALIZAR ESTRUCTURAS
+		if errSwap != nil {
+			logger.Error("Error: %v", errSwap)
+			http.Error(w, "error: %v", http.StatusConflict)
+			respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradas.Error())}
+			return
+		}
 
-	tiempoTranscurrido := time.Now().Sub(inicio)
-	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+		g.MutexProcesosPorPID.Lock()
+		proceso := g.ProcesosPorPID[mensaje.PID]
+		g.MutexProcesosPorPID.Unlock()
+		IncrementarMetrica(proceso, 1, IncrementarBajadasSwap)
+
+		g.EstaEnSwap[mensaje.PID] = true
+
+		tiempoTranscurrido := time.Now().Sub(inicio)
+		g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+
+	}
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
-
-	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Respuesta devuelta"))
 }
@@ -249,7 +260,7 @@ func CargarEntradasAMemoria(pid int, entradas map[int]g.EntradaSwap) (err error)
 func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
-
+	ignore := 0
 	var mensaje g.DesuspensionProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
@@ -259,37 +270,48 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		Mensaje: "Proceso cargado a Memoria",
 	}
 
-	entradas, errEntradasSwap := CargarEntradasDeSwap(mensaje.PID)
-	if errEntradasSwap != nil {
-		logger.Error("Error al cargar entradas: %v", errEntradasSwap)
-		http.Error(w, "error: %v", http.StatusConflict)
-		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradasSwap.Error())}
-		return
+	g.MutexSwapBool.Lock()
+	estaProcesoEnMemoria := !g.EstaEnSwap[mensaje.PID]
+	g.MutexSwapBool.Unlock()
+
+	if estaProcesoEnMemoria {
+		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: "Ya esta en Memoria"}
+		ignore = 1
 	}
 
-	errEntradasMem := CargarEntradasAMemoria(mensaje.PID, entradas)
-	if errEntradasMem != nil {
-		logger.Error("Error al cargar entradas: %v", errEntradasMem)
-		http.Error(w, "error: %v", http.StatusConflict)
-		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradasMem.Error())}
-		return
+	if ignore != 1 {
+		entradas, errEntradasSwap := CargarEntradasDeSwap(mensaje.PID)
+		if errEntradasSwap != nil {
+			logger.Error("Error al cargar entradas: %v", errEntradasSwap)
+			http.Error(w, "error: %v", http.StatusConflict)
+			respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradasSwap.Error())}
+			return
+		}
+
+		errEntradasMem := CargarEntradasAMemoria(mensaje.PID, entradas)
+		if errEntradasMem != nil {
+			logger.Error("Error al cargar entradas: %v", errEntradasMem)
+			http.Error(w, "error: %v", http.StatusConflict)
+			respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradasMem.Error())}
+			return
+		}
+
+		g.MutexProcesosPorPID.Lock()
+		proceso := g.ProcesosPorPID[mensaje.PID]
+		g.MutexProcesosPorPID.Unlock()
+		IncrementarMetrica(proceso, 1, IncrementarSubidasMP)
+
+		g.EstaEnSwap[mensaje.PID] = false
+
+		time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Second)
+
+		tiempoTranscurrido := time.Now().Sub(inicio)
+		g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+
 	}
-
-	g.MutexProcesosPorPID.Lock()
-	proceso := g.ProcesosPorPID[mensaje.PID]
-	g.MutexProcesosPorPID.Unlock()
-	IncrementarMetrica(proceso, 1, IncrementarSubidasMP)
-
-	time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Second)
-
-	tiempoTranscurrido := time.Now().Sub(inicio)
-	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
-
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
-
-	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Respuesta devuelta"))
 }
