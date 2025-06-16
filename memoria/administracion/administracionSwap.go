@@ -2,7 +2,6 @@ package administracion
 
 import (
 	"encoding/json"
-	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
@@ -10,12 +9,6 @@ import (
 	"sync"
 	"time"
 )
-
-// Para pasar a suspendido:
-// 1) Transferir los datos de cada entrada en bytes hacia el archivo, dejar en bytes.
-// 2) Marcar cantidad frames como libres y no presente
-// 3) Eliminar el contenido de los frames (conceptualmente mal, pero es posible que me ataje algún error de mis funciones)
-// 4) Actualizar estructuras necesarias
 
 func RecolectarEntradasProcesoSwap(proceso g.Proceso) (resultados []int) {
 	cantidadEntradas := g.MemoryConfig.EntriesPerPage
@@ -107,6 +100,7 @@ func CargarEntradasDeMemoria(pid int) (resultados map[int]g.EntradaSwap, err err
 
 func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 	tamanioPagina := g.MemoryConfig.PagSize
+	err = nil
 
 	for _, entrada := range entradas {
 
@@ -124,21 +118,26 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
 
-	var mensaje g.SuspensionProceso
+	var mensaje g.PedidoKernel
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
-
+	respuesta := g.RespuestaMemoria{
+		Exito:   true,
+		Mensaje: "Proceso cargado a SWAP",
+	}
 	entradas, errEntradas := CargarEntradasDeMemoria(mensaje.PID)
 	if errEntradas != nil {
 		logger.Error("Error: %v", errEntradas)
 		http.Error(w, "error: %v", http.StatusNoContent)
+		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: errEntradas.Error()}
 		return
 	}
 	errSwap := CargarEntradasASwap(mensaje.PID, entradas) // REQUIERE ACTUALIZAR ESTRUCTURAS
 	if errSwap != nil {
 		logger.Error("Error: %v", errSwap)
-		http.Error(w, "error: %v", http.StatusNoContent)
+		http.Error(w, "error: %v", http.StatusConflict)
+		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: errEntradas.Error()}
 		return
 	}
 
@@ -146,11 +145,6 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	proceso := g.ProcesosPorPID[mensaje.PID]
 	g.MutexProcesosPorPID.Unlock()
 	IncrementarMetrica(proceso, 1, IncrementarBajadasSwap)
-
-	respuesta := g.RespuestaMemoria{
-		Exito:   true,
-		Mensaje: "Proceso cargado a SWAP",
-	}
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
@@ -164,29 +158,32 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Respuesta devuelta"))
 }
 
-// Para sacar de suspendido:
-// 1) Verificar el tamanio del proceso y si entra en Memoria
-// 2) Leer cada entrada de swap, ponerlo en memoria y marcar como presente
-// 3) Liberar de SWAP el espacio
-// 4) Actualizar estructuras necesarias
-// 5) Retonar confirmación éxitosa o fallida
+// ==========================================================================
 
 func CargarEntradasDeSwap(pid int) (entradas map[int]g.EntradaSwap) {
 
 	return
 }
 
-func CargarEntradasAMemoria(pid int, entradas map[int]g.EntradaSwap) {
+func CargarEntradasAMemoria(pid int, entradas map[int]g.EntradaSwap) (err error) {
 	tamanioPagina := g.MemoryConfig.PagSize
+	err = nil
 
 	for _, entrada := range entradas {
+		dirFisica := entrada.NumeroFrame * tamanioPagina
+		rta := EscribirEspacioEntrada(pid, dirFisica, string(entrada.Datos))
+		if rta.Exito != nil {
+			logger.Error("Error: %v", rta.Exito)
+			return rta.Exito
+		}
 
 		logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>",
 			pid,
-			entrada.NumeroFrame*tamanioPagina,
+			dirFisica,
 			entrada.Tamanio,
 		)
 	}
+	return
 }
 
 func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
@@ -197,16 +194,29 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
+	respuesta := g.RespuestaMemoria{
+		Exito:   true,
+		Mensaje: "Proceso cargado a Memoria",
+	}
 
 	entradas := CargarEntradasDeSwap(mensaje.PID)
-	CargarEntradasAMemoria
+	errEntradas := CargarEntradasAMemoria(mensaje.PID, entradas)
+	if errEntradas != nil {
+		logger.Error("Error al cargar entradas: %v", errEntradas)
+		http.Error(w, "error: %v", http.StatusConflict)
+		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: errEntradas.Error()}
+		return
+	}
+
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[mensaje.PID]
+	g.MutexProcesosPorPID.Unlock()
+	IncrementarMetrica(proceso, 1, IncrementarSubidasMP)
 
 	time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Second)
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
-
-	respuesta := g.ExitoDesuspensionProceso{}
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)

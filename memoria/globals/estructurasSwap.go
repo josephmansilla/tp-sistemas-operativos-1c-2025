@@ -19,18 +19,10 @@ type EntradaSwap struct {
 	Tamanio     int    `json:"tamanio"`
 }
 
-type SuspensionProceso struct {
+type PedidoKernel struct {
 	PID int `json:"pid"`
-}
-
-type ExitoSuspensionProceso struct {
-	Exito error `json:"exito"`
 }
 
 type DesuspensionProceso struct {
 	PID int `json:"pid"`
-}
-
-type ExitoDesuspensionProceso struct {
-	Exito error `json:"exito"`
 }
