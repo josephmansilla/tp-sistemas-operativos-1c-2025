@@ -23,19 +23,15 @@ type CachePaginas struct {
 }
 
 var Cache *CachePaginas
-var max int
-
-func InitCache() {
-	max = globals.ClientConfig.CacheEntries
-}
+var Max int
 
 func NuevaCachePaginas() *CachePaginas {
-	if max <= 0 {
+	if Max <= 0 {
 		return nil
 	}
 	return &CachePaginas{
-		Entradas:    make([]EntradaCache, 0, max),
-		MaxEntradas: max,
+		Entradas:    make([]EntradaCache, 0, Max),
+		MaxEntradas: Max,
 		Algoritmo:   globals.ClientConfig.CacheReplacement,
 		Puntero:     0,
 	}
@@ -175,4 +171,12 @@ func (c *CachePaginas) reemplazoClockM(nueva EntradaCache) {
 
 	// Vuelvo a buscar
 	c.reemplazoClockM(nueva)
+}
+
+func LimpiarCache() {
+	//TODO
+}
+
+func EliminarEntrada() {
+	//TODO
 }

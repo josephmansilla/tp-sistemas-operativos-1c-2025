@@ -54,7 +54,8 @@ func Traducir(dirLogica int) int {
 	}
 
 	// Inicializo la TLB
-	var tlb = NuevaTLB(globals.ClientConfig.TlbEntries, globals.ClientConfig.TlbReplacement)
+	var tlb = NuevaTLB()
+	tlb.AgregarEntrada(4, 7)
 
 	// Consulto la TLB
 	if marco, ok := tlb.Buscar(nroPagina); ok {
@@ -62,7 +63,7 @@ func Traducir(dirLogica int) int {
 	}
 
 	// La página no está en la TLB, voy a Memoria
-	entradas := descomponerPagina(nroPagina, niveles, entradasPorNivel)
+	entradas := DescomponerPagina(nroPagina, niveles, entradasPorNivel)
 	marco, err := accederTabla(globals.PIDActual, entradas)
 	if err != nil {
 		log.Printf("No se pudo acceder a la tabla de páginas: %s", err.Error())
@@ -80,7 +81,7 @@ func Traducir(dirLogica int) int {
 }
 
 // Descompone el número de página en los índices para cada nivel
-func descomponerPagina(nroPagina int, niveles int, entradasPorNivel int) []int {
+func DescomponerPagina(nroPagina int, niveles int, entradasPorNivel int) []int {
 	entradas := make([]int, niveles)
 	divisor := 1
 

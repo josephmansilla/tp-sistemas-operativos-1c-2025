@@ -143,6 +143,7 @@ func readMemInstruccion(arguments []string) error {
 	nroPagina := dirLogica / globals.TamanioPagina
 
 	var valorLeido string
+
 	if traducciones.Cache.EstaActiva() {
 		valorLeido, err = traducciones.LeerEnCache(nroPagina, tamanio)
 		if err != nil {
@@ -159,8 +160,9 @@ func readMemInstruccion(arguments []string) error {
 		log.Printf("Error leyendo de memoria: %v", err)
 		return err
 	}
+
 	if traducciones.Cache.EstaActiva() {
-		traducciones.Cache.Agregar(nroPagina, valorLeido, true) // reemplazá "" con el contenido real si lo tenés
+		traducciones.Cache.Agregar(nroPagina, valorLeido, false) // reemplazá "" con el contenido real si lo tenés
 		log.Printf("PID: %d - CACHE ADD - Pagina: %d", globals.PIDActual, nroPagina)
 	}
 
@@ -220,6 +222,8 @@ func ioInstruccion(arguments []string) error {
 		return err
 	}
 
+	traducciones.LimpiarCache()
+
 	log.Println("Syscall IO realizada exitosamente")
 	return globals.ErrSyscallBloqueante
 }
@@ -242,6 +246,8 @@ func exitInstruccion(arguments []string) error {
 		log.Printf("Error al hacer syscall EXIT a Kernel: %s", err)
 		return err
 	}
+
+	traducciones.LimpiarCache()
 
 	log.Println("Syscall EXIT realizada exitosamente")
 	return nil

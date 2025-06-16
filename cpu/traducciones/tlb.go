@@ -22,14 +22,16 @@ type TLB struct {
 	mutex       sync.Mutex
 }
 
-func NuevaTLB(maxEntradas int, algoritmo string) *TLB {
+func NuevaTLB() *TLB {
+	algoritmo := globals.ClientConfig.TlbReplacement
+
 	if algoritmo != "FIFO" && algoritmo != "LRU" {
 		log.Printf("Algoritmo TLB inválido: %s", algoritmo)
 	}
 	return &TLB{
 		entradas:    make(map[int]*list.Element),
 		orden:       list.New(),
-		maxEntradas: maxEntradas,
+		maxEntradas: globals.ClientConfig.TlbEntries,
 		algoritmo:   algoritmo,
 	}
 }

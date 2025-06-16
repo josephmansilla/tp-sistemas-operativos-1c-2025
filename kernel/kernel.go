@@ -54,7 +54,7 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DEL CONFIG ------------------
 	// ----------------------------------------------------
-	configData, err := os.ReadFile("config.json")
+	configData, err := os.ReadFile("config_1.json")
 	if err != nil {
 		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
 	}

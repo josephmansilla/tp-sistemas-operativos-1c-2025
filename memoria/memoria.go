@@ -32,7 +32,7 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DEL CONFIG ------------------
 	// ----------------------------------------------------
-	configPath := fmt.Sprintf("config_%s.json", os.Args[0])
+	configPath := fmt.Sprintf("configs/config_%s.json", os.Args[1])
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
 		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())

@@ -41,7 +41,7 @@ func main() {
 	if globals.ClientConfig == nil {
 		log.Fatal("No se pudo cargar el archivo de configuracion")
 	}
-	traducciones.InitCache()
+	traducciones.Max = globals.ClientConfig.CacheEntries
 
 	//Solicito la configuracion de memoria
 	err = utils.RecibirConfiguracionMemoria(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)

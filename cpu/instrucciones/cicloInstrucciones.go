@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
+	"github.com/sisoputnfrba/tp-golang/cpu/traducciones"
 	"log"
 	"net/http"
 	"strings"
@@ -127,6 +128,8 @@ func FaseCheckInterrupt() bool {
 			globals.PIDInterrumpido, globals.PIDActual)
 		return false
 	}
+
+	traducciones.LimpiarCache()
 
 	pid := globals.PIDActual
 	pc := globals.PCActual
