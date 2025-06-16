@@ -67,6 +67,10 @@ func DesocuparProcesoEnVectorMapeable(pid int) (proceso *g.Proceso, err error) {
 		return proceso, fmt.Errorf("no hay una instancia de pid \"%d\" en el slice de procesos por PID %v", pid, logger.ErrNoInstance)
 	}
 
+	g.MutexSwapIndex.Lock()
+	delete(g.SwapIndex, pid)
+	g.MutexSwapIndex.Unlock()
+
 	return
 }
 

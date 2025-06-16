@@ -116,6 +116,7 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 		return err
 	}
 	var info = &g.SwapProcesoInfo{
+		Entradas:     make(map[int]*g.EntradaSwapInfo),
 		NumerosFrame: make([]int, 0),
 	}
 	for _, entrada := range entradas {

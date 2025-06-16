@@ -10,7 +10,6 @@ var SwapIndex map[int]*SwapProcesoInfo
 func InstanciarEstructurasGlobales() {
 	ProcesosPorPID = make(map[int]*Proceso)
 	SwapIndex = make(map[int]*SwapProcesoInfo)
-	// SwapIndex.Entradas = make(map[int]EntradaSwap)
 }
 
 type EstadoMemoria struct {
