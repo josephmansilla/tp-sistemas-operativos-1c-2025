@@ -195,9 +195,13 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## PID: <%d>  - Memory Dump solicitado", dump.PID)
 
-	contenido := adm.RealizarDumpMemoria(dump.PID)
-	// TODO: verificacion esta vacio
-	g.ParsearContenido(dumpFile, contenido)
+	contenido, err := adm.RealizarDumpMemoria(dump.PID)
+	if err != nil {
+		logger.Error("Error encontrando PID: %v", err)
+		http.Error(w, "Error encontrando PID", http.StatusInternalServerError)
+		return
+	}
+	g.ParsearContenido(dumpFile, dump.PID, contenido)
 
 	logger.Info("## Archivo Dump fue creado con EXITO")
 	w.WriteHeader(http.StatusOK)

@@ -7,7 +7,6 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"os"
 	"strings"
-	"sync"
 )
 
 func InicializarMemoriaPrincipal() {
@@ -16,20 +15,17 @@ func InicializarMemoriaPrincipal() {
 	cantidadFrames := tamanioMemoriaPrincipal / tamanioPagina
 
 	g.MemoriaPrincipal = make([]byte, tamanioMemoriaPrincipal)
-
-	g.FramesLibres = make([]bool, cantidadFrames)
 	ConfigurarFrames(cantidadFrames)
-
 	g.InstanciarEstructurasGlobales()
-
-	g.MutexMetrica = make([]sync.Mutex, g.MemoryConfig.MemorySize*1000) // TODO: tamanioTotalmente arbitrario
+	g.InicializarSemaforos()
 
 	logger.Info("Tamanio Memoria Principal de %d", g.MemoryConfig.MemorySize)
 	logger.Info("Memoria Principal Inicializada con %d con %d frames de %d.",
 		tamanioMemoriaPrincipal, cantidadFrames, tamanioPagina)
 }
 
-func ConfigurarFrames(cantidadFrames int) { //TODO: MAS O MENOS OBSOLETO
+func ConfigurarFrames(cantidadFrames int) {
+	g.FramesLibres = make([]bool, cantidadFrames)
 	g.MutexEstructuraFramesLibres.Lock()
 	for i := 0; i < cantidadFrames; i++ {
 		g.FramesLibres[i] = true
@@ -73,7 +69,9 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, taman
 
 		stringEnBytes = append(stringEnBytes, lineaEnBytes...)
 		proceso.OffsetInstrucciones[cantidadInstrucciones] = len(stringEnBytes)
-		cantidadInstrucciones++ // TODO: si los tests cuentan al EOF como instruccion queda así
+		cantidadInstrucciones++
+		// TODO: si los tests cuentan al EOF como instruccion queda así
+		// TODO: sino despues del if
 
 		if strings.TrimSpace(lineaEnString) == "EOF" {
 			break
@@ -100,9 +98,9 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 	bytesRestantes := tamanioPagina - offset
 
 	if direccionFisica+bytesRestantes > finFrame {
-		logger.Fatal("Se está leyendo afuera del frame")
+		logger.Error("Se está leyendo afuera del frame")
 		// TODO:		panic("Segment Fault - Lectura fuera del marco asignado")
-		// TODO: tirar error pero sin panic
+		// TODO: tirar error pero sin panic porque no es un caso en los tests
 	}
 
 	pseudocodigoEnBytes := make([]byte, bytesRestantes)
@@ -122,7 +120,7 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 	return
 }
 
-func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes []byte) {
+func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes []byte) (err error) {
 	tamanioPagina := g.MemoryConfig.PagSize
 	numeroPagina := direccionFisica / tamanioPagina
 
@@ -130,8 +128,9 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	finFrame := inicioFrame + tamanioPagina
 
 	if direccionFisica+len(datosEnBytes) > finFrame {
-		logger.Fatal("Segment Fault - Escritura fuera del marco asignado")
-	} // ERR HANDLING DIFERENTE PORFA
+		logger.Error("Segment Fault - Escritura fuera del marco asignado")
+		return logger.ErrSegmentFault
+	}
 
 	g.MutexMemoriaPrincipal.Lock()
 	copy(g.MemoriaPrincipal[direccionFisica:], datosEnBytes)
@@ -145,7 +144,7 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	entrada, err := BuscarEntradaPagina(proceso, indices)
 	if err != nil {
 		logger.Error("No se pudo encontrar la entrada de pagina: %v", err)
-		panic("AAAAAAAAAAAAAAAAAAAAAAAAA") // TODO: ver que hacer con este error
+		return err
 	}
 	if entrada != nil {
 		entrada.FueModificado = true
@@ -153,6 +152,8 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	}
 
 	IncrementarMetrica(proceso, 1, IncrementarEscrituraDeMemoria)
+
+	return nil
 }
 
 func RemoverEspacioMemoria(inicio int, limite int) (err error) {
@@ -314,4 +315,4 @@ func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int, dato
 	}
 	return g.ExitoEdicionMemoria{Exito: err, Booleano: true}, nil
 
-} //TODO: err handling
+}

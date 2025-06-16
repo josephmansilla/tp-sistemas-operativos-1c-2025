@@ -7,12 +7,16 @@ import (
 	"time"
 )
 
-func ParsearContenido(dumpFile *os.File, contenido string) {
-	_, err := dumpFile.WriteString(contenido)
-	if err != nil {
-		logger.Error("Error al escribir contenido en el archivo dump: %v", err)
+func ParsearContenido(dumpFile *os.File, pid int, contenido []string) {
+	comienzo := fmt.Sprintf("## Dump De Memoria Para PID: %d\n\n", pid)
+	_, err := dumpFile.WriteString(comienzo)
+	for i := 0; i < len(contenido); i++ {
+		_, err = dumpFile.WriteString(contenido[i])
+		if err != nil {
+			logger.Error("Error al escribir contenido en el archivo dump: %v", err)
+		}
 	}
-} //TODO: rever
+}
 
 func ConversionEnBytes(stringazo string) []byte {
 	return []byte(stringazo)
@@ -31,7 +35,7 @@ func CalcularCantidadEntradasATraer(tamanio int) (resultado int, err error) {
 	err = nil
 	resultado = 0
 	if tamanio <= 0 {
-		return resultado, fmt.Errorf("el tamanio pedido de espacio es 0", logger.ErrBadRequest)
+		return resultado, fmt.Errorf("el tamanio pedido de espacio es 0 %v", logger.ErrBadRequest)
 	}
 
 	resultado = tamanio / MemoryConfig.PagSize
