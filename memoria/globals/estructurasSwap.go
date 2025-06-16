@@ -16,7 +16,7 @@ type SwapProceso struct {
 type EntradaSwap struct {
 	NumeroPagina int    `json:"numero_pagina"`
 	OffsetSwap   int    `json:"offset_swap"`
-	FrameSwap    []byte `json:"frame_swap"`
+	Datos        []byte `json:"frame_swap"`
 	Presente     bool   `json:"presente"`
 }
 

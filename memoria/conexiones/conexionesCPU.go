@@ -11,15 +11,24 @@ import (
 
 func RecibirMensajeDeCPUHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje g.DatosDeCPU
-	data.LeerJson(w, r, &mensaje)
+	err := data.LeerJson(w, r, &mensaje)
+	if err != nil {
+		return
+	}
 
 	g.CPU = g.DatosDeCPU{
 		PID: mensaje.PID,
 		PC:  mensaje.PC,
 	}
 
-	logger.Info("PID Pedido: %d", mensaje.PID)
-	logger.Info("PC Pedido: %d", mensaje.PC)
+	logger.Info("PID Pedido: %d ; PC Pedido: %d", mensaje.PID, mensaje.PC)
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(mensaje); err != nil {
+		logger.Error("Error al codificar la respuesta JSON: %v", err)
+		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
+	}
+	w.Write([]byte("Instruccion devuelta"))
 }
 
 func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
@@ -37,39 +46,19 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
 
-	respuesta := ObtenerInstruccion(proceso, pc)
+	respuesta, err := adm.ObtenerInstruccion(proceso, pc)
+	if err != nil {
+		return
+	}
 
 	logger.Info("## PID: <%d>  - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, respuesta.Instruccion)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(respuesta)
-	w.Write([]byte("Insturccion devuelta"))
-}
-
-func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU) {
-	respuesta = g.InstruccionCPU{Exito: nil, Instruccion: ""}
-	cantInstrucciones := len(proceso.OffsetInstrucciones)
-
-	var base int
-	var tamanioALeer int
-
-	if pc == 0 {
-		base = 0
-		tamanioALeer = proceso.OffsetInstrucciones[pc]
-	} else if pc == cantInstrucciones {
-		return
-	} else { // Esto indica fin del archivo o error de PC
-		base = proceso.OffsetInstrucciones[pc-1]
-		tamanioALeer = proceso.OffsetInstrucciones[pc] - base
+	if err := json.NewEncoder(w).Encode(mensaje); err != nil {
+		logger.Error("Error al codificar la respuesta JSON: %v", err)
+		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 	}
-	tamanioPagina := g.MemoryConfig.PagSize
-	numeroEntradaABuscar := base / tamanioPagina
-	offsetDir := base % tamanioPagina
-
-	direccionFisica := (adm.BuscarEntradaEspecifica(proceso.TablaRaiz, numeroEntradaABuscar) * tamanioPagina) + offsetDir
-	adm.LeerEspacioMemoria(proceso.PID, direccionFisica, tamanioALeer)
-
-	return respuesta
+	w.Write([]byte("Instruccion devuelta"))
 }
 
 func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +69,6 @@ func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := data.LeerJson(w, r, &pidData)
 	if err != nil {
-		// El error ya está logueado por LeerJson
 		return
 	}
 	logger.Info("Recibí petición de configuración desde PID: %d", pidData.PID)
@@ -96,21 +84,24 @@ func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error al codificar la respuesta JSON: %v", err)
 		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 	}
-
+	w.Write([]byte("Configuracion de memoria devuelta"))
 }
 
 func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje g.MensajePedidoTablaCPU
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
-		http.Error(w, "Error leyendo JSON del CPU\n", http.StatusBadRequest)
 		return
 	}
 
 	pid := mensaje.PID
 	indices := mensaje.IndicesEntrada
-
-	marco := adm.ObtenerEntradaPagina(pid, indices)
+	var marco int
+	marco, err = adm.ObtenerEntradaPagina(pid, indices)
+	if err != nil {
+		logger.Error("Error: %v", err)
+		http.Error(w, "Error al Leer espacio de Memoria \n", http.StatusInternalServerError)
+	}
 
 	respuesta := g.RespuestaTablaCPU{
 		NumeroMarco: marco,
@@ -119,6 +110,9 @@ func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("## Número Frame enviado: %d ", marco)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(respuesta)
+	errEncode := json.NewEncoder(w).Encode(respuesta)
+	if errEncode != nil {
+		return
+	}
 	w.Write([]byte("marco devuelto"))
 }

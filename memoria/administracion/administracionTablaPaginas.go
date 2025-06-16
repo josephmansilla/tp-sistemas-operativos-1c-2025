@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
+	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 	"time"
@@ -247,6 +248,36 @@ func ModificarEstadoEntradaLectura(pid int) {
 	logger.Info("## Modificacion del estado entrada exitosa")
 }
 
+func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU, err error) {
+	respuesta = g.InstruccionCPU{Exito: nil, Instruccion: ""}
+	cantInstrucciones := len(proceso.OffsetInstrucciones)
+
+	var base int
+	var tamanioALeer int
+
+	if pc == 0 {
+		base = 0
+		tamanioALeer = proceso.OffsetInstrucciones[pc]
+	} else if pc == cantInstrucciones {
+		return
+	} else { // Esto indica fin del archivo o error de PC
+		base = proceso.OffsetInstrucciones[pc-1]
+		tamanioALeer = proceso.OffsetInstrucciones[pc] - base
+	}
+	tamanioPagina := g.MemoryConfig.PagSize
+	numeroEntradaABuscar := base / tamanioPagina
+	offsetDir := base % tamanioPagina
+
+	direccionFisica := (BuscarEntradaEspecifica(proceso.TablaRaiz, numeroEntradaABuscar) * tamanioPagina) + offsetDir
+	var memoria g.ExitoLecturaMemoria
+	memoria, err = LeerEspacioMemoria(proceso.PID, direccionFisica, tamanioALeer)
+	if err != nil {
+		return respuesta, err
+	}
+	respuesta = g.InstruccionCPU{Instruccion: memoria.DatosAEnviar}
+	return
+}
+
 func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
 	err = nil
 
@@ -283,9 +314,7 @@ func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 	retrasoSwap := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
 	var mensaje g.LecturaPagina
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
 
@@ -316,11 +345,10 @@ func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
 	var mensaje g.EscrituraPagina
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
+
 	if mensaje.TamanioNecesario > g.MemoryConfig.PagSize {
 		logger.Error("No se puede cargar en una pagina este tamaño")
 		http.Error(w, "No se puede cargar en una pagina este tamaño", http.StatusBadRequest)

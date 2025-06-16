@@ -34,25 +34,30 @@ func ObtenerEspacioLibreHandler(w http.ResponseWriter, r *http.Request) {
 
 func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje g.DatosRespuestaDeKernel
-
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+	respuesta := g.RespuestaMemoria{
+		Exito:   true,
+		Mensaje: "Proceso creado correctamente en memoria",
+	}
+	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
 
 	pid := mensaje.PID
 	tamanioProceso := mensaje.TamanioMemoria
-	adm.InicializarProceso(pid, tamanioProceso, mensaje.Pseudocodigo)
+	err := adm.InicializarProceso(pid, tamanioProceso, mensaje.Pseudocodigo)
+	if err != nil {
+		logger.Error("Error: %v", err)
+		respuesta = g.RespuestaMemoria{
+			Exito:   false,
+			Mensaje: "",
+		}
+	}
 
 	logger.Info("## PID: <%d> - Proceso Creado - Tamaño: <%d>", pid, tamanioProceso)
 
-	respuesta := g.RespuestaMemoria{
-		Exito:   true,
-		Mensaje: "Proceso creado correctamente en memoria",
-	}
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
+	if errEnconde := json.NewEncoder(w).Encode(respuesta); errEnconde != nil {
+		logger.Error("Error al serializar mock de espacio: %v", errEnconde)
+		return
 	}
 
 	json.NewEncoder(w).Encode(respuesta)
@@ -64,15 +69,13 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 	var mensaje g.FinalizacionProceso
 
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
-	var metricas g.MetricasProceso
+
 	pid := mensaje.PID
 
-	metricas, err = adm.LiberarMemoriaProceso(pid)
+	metricas, err := adm.LiberarMemoriaProceso(pid)
 	if err != nil {
 		logger.Error("Hubo un error al eliminar el proceso %v", err)
 	}
@@ -86,10 +89,11 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 	respuesta := g.RespuestaMemoria{
 		Exito:   true,
-		Mensaje: "Proceso creado correctamente en memoria",
+		Mensaje: "Proceso eliminado correctamente en memoria",
 	}
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
+	if errEncode := json.NewEncoder(w).Encode(respuesta); errEncode != nil {
+		logger.Error("Error al serializar mock de espacio: %v", errEncode)
+		return
 	}
 
 	json.NewEncoder(w).Encode(respuesta)
@@ -102,9 +106,8 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
 	var mensaje g.LecturaProceso
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	err := data.LeerJson(w, r, &mensaje)
 	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
 		return
 	}
 
@@ -114,7 +117,8 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	respuesta, err := adm.LeerEspacioMemoria(pid, direccionFisica, tamanioALeer)
 	if err != nil {
-		// TODO:::::: -------------------------------------------------------------
+		logger.Error("Error: %v", err)
+		http.Error(w, "Error al Leer espacio de Memoria \n", http.StatusInternalServerError)
 	}
 
 	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
@@ -126,6 +130,7 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
+		return
 	}
 
 	logger.Info("## Lectura en espacio de memoria Éxitosa")
@@ -140,9 +145,7 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
 	var mensaje g.EscrituraProceso
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
 
@@ -153,7 +156,8 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	respuesta, err := adm.EscribirEspacioMemoria(pid, direccionFisica, tamanioALeer, datos)
 	if err != nil {
-		// TODO : ======================================
+		logger.Error("Error: %v", err)
+		http.Error(w, "Error al Leer espacio de Memoria \n", http.StatusInternalServerError)
 	}
 
 	logger.Info("## PID: <%d> - <Escritura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
@@ -178,8 +182,6 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 	var dump g.DatosParaDump
 
 	if err := data.LeerJson(w, r, &dump); err != nil {
-		logger.Error("Error al recibir JSON: %v", err)
-		http.Error(w, "Error procesando datos del Kernel", http.StatusInternalServerError)
 		return
 	}
 
