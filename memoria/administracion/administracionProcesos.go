@@ -44,7 +44,10 @@ func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
 	}
 	metricas = proceso.Metricas
 	for _, tabla := range proceso.TablaRaiz {
-		LiberarTablaPaginas(tabla, pid)
+		err := LiberarTablaPaginas(tabla, pid)
+		if err != nil {
+			return g.MetricasProceso{}, err
+		}
 	}
 	logger.Info("Se liberó todo para el PID: %d", pid)
 	return

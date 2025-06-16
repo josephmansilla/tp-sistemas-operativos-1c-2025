@@ -22,7 +22,8 @@ func InicializarMemoriaPrincipal() {
 
 	g.InstanciarEstructurasGlobales()
 
-	g.MutexMetrica = make([]sync.Mutex, g.MemoryConfig.MemorySize*1000) // TODO: tamanioTotalmente arbitrario
+	g.MutexMetrica = make([]sync.Mutex, g.MemoryConfig.MemorySize*1000)
+	// tamaño totalmente arbitrario
 
 	logger.Info("Tamanio Memoria Principal de %d", g.MemoryConfig.MemorySize)
 	logger.Info("Memoria Principal Inicializada con %d con %d frames de %d.",
@@ -73,7 +74,9 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, taman
 
 		stringEnBytes = append(stringEnBytes, lineaEnBytes...)
 		proceso.OffsetInstrucciones[cantidadInstrucciones] = len(stringEnBytes)
-		cantidadInstrucciones++ // TODO: si los tests cuentan al EOF como instruccion queda así
+		cantidadInstrucciones++
+		// TODO: si los tests cuentan al EOF como instruccion queda así
+		// TODO: sino despues del if
 
 		if strings.TrimSpace(lineaEnString) == "EOF" {
 			break
@@ -100,9 +103,9 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 	bytesRestantes := tamanioPagina - offset
 
 	if direccionFisica+bytesRestantes > finFrame {
-		logger.Fatal("Se está leyendo afuera del frame")
+		logger.Error("Se está leyendo afuera del frame")
 		// TODO:		panic("Segment Fault - Lectura fuera del marco asignado")
-		// TODO: tirar error pero sin panic
+		// TODO: tirar error pero sin panic porque no es un caso en los tests
 	}
 
 	pseudocodigoEnBytes := make([]byte, bytesRestantes)
@@ -122,7 +125,7 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 	return
 }
 
-func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes []byte) {
+func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes []byte) (err error) {
 	tamanioPagina := g.MemoryConfig.PagSize
 	numeroPagina := direccionFisica / tamanioPagina
 
@@ -130,8 +133,9 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	finFrame := inicioFrame + tamanioPagina
 
 	if direccionFisica+len(datosEnBytes) > finFrame {
-		logger.Fatal("Segment Fault - Escritura fuera del marco asignado")
-	} // ERR HANDLING DIFERENTE PORFA
+		logger.Error("Segment Fault - Escritura fuera del marco asignado")
+		return logger.ErrSegmentFault
+	}
 
 	g.MutexMemoriaPrincipal.Lock()
 	copy(g.MemoriaPrincipal[direccionFisica:], datosEnBytes)
@@ -145,7 +149,7 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	entrada, err := BuscarEntradaPagina(proceso, indices)
 	if err != nil {
 		logger.Error("No se pudo encontrar la entrada de pagina: %v", err)
-		panic("AAAAAAAAAAAAAAAAAAAAAAAAA") // TODO: retonar error con err handling
+		return err
 	}
 	if entrada != nil {
 		entrada.FueModificado = true
@@ -153,6 +157,8 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	}
 
 	IncrementarMetrica(proceso, 1, IncrementarEscrituraDeMemoria)
+
+	return nil
 }
 
 func RemoverEspacioMemoria(inicio int, limite int) (err error) {
@@ -234,7 +240,7 @@ func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirm
 		}
 	}
 	return g.ExitoLecturaMemoria{Exito: nil, DatosAEnviar: string(datos)}, nil
-} // TODO: err handling
+}
 
 func LogicaRecorrerMemoria(i int, cantEntradas int, entrada g.EntradaPagina, dirF int, bytesRestantes int) (inicio int, limite int, err error) {
 	tamTotal := g.MemoryConfig.MemorySize
@@ -314,4 +320,4 @@ func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int, dato
 	}
 	return g.ExitoEdicionMemoria{Exito: err, Booleano: true}, nil
 
-} //TODO: err handling
+}

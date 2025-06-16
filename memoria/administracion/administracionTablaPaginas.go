@@ -5,7 +5,6 @@ import (
 	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
-	"log"
 	"net/http"
 	"time"
 )
@@ -103,21 +102,21 @@ func RecorrerTablasBuscandoEntrada(tabla *g.TablaPagina, numeroEntrada int, cont
 	return -1, false
 }
 
-func ObtenerEntradaPagina(pid int, indices []int) int {
+func ObtenerEntradaPagina(pid int, indices []int) (int, error) {
 	g.MutexProcesosPorPID.Lock()
 	procesoBuscado, errPro := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
 	if !errPro {
 		logger.Error("Processo Buscado no existe")
-		return -1
+		return -1, fmt.Errorf("el proceso no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
 	}
 	entradaPagina, errPag := BuscarEntradaPagina(procesoBuscado, indices)
 	if errPag != nil {
 		logger.Error("Error al buscar la entrada de página")
-		return -1
+		return -1, fmt.Errorf("la entrada no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
 	}
-	return entradaPagina.NumeroFrame
-} // TODO: HACER ERROR HANDLING
+	return entradaPagina.NumeroFrame, nil
+}
 
 func AsignarNumeroEntradaPagina() int {
 	numeroEntradaLibre := -1
@@ -175,9 +174,10 @@ func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) erro
 		fragmentoACargar := informacionEnBytes[offset:end]
 		numeroPagina := AsignarNumeroEntradaPagina()
 		if numeroPagina == -1 {
-			logger.Error("No hay marcos libres")
-			break
-		} // TODO: not enough for error handling and pretty fucking vage
+			err := logger.ErrNoMemory
+			logger.Error("No hay marcos libres %v", err)
+			return err
+		}
 
 		entradaPagina := &g.EntradaPagina{
 			NumeroFrame:   numeroPagina,
@@ -187,15 +187,22 @@ func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) erro
 		}
 
 		direccionFisica := numeroPagina * tamanioPagina
-		ModificarEstadoEntradaEscritura(direccionFisica, proceso.PID, fragmentoACargar)
+		err := ModificarEstadoEntradaEscritura(direccionFisica, proceso.PID, fragmentoACargar)
+		if err != nil {
+			logger.Error("error al modificar estado entrada de pagina: %v", err)
+			return err
+		}
 		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entradaPagina)
+		if err != nil {
+			logger.Error("Error al insertar entrada de pagina: %v", err)
+			return err
+		}
 	}
 	return nil
-} // HACER ERR HANDLING
+}
 
 func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, entrada *g.EntradaPagina) {
 	indices := CrearIndicePara(numeroPagina)
-
 	actual := tablaRaiz[indices[0]]
 
 	for i := 1; i < len(indices)-1; i++ {
@@ -314,16 +321,16 @@ func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
 		return
 	}
+	if mensaje.TamanioNecesario > g.MemoryConfig.PagSize {
+		logger.Error("No se puede cargar en una pagina este tamaño")
+		http.Error(w, "No se puede cargar en una pagina este tamaño", http.StatusBadRequest)
+		return
+	}
 
-	tamanioNecesario := mensaje.TamanioNecesario
 	pid := mensaje.PID
 	datosASobreEscribir := mensaje.DatosASobreEscribir
 	direccionFisica := mensaje.DireccionFisica
 
-	if tamanioNecesario > g.MemoryConfig.PagSize {
-		log.Fatal("No se puede cargar en una pagina este tamaño")
-		// TODO: FATAL ...
-	}
 	respuesta := EscribirEspacioEntrada(pid, direccionFisica, datosASobreEscribir)
 
 	logger.Info("## PID: <%d> - Actualizar Página Completa - Dir. Física: <%d>", pid, direccionFisica)
