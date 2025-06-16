@@ -2,6 +2,7 @@ package administracion
 
 import (
 	"encoding/json"
+	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
@@ -130,14 +131,14 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	if errEntradas != nil {
 		logger.Error("Error: %v", errEntradas)
 		http.Error(w, "error: %v", http.StatusNoContent)
-		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: errEntradas.Error()}
+		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Errror: %s", errEntradas.Error())}
 		return
 	}
 	errSwap := CargarEntradasASwap(mensaje.PID, entradas) // REQUIERE ACTUALIZAR ESTRUCTURAS
 	if errSwap != nil {
 		logger.Error("Error: %v", errSwap)
 		http.Error(w, "error: %v", http.StatusConflict)
-		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: errEntradas.Error()}
+		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradas.Error())}
 		return
 	}
 
@@ -204,7 +205,7 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	if errEntradas != nil {
 		logger.Error("Error al cargar entradas: %v", errEntradas)
 		http.Error(w, "error: %v", http.StatusConflict)
-		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: errEntradas.Error()}
+		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradas.Error())}
 		return
 	}
 
