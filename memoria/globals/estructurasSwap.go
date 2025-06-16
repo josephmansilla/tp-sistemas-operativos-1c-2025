@@ -14,21 +14,17 @@ type SwapProceso struct {
 }
 
 type EntradaSwap struct {
-	NumeroPagina int    `json:"numero_pagina"`
-	OffsetSwap   int    `json:"offset_swap"`
-	Datos        []byte `json:"frame_swap"`
-	Presente     bool   `json:"presente"`
+	NumeroFrame int    `json:"numero_pagina"`
+	Datos       []byte `json:"frame_swap"`
+	Tamanio     int    `json:"tamanio"`
 }
 
 type SuspensionProceso struct {
-	PID    int   `json:"pid"`
-	Indice []int `json:"indice"`
+	PID int `json:"pid"`
 }
 
 type ExitoSuspensionProceso struct {
-	Exito           error `json:"exito"`
-	DireccionFisica int   `json:"direccion_fisica"`
-	TamanioProceso  int   `json:"tamanio_proceso"`
+	Exito error `json:"exito"`
 }
 
 type DesuspensionProceso struct {
@@ -36,7 +32,5 @@ type DesuspensionProceso struct {
 }
 
 type ExitoDesuspensionProceso struct {
-	Exito           error `json:"exito"`
-	DireccionFisica int   `json:"direccion_fisica"`
-	TamanioProceso  int   `json:"tamanio_proceso"`
+	Exito error `json:"exito"`
 }

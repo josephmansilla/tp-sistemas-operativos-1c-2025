@@ -2,10 +2,12 @@ package administracion
 
 import (
 	"encoding/json"
+	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -15,14 +17,108 @@ import (
 // 3) Eliminar el contenido de los frames (conceptualmente mal, pero es posible que me ataje algún error de mis funciones)
 // 4) Actualizar estructuras necesarias
 
-// Para sacar de suspendido:
-// 1) Verificar el tamanio del proceso y si entra en Memoria
-// 2) Leer cada entrada de swap, ponerlo en memoria y marcar como presente
-// 3) Liberar de SWAP el espacio
-// 4) Actualizar estructuras necesarias
-// 5) Retonar confirmación éxitosa o fallida
+func RecolectarEntradasProcesoSwap(proceso g.Proceso) (resultados []int) {
+	cantidadEntradas := g.MemoryConfig.EntriesPerPage
+	var wg sync.WaitGroup
+	canal := make(chan int, cantidadEntradas)
 
-func PasarSwapEntradaPagina(numeroFrame int) {}
+	for _, subtabla := range proceso.TablaRaiz {
+		wg.Add(1)
+		go func(st *g.TablaPagina) {
+			defer wg.Done()
+			RecorrerTablaPaginaDeFormaConcurrenteSwap(st, canal, proceso.PID)
+		}(subtabla)
+	}
+
+	go func() {
+		wg.Wait()
+		close(canal)
+	}()
+
+	for numeroFrame := range canal {
+		resultados = append(resultados, numeroFrame)
+	}
+
+	return
+}
+
+func RecorrerTablaPaginaDeFormaConcurrenteSwap(tabla *g.TablaPagina, canal chan int, pid int) {
+
+	if tabla.Subtabla != nil {
+		for _, subTabla := range tabla.Subtabla {
+			RecorrerTablaPaginaDeFormaConcurrenteSwap(subTabla, canal, pid)
+		}
+		return
+	}
+	for i, entrada := range tabla.EntradasPaginas {
+		if tabla.EntradasPaginas[i].EstaPresente {
+			canal <- entrada.NumeroFrame
+			entrada.EstaPresente = false
+			LiberarEntradaPagina(entrada.NumeroFrame)
+
+		}
+	}
+}
+
+func CargarEntradasDeMemoria(pid int) (resultados map[int]g.EntradaSwap, err error) {
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[pid]
+	g.MutexProcesosPorPID.Unlock()
+
+	if proceso == nil {
+		logger.Error("No existe el proceso solicitado para SWAP")
+		return resultados, logger.ErrNoInstance
+	}
+
+	var entradas []int
+
+	entradas = RecolectarEntradasProcesoSwap(*proceso)
+
+	tamanioPagina := g.MemoryConfig.PagSize
+	for i := 0; i < len(entradas); i++ {
+		numeroFrame := entradas[i]
+		inicio := numeroFrame * tamanioPagina
+		fin := inicio + tamanioPagina
+
+		if fin > len(g.MemoriaPrincipal) {
+			logger.Error("Acceso fuera de rango al hacer dump del frame %d con PID: %d", numeroFrame, pid)
+			fin = len(g.MemoriaPrincipal) - 1
+			continue
+		}
+		vacio := make([]byte, tamanioPagina)
+		g.MutexMemoriaPrincipal.Lock()
+		datos := g.MemoriaPrincipal[inicio:fin]
+		copy(g.MemoriaPrincipal[inicio:fin], vacio) // TODO: preguntar o cambiar impl de leer entrada entera
+		g.MutexMemoriaPrincipal.Unlock()
+
+		entradita := g.EntradaSwap{
+			NumeroFrame: numeroFrame,
+			Datos:       datos,
+			Tamanio:     len(datos),
+		}
+
+		g.MutexDump.Lock()
+		resultados[numeroFrame] = entradita
+		g.MutexDump.Unlock()
+	}
+
+	return
+}
+
+func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
+	tamanioPagina := g.MemoryConfig.PagSize
+
+	for _, entrada := range entradas {
+
+		logger.Info("## PID: <%d> - <Escritura> - Dir. Física: <%d> - Tamaño: <%d>",
+			pid,
+			entrada.NumeroFrame*tamanioPagina,
+			entrada.Tamanio,
+		)
+	}
+
+	return
+}
 
 func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
@@ -33,15 +129,28 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//PasarSwapEntradaPagina(numeroFrame)
-	//LiberarEntradaPagina(numeroFrame)
+	entradas, errEntradas := CargarEntradasDeMemoria(mensaje.PID)
+	if errEntradas != nil {
+		logger.Error("Error: %v", errEntradas)
+		http.Error(w, "error: %v", http.StatusNoContent)
+		return
+	}
+	errSwap := CargarEntradasASwap(mensaje.PID, entradas) // REQUIERE ACTUALIZAR ESTRUCTURAS
+	if errSwap != nil {
+		logger.Error("Error: %v", errSwap)
+		http.Error(w, "error: %v", http.StatusNoContent)
+		return
+	}
 
-	// TODO cambiar
-	// proceso := g.ProcesoSuspendido{}
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[mensaje.PID]
+	g.MutexProcesosPorPID.Unlock()
+	IncrementarMetrica(proceso, 1, IncrementarBajadasSwap)
 
-	//logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", mensaje.PID, proceso.DireccionFisica, proceso.TamanioProceso)
-
-	respuesta := g.ExitoDesuspensionProceso{}
+	respuesta := g.RespuestaMemoria{
+		Exito:   true,
+		Mensaje: "Proceso cargado a SWAP",
+	}
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
@@ -55,9 +164,30 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Respuesta devuelta"))
 }
 
-func SacarEntradaPaginaSwap(numeroFrame int) {}
+// Para sacar de suspendido:
+// 1) Verificar el tamanio del proceso y si entra en Memoria
+// 2) Leer cada entrada de swap, ponerlo en memoria y marcar como presente
+// 3) Liberar de SWAP el espacio
+// 4) Actualizar estructuras necesarias
+// 5) Retonar confirmación éxitosa o fallida
 
-func LiberarEspacioEnSwap(numeroFrame int) {}
+func CargarEntradasDeSwap(pid int) (entradas map[int]g.EntradaSwap) {
+
+	return
+}
+
+func CargarEntradasAMemoria(pid int, entradas map[int]g.EntradaSwap) {
+	tamanioPagina := g.MemoryConfig.PagSize
+
+	for _, entrada := range entradas {
+
+		logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>",
+			pid,
+			entrada.NumeroFrame*tamanioPagina,
+			entrada.Tamanio,
+		)
+	}
+}
 
 func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
@@ -67,13 +197,11 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
-	//VerificarTamanioNecesario
-	//SacarEntradaPaginaSwap(numeroFrame)
-	//LiberarEspacioEnSwap(numeroFrame)
-	//ActualizarEstructurasNecesarias
+
+	entradas := CargarEntradasDeSwap(mensaje.PID)
+	CargarEntradasAMemoria
 
 	time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Second)
-	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>")
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
