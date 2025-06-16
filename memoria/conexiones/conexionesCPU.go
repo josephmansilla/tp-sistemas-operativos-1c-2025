@@ -37,7 +37,7 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
 
-	respuesta := ObtenerInstruccion(proceso, pc)
+	respuesta, err := ObtenerInstruccion(proceso, pc)
 
 	logger.Info("## PID: <%d>  - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, respuesta.Instruccion)
 
@@ -46,7 +46,7 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Insturccion devuelta"))
 }
 
-func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU) {
+func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU, err error) {
 	respuesta = g.InstruccionCPU{Exito: nil, Instruccion: ""}
 	cantInstrucciones := len(proceso.OffsetInstrucciones)
 
@@ -67,9 +67,13 @@ func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU)
 	offsetDir := base % tamanioPagina
 
 	direccionFisica := (adm.BuscarEntradaEspecifica(proceso.TablaRaiz, numeroEntradaABuscar) * tamanioPagina) + offsetDir
-	adm.LeerEspacioMemoria(proceso.PID, direccionFisica, tamanioALeer)
-
-	return respuesta
+	var memoria g.ExitoLecturaMemoria
+	memoria, err = adm.LeerEspacioMemoria(proceso.PID, direccionFisica, tamanioALeer)
+	if err != nil {
+		return
+	}
+	respuesta = g.InstruccionCPU{Instruccion: memoria.DatosAEnviar}
+	return
 }
 
 func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
@@ -109,8 +113,12 @@ func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
 
 	pid := mensaje.PID
 	indices := mensaje.IndicesEntrada
-
-	marco := adm.ObtenerEntradaPagina(pid, indices)
+	var marco int
+	marco, err = adm.ObtenerEntradaPagina(pid, indices)
+	if err != nil {
+		logger.Error("Error: %v", err)
+		http.Error(w, "Error al Leer espacio de Memoria \n", http.StatusInternalServerError)
+	}
 
 	respuesta := g.RespuestaTablaCPU{
 		NumeroMarco: marco,

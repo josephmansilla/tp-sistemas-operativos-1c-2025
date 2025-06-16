@@ -7,10 +7,10 @@ import (
 	"sync"
 )
 
-func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo string) {
+func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo string) (err error) {
 	if !TieneTamanioNecesario(tamanioProceso) {
 		logger.Error("No hay memoria")
-		// return err
+		return fmt.Errorf("no hay memoria disponible para el proceso: %v", logger.ErrNoMemory)
 	}
 	nuevoProceso := &g.Proceso{
 		PID:                 pid,
@@ -21,16 +21,19 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 	pseudo, err := LecturaPseudocodigo(nuevoProceso, nombreArchPseudocodigo, tamanioProceso)
 	if err != nil {
 		logger.Error("Error al leer el pseudocodigo: %v", err)
+		return fmt.Errorf("error al leer el pseudocodigo: %v", logger.ErrBadRequest)
 	}
 
 	err = AsignarDatosAPaginacion(nuevoProceso, pseudo)
 	if err != nil {
 		logger.Error("Error al asignarDatosAPaginacion %v", err)
+		return fmt.Errorf("error al asignar datos para el proceso: %v", logger.ErrInternalFailure)
 	}
 
 	g.MutexProcesosPorPID.Lock()
 	g.ProcesosPorPID[pid] = nuevoProceso
 	g.MutexProcesosPorPID.Unlock()
+	return nil
 } // TODO: le falta el err handling
 
 func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
