@@ -7,7 +7,6 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"os"
 	"strings"
-	"sync"
 )
 
 func InicializarMemoriaPrincipal() {
@@ -16,14 +15,9 @@ func InicializarMemoriaPrincipal() {
 	cantidadFrames := tamanioMemoriaPrincipal / tamanioPagina
 
 	g.MemoriaPrincipal = make([]byte, tamanioMemoriaPrincipal)
-
-	g.FramesLibres = make([]bool, cantidadFrames)
 	ConfigurarFrames(cantidadFrames)
-
 	g.InstanciarEstructurasGlobales()
-
-	g.MutexMetrica = make([]sync.Mutex, g.MemoryConfig.MemorySize*1000)
-	// tamaño totalmente arbitrario
+	g.InicializarSemaforos()
 
 	logger.Info("Tamanio Memoria Principal de %d", g.MemoryConfig.MemorySize)
 	logger.Info("Memoria Principal Inicializada con %d con %d frames de %d.",
@@ -31,6 +25,7 @@ func InicializarMemoriaPrincipal() {
 }
 
 func ConfigurarFrames(cantidadFrames int) {
+	g.FramesLibres = make([]bool, cantidadFrames)
 	g.MutexEstructuraFramesLibres.Lock()
 	for i := 0; i < cantidadFrames; i++ {
 		g.FramesLibres[i] = true

@@ -8,8 +8,6 @@ var ProcesosPorPID map[int]*Proceso // guardo procesos con los PID
 var ProcesosSuspendidos map[int]*SwapProceso
 var PaginasEnSwap map[int][]EntradaSwap
 
-// var InstruccionesPorPID map[int][]int
-
 func InstanciarEstructurasGlobales() {
 	ProcesosPorPID = make(map[int]*Proceso)
 	ProcesosSuspendidos = make(map[int]*SwapProceso)

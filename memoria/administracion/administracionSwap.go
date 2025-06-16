@@ -8,6 +8,19 @@ import (
 	"time"
 )
 
+// Para pasar a suspendido:
+// 1) Transferir los datos de cada entrada en bytes hacia el archivo, dejar en bytes.
+// 2) Marcar cantidad frames como libres y no presente
+// 3) Eliminar el contenido de los frames (conceptualmente mal, pero es posible que me ataje algún error de mis funciones)
+// 4) Actualizar estructuras necesarias
+
+// Para sacar de suspendido:
+// 1) Verificar el tamanio del proceso y si entra en Memoria
+// 2) Leer cada entrada de swap, ponerlo en memoria y marcar como presente
+// 3) Liberar de SWAP el espacio
+// 4) Actualizar estructuras necesarias
+// 5) Retonar confirmación éxitosa o fallida
+
 func PasarSwapEntradaPagina(numeroFrame int) {}
 
 func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
@@ -43,11 +56,6 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Respuesta devuelta"))
 }
 
-// TODO: NO ES NECESARIO EL SWAPEO DE TABLAS DE PAGINAS
-
-// TODO: SE LIBERA EN MEMORIA
-// TODO: SE ESCRIBE EN SWAP LA INFO NECESARIA
-
 func SacarEntradaPaginaSwap(numeroFrame int) {}
 
 func LiberarEspacioEnSwap(numeroFrame int) {}
@@ -65,7 +73,7 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	//VerificarTamanioNecesario
 	//SacarEntradaPaginaSwap(numeroFrame)
 	//LiberarEspacioEnSwap(numeroFrame)
-	// TODO: ActualizarEstructurasNecesarias
+	//ActualizarEstructurasNecesarias
 
 	time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Second)
 	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>")
@@ -83,11 +91,3 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Respuesta devuelta"))
 }
-
-// TODO: VERIFICAR EL TAMAÑO NECESARIO
-
-// TODO: LEER EL CONTENIDO DEL SWAP, ESCRIBIERLO EN EL FRAME ASIGNADO
-// TODO: LIBERAR ESPACIO EN SWAP
-// TODO: ACTUALIZAR ESTRUCTURAS NECESARIAS
-
-// TODO: RETORNAR OK
