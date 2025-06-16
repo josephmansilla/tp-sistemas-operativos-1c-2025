@@ -45,12 +45,9 @@ func Traducir(dirLogica int) int {
 	desplazamiento := dirLogica % tamPagina
 
 	var cache = NuevaCachePaginas()
-	cache.Agregar(1, "Contenido Pag1", true)
-	cache.Agregar(3, "Contenido Pag3", true)
-	cache.Agregar(5, "Contenido Pag5", true)
 
 	//Primero verifico si la cache esta activa
-	if Cache.EstaActiva() {
+	if cache.EstaActiva() {
 		log.Printf("Cache Activa")
 	} else {
 		log.Printf("Cache Inactiva")
@@ -58,9 +55,6 @@ func Traducir(dirLogica int) int {
 
 	// Inicializo la TLB
 	var tlb = NuevaTLB(globals.ClientConfig.TlbEntries, globals.ClientConfig.TlbReplacement)
-	tlb.AgregarEntrada(1, 2)
-	tlb.AgregarEntrada(3, 4)
-	tlb.AgregarEntrada(5, 6)
 
 	// Consulto la TLB
 	if marco, ok := tlb.Buscar(nroPagina); ok {
