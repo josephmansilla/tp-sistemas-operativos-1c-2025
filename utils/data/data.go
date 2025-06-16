@@ -3,6 +3,7 @@ package data
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"io"
 	"log"
 	"net/http"
@@ -61,14 +62,12 @@ func RecibirDatos(url string, data any) error {
 func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) error {
 	err := json.NewDecoder(r.Body).Decode(mensaje)
 	if err != nil {
-		log.Printf("Error al decodificar el mensaje: %s", err.Error())
+		logger.Error("Error al decodificar el mensaje: %s", err.Error())
 		http.Error(w, "Error al decodificar mensaje", http.StatusBadRequest)
 		return err
 	}
-	log.Printf("Me llegó un mensaje: %+v", mensaje)
+	logger.Info("Me llegó un mensaje: %+v", mensaje)
 
-	//w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("STATUS OK"))
 	return nil
 }
 

@@ -38,9 +38,7 @@ func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		Exito:   true,
 		Mensaje: "Proceso creado correctamente en memoria",
 	}
-	errDecode := json.NewDecoder(r.Body).Decode(&mensaje)
-	if errDecode != nil {
-		http.Error(w, "Error leyendo JSON\n", http.StatusBadRequest)
+	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
 
@@ -71,15 +69,13 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 	var mensaje g.FinalizacionProceso
 
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON\n", http.StatusBadRequest)
+	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
-	var metricas g.MetricasProceso
+
 	pid := mensaje.PID
 
-	metricas, err = adm.LiberarMemoriaProceso(pid)
+	metricas, err := adm.LiberarMemoriaProceso(pid)
 	if err != nil {
 		logger.Error("Hubo un error al eliminar el proceso %v", err)
 	}
@@ -110,9 +106,8 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
 	var mensaje g.LecturaProceso
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
+	err := data.LeerJson(w, r, &mensaje)
 	if err != nil {
-		http.Error(w, "Error leyendo JSON\n", http.StatusBadRequest)
 		return
 	}
 
@@ -150,9 +145,7 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
 
 	var mensaje g.EscrituraProceso
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
 
@@ -189,8 +182,6 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 	var dump g.DatosParaDump
 
 	if err := data.LeerJson(w, r, &dump); err != nil {
-		logger.Error("Error al recibir JSON: %v", err)
-		http.Error(w, "Error procesando datos del Kernel", http.StatusInternalServerError)
 		return
 	}
 

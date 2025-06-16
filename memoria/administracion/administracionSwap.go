@@ -3,6 +3,7 @@ package administracion
 import (
 	"encoding/json"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
+	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 	"time"
@@ -28,9 +29,7 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
 
 	var mensaje g.SuspensionProceso
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
 
@@ -65,9 +64,7 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
 
 	var mensaje g.DesuspensionProceso
-	err := json.NewDecoder(r.Body).Decode(&mensaje)
-	if err != nil {
-		http.Error(w, "Error leyendo JSON de Kernel\n", http.StatusBadRequest)
+	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
 	//VerificarTamanioNecesario
