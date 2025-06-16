@@ -27,7 +27,8 @@ type DatosParaDump struct {
 	PID       int    `json:"pid"`
 	TimeStamp string `json:"timeStamp"`
 }
-type EntradaDump struct {
+
+/*type EntradaDump struct {
 	DireccionFisica int `json:"direccion_fisica"`
 	NumeroFrame     int `json:"numero_frame"`
-}
+}*/

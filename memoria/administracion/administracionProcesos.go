@@ -67,6 +67,10 @@ func DesocuparProcesoEnVectorMapeable(pid int) (proceso *g.Proceso, err error) {
 		return proceso, fmt.Errorf("no hay una instancia de pid \"%d\" en el slice de procesos por PID %v", pid, logger.ErrNoInstance)
 	}
 
+	g.MutexSwapIndex.Lock()
+	delete(g.SwapIndex, pid)
+	g.MutexSwapIndex.Unlock()
+
 	return
 }
 
@@ -80,17 +84,18 @@ func RealizarDumpMemoria(pid int) (vector []string, err error) {
 		return vector, logger.ErrNoInstance
 	}
 
-	var entradas []g.EntradaDump
+	var entradas []int
 
-	entradas = RecolectarEntradasProceso(*proceso)
+	entradas = RecolectarEntradasProcesoDump(*proceso)
 
 	tamanioPagina := g.MemoryConfig.PagSize
-	for _, e := range entradas {
-		inicio := e.NumeroFrame * tamanioPagina
+	for i := 0; i < len(entradas); i++ {
+		numeroFrame := entradas[i]
+		inicio := numeroFrame * tamanioPagina
 		fin := inicio + tamanioPagina
 
 		if fin > len(g.MemoriaPrincipal) {
-			logger.Error("Acceso fuera de rango al hacer dump del frame %d con PID: %d", e.NumeroFrame, pid)
+			logger.Error("Acceso fuera de rango al hacer dump del frame %d con PID: %d", numeroFrame, pid)
 			fin = len(g.MemoriaPrincipal) - 1
 			continue
 		}
@@ -100,25 +105,25 @@ func RealizarDumpMemoria(pid int) (vector []string, err error) {
 		g.MutexMemoriaPrincipal.Unlock()
 
 		datosEnString := string(datos)
-		resul := fmt.Sprintf("Direccion Fisica: %d | Frame: %d | Datos: %q\n", e.DireccionFisica, e.NumeroFrame, datosEnString)
+		resul := fmt.Sprintf("Direccion Fisica: %d | Frame: %d | Datos: %q\n", inicio, numeroFrame, datosEnString)
 
 		g.MutexDump.Lock()
-		vector[e.NumeroFrame] = resul
+		vector[numeroFrame] = resul
 		g.MutexDump.Unlock()
 	}
 
 	return
 }
-func RecolectarEntradasProceso(proceso g.Proceso) (resultados []g.EntradaDump) {
+func RecolectarEntradasProcesoDump(proceso g.Proceso) (resultados []int) {
 	cantidadEntradas := g.MemoryConfig.EntriesPerPage
 	var wg sync.WaitGroup
-	canal := make(chan g.EntradaDump, cantidadEntradas)
+	canal := make(chan int, cantidadEntradas)
 
 	for _, subtabla := range proceso.TablaRaiz {
 		wg.Add(1)
 		go func(st *g.TablaPagina) {
 			defer wg.Done()
-			RecorrerTablaPaginaDeFormaConcurrente(st, canal)
+			RecorrerTablaPaginaDeFormaConcurrenteDump(st, canal)
 		}(subtabla)
 	}
 
@@ -127,32 +132,29 @@ func RecolectarEntradasProceso(proceso g.Proceso) (resultados []g.EntradaDump) {
 		close(canal)
 	}()
 
-	for entrada := range canal {
-		resultados = append(resultados, entrada)
+	for numeroFrame := range canal {
+		resultados = append(resultados, numeroFrame)
 	}
 
 	return
 }
 
-func RecorrerTablaPaginaDeFormaConcurrente(tabla *g.TablaPagina, canal chan g.EntradaDump) {
+func RecorrerTablaPaginaDeFormaConcurrenteDump(tabla *g.TablaPagina, canal chan int) {
 
 	if tabla.Subtabla != nil {
 		for _, subTabla := range tabla.Subtabla {
-			RecorrerTablaPaginaDeFormaConcurrente(subTabla, canal)
+			RecorrerTablaPaginaDeFormaConcurrenteDump(subTabla, canal)
 		}
 		return
 	}
 	for i, entrada := range tabla.EntradasPaginas {
 		if tabla.EntradasPaginas[i].EstaPresente {
-			canal <- g.EntradaDump{
-				DireccionFisica: g.MemoryConfig.PagSize * entrada.NumeroFrame,
-				NumeroFrame:     entrada.NumeroFrame,
-			}
+			canal <- entrada.NumeroFrame
 		}
 	}
 }
 
-func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]*g.EntradaDump) {
+/*func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]*g.EntradaDump) {
 
 	if tabla.Subtabla != nil {
 		for _, subTabla := range tabla.Subtabla {
@@ -168,9 +170,9 @@ func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]*g.EntradaDump) {
 			})
 		}
 	}
-} //TODO: a usar despues
+}
 
-/*func DumpGlobal() (resultado string) {
+func DumpGlobal() (resultado string) {
 	g.MutexProcesosPorPID.Lock()
 	for pid := range g.ProcesosPorPID {
 		g.MutexProcesosPorPID.Unlock()
@@ -200,7 +202,7 @@ func IncrementarMetrica(proceso *g.Proceso, cantidad int, funcMetrica g.Operacio
 	g.MutexMetrica[proceso.PID].Lock()
 	funcMetrica(&proceso.Metricas, cantidad)
 	g.MutexMetrica[proceso.PID].Unlock()
-} // TODO: ES REALMENTE NECESARIO? -> me dijo que si
+}
 
 func IncrementarAccesosTablasPaginas(metrica *g.MetricasProceso, cantidad int) {
 	metrica.AccesosTablasPaginas += cantidad

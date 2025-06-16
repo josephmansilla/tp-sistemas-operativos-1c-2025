@@ -188,16 +188,12 @@ func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) erro
 		}
 
 		direccionFisica := numeroPagina * tamanioPagina
-		err := ModificarEstadoEntradaEscritura(direccionFisica, proceso.PID, fragmentoACargar)
-		if err != nil {
-			logger.Error("error al modificar estado entrada de pagina: %v", err)
-			return err
+		errMod := ModificarEstadoEntradaEscritura(direccionFisica, proceso.PID, fragmentoACargar)
+		if errMod != nil {
+			logger.Error("error al modificar estado entrada de pagina: %v", errMod)
+			return errMod
 		}
 		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entradaPagina)
-		if err != nil {
-			logger.Error("Error al insertar entrada de pagina: %v", err)
-			return err
-		}
 	}
 	return nil
 }
@@ -223,7 +219,10 @@ func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string)
 	if len(stringEnBytes) == 0 {
 		logger.Error("Los datos a escribir son vacios: %v", logger.ErrNoInstance)
 	}
-	ModificarEstadoEntradaEscritura(pid, direccionFisica, stringEnBytes)
+	err := ModificarEstadoEntradaEscritura(pid, direccionFisica, stringEnBytes)
+	if err != nil {
+		return g.ExitoEscrituraPagina{Exito: err, DireccionFisica: direccionFisica, Mensaje: err.Error()}
+	}
 
 	exito := g.ExitoEscrituraPagina{
 		Exito:           nil,
