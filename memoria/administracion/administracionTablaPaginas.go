@@ -336,7 +336,7 @@ func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Respuesta devuelta"))
+	//w.Write([]byte("Respuesta devuelta"))
 }
 
 func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
@@ -375,5 +375,5 @@ func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Respuesta devuelta"))
+	//w.Write([]byte("Respuesta devuelta"))
 }

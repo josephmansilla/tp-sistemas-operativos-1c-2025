@@ -197,7 +197,7 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Respuesta devuelta"))
+	//w.Write([]byte("Respuesta devuelta"))
 }
 
 // ==========================================================================
@@ -313,5 +313,5 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Respuesta devuelta"))
+	//w.Write([]byte("Respuesta devuelta"))
 }

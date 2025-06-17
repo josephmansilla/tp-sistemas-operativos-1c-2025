@@ -28,7 +28,7 @@ func RecibirMensajeDeCPUHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error al codificar la respuesta JSON: %v", err)
 		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 	}
-	w.Write([]byte("Instruccion devuelta"))
+	//w.Write([]byte("Instruccion devuelta"))
 }
 
 func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +58,7 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error al codificar la respuesta JSON: %v", err)
 		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 	}
-	w.Write([]byte("Instruccion devuelta"))
+	//w.Write([]byte("Instruccion devuelta"))
 }
 
 func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +84,6 @@ func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error al codificar la respuesta JSON: %v", err)
 		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 	}
-	w.Write([]byte("Configuracion de memoria devuelta"))
 }
 
 func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
@@ -114,5 +113,5 @@ func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
 	if errEncode != nil {
 		return
 	}
-	w.Write([]byte("marco devuelto"))
+	//w.Write([]byte("marco devuelto"))
 }

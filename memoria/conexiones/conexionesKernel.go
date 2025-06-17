@@ -29,7 +29,7 @@ func ObtenerEspacioLibreHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("ESPACIO DEVUELTO"))
+	//w.Write([]byte("ESPACIO DEVUELTO"))
 }
 
 func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +62,7 @@ func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Respuesta devuelta"))
+	//w.Write([]byte("Respuesta devuelta"))
 }
 
 func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +98,7 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Respuesta devuelta"))
+	//w.Write([]byte("Respuesta devuelta"))
 }
 
 func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +137,7 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Respuesta devuelta"))
+	//w.Write([]byte("Respuesta devuelta"))
 }
 
 func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
@@ -175,7 +175,7 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Respuesta devuelta"))
+	//w.Write([]byte("Respuesta devuelta"))
 }
 
 func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
@@ -207,5 +207,5 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## Archivo Dump fue creado con EXITO")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Dump Realizado"))
+	//w.Write([]byte("Dump Realizado"))
 }
