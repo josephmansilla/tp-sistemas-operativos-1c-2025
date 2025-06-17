@@ -26,6 +26,7 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 		FileName:       fileName,
 		ProcessSize:    tamanio,
 		TiempoEstado:   time.Now(),
+		CpuID:          "",
 	}
 
 	//Paso 2: Agregar el primero a la cola NEW
@@ -172,7 +173,7 @@ func ManejadorFinalizacionProcesos() {
 		if err != nil {
 			logger.Error("Error avisando fin proceso pid=%d: %v", pid, err)
 			continue
-		}*///MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
+		}*/ //MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
 
 		//ACA PONER UN WAIT/TUBERIA que espere a que memoria libere el proceso, ES PARA TENER UN ORDEN
 

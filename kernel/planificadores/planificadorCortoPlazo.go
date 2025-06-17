@@ -14,12 +14,13 @@ func PlanificarCortoPlazo() {
 	go DespacharProceso()
 	go BloquearProceso()
 	go FinDeIO()
+	go DesalojarProceso()
 }
 
 func DespacharProceso() {
 	for {
 		// WAIT hasta que llegue un proceso a READY
-		//o se libere una CPU por SYSCALL DE EXTI O I/O
+		//o se libere una CPU por SYSCALL DE EXIT O I/O
 		<-Utils.NotificarDespachador
 		logger.Info("Arranca Despachador")
 
@@ -55,9 +56,14 @@ func DespacharProceso() {
 
 		if cpuID == "" {
 			logger.Info("No hay CPU disponible para ejecutar el proceso <%d>", proceso.PID)
+
+			if globals.KConfig.SchedulerAlgorithm == "SRT" {
+				algoritmos.Desalojo(proceso)
+			}
 			continue
 		}
 
+		proceso.CpuID = cpuID
 		logger.Info("Proceso <%d> -> EXECUTE en CPU <%s>", proceso.PID, cpuID)
 
 		Utils.MutexEjecutando.Lock()
