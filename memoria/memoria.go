@@ -53,7 +53,7 @@ func main() {
 
 	logger.Info("======== Comenzo la ejecucion de Memoria ========")
 
-	logger.Info("Servidor escuchando en http://localhost:%d/memoria\n", portMemory)
+	logger.Info("Servidor escuchando en http://localhost:%d/memoria", portMemory)
 
 	// ----------------------------------------------------------
 	// --------- INICIALIZO LAS ESTRUCTURAS NECESARIAS  ---------

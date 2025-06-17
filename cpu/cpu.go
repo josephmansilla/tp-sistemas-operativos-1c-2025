@@ -5,6 +5,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/cpu/traducciones"
 	"github.com/sisoputnfrba/tp-golang/cpu/utils"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"log"
 	"net/http"
 	"os"
@@ -30,9 +31,9 @@ func main() {
 		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
 	}*/
 
-	log.Printf("=========================================================")
-	log.Printf("======== Comenzo la ejecucion del CPU con ID: %s ========", globals.ID)
-	log.Printf("=========================================================\n")
+	logger.Info("=========================================================")
+	logger.Info("======== Comenzo la ejecucion del CPU con ID: %s ========", globals.ID)
+	logger.Info("=========================================================")
 
 	//CPU CLIENTE
 	configpath := fmt.Sprintf("configs/cpu_%sconfig.json", globals.ID)
