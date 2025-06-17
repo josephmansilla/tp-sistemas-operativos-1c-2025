@@ -43,10 +43,6 @@ func TestTraducirDireccionTLB(t *testing.T) {
 	assert.Equal(t, dirEsperada, dirFisica)
 }
 
-func TestTraduccionMemoria(t *testing.T) {
-	//TODO: le pide a memoria el marco
-}
-
 func TestDescomponerPagina(t *testing.T) {
 	err := CargarConfigCPU("../configs/cpu_1config.json")
 	if err != nil {
@@ -59,4 +55,16 @@ func TestDescomponerPagina(t *testing.T) {
 	entradasEsperadas := []int{0, 1, 1}
 
 	assert.Equal(t, entradasEsperadas, entradas)
+}
+
+func TestTraduccionMemoria(t *testing.T) {
+	//TODO: le pide a memoria el marco
+}
+
+func TestLeerEnMemoria(t *testing.T) {
+	//TODO
+}
+
+func TestEscribirEnMemoria(t *testing.T) {
+	//TODO
 }

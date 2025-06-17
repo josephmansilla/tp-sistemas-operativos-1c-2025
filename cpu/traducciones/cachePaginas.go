@@ -1,5 +1,6 @@
 package traducciones
 
+import "C"
 import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
@@ -173,10 +174,39 @@ func (c *CachePaginas) reemplazoClockM(nueva EntradaCache) {
 	c.reemplazoClockM(nueva)
 }
 
-func LimpiarCache() {
-	//TODO
-}
+func (c *CachePaginas) LimpiarCache() {
+	if c == nil {
+		return
+	}
 
-func EliminarEntrada() {
-	//TODO
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	tamPagina := globals.TamanioPagina
+
+	for _, entrada := range c.Entradas {
+		if entrada.Modificado {
+			dirLogica := entrada.NroPagina * tamPagina
+
+			dirFisica := Traducir(dirLogica)
+			if dirFisica == -1 {
+				log.Printf("Error al traducir la dirección lógica de página %d", entrada.NroPagina)
+				continue
+			}
+
+			err := EscribirEnMemoria(dirFisica, entrada.Contenido)
+			if err != nil {
+				log.Printf("Error al escribir página %d en dirección física %d: %v", entrada.NroPagina, dirFisica, err)
+				continue
+			}
+
+			log.Printf("Página modificada %d escrita en dirección física %d", entrada.NroPagina, dirFisica)
+		}
+	}
+
+	//Elimino las entradas
+	c.Entradas = make([]EntradaCache, 0, c.MaxEntradas)
+	c.Puntero = 0
+
+	log.Println("Caché vaciada correctamente")
 }

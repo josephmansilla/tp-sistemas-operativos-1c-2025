@@ -222,7 +222,7 @@ func ioInstruccion(arguments []string) error {
 		return err
 	}
 
-	traducciones.LimpiarCache()
+	traducciones.Cache.LimpiarCache()
 
 	log.Println("Syscall IO realizada exitosamente")
 	return globals.ErrSyscallBloqueante
@@ -247,7 +247,7 @@ func exitInstruccion(arguments []string) error {
 		return err
 	}
 
-	traducciones.LimpiarCache()
+	traducciones.Cache.LimpiarCache()
 
 	log.Println("Syscall EXIT realizada exitosamente")
 	return nil

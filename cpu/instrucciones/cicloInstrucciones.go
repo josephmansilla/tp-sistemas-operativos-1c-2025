@@ -129,7 +129,7 @@ func FaseCheckInterrupt() bool {
 		return false
 	}
 
-	traducciones.LimpiarCache()
+	traducciones.Cache.LimpiarCache()
 
 	pid := globals.PIDActual
 	pc := globals.PCActual
