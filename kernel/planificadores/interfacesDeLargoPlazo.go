@@ -38,7 +38,7 @@ func (f *FIFOAdmision) intentarAdmitir() {
 		muNEW.Lock()
 		primero := algoritmos.ColaNuevo.First()
 		// aca memoria deberia responder si puede crear el proceso o no, por eso le pasamos el tamaño del proceso
-		ok := comunicacion.SolicitarEspacioEnMemoria(primero.FileName, primero.ProcessSize)
+		ok, _ := comunicacion.SolicitarCreacionEnMemoria(primero.FileName, primero.ProcessSize, primero.PID)
 		if ok {
 			algoritmos.ColaNuevo.Remove(primero)
 			algoritmos.ColaReady.Add(primero)
@@ -64,7 +64,7 @@ func (s *SJFAdmision) intentarAdmitir() {
 		})
 		// aca memoria deberia responder si puede crear el proceso o no, por eso le pasamos el tamaño del proceso
 		for _, p := range all {
-			ok := comunicacion.SolicitarEspacioEnMemoria(p.FileName, p.ProcessSize)
+			ok, _ := comunicacion.SolicitarCreacionEnMemoria(p.FileName, p.ProcessSize, p.PID)
 			if ok {
 				muNEW.Lock()
 				algoritmos.ColaNuevo.Remove(p)

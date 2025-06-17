@@ -7,6 +7,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
+	"net/http"
 )
 
 // Body JSON a recibir
@@ -98,4 +99,49 @@ const (
 var ErrorRequestType = map[string]error{
 	CreateProcess: errors.New("memoria: No hay espacio disponible en memoria "),
 	FinishProcess: errors.New("memoria: No se puedo finalizar el proceso"),
+}
+
+func SolicitarCreacionEnMemoria(fileName string, tamanio, pid int) (bool, error) {
+	url := fmt.Sprintf("http://%s:%d/memoria/inicializacionProceso",
+		globals.KConfig.MemoryAddress,
+		globals.KConfig.MemoryPort,
+	)
+
+	req := inicializacionRequest{
+		Filename: fileName,
+		Tamanio:  tamanio,
+		PID:      pid,
+	}
+
+	resp, err := data.EnviarDatosConRespuesta(url, req)
+	if err != nil {
+		logger.Error("Error enviando request de inicialización a Memoria: %v", err)
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logger.Warn("Memoria respondió HTTP %d al solicitar creación", resp.StatusCode)
+		return false, fmt.Errorf("memoria HTTP %d", resp.StatusCode)
+	}
+
+	var rta inicializacionResponse
+	if err := json.NewDecoder(resp.Body).Decode(&rta); err != nil {
+		logger.Error("Error decodificando respuesta de inicialización de Memoria: %v", err)
+		return false, err
+	}
+
+	logger.Info("Memoria inicializaciónProceso respondió: %s", rta.Mensaje)
+	return rta.Exito, nil
+}
+
+type inicializacionRequest struct {
+	Filename string `json:"filename"`
+	Tamanio  int    `json:"tamanio_memoria"`
+	PID      int    `json:"pid"`
+}
+
+type inicializacionResponse struct {
+	Exito   bool   `json:"exito"`
+	Mensaje string `json:"mensaje"`
 }
