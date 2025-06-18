@@ -1,11 +1,11 @@
 package traducciones
 
-import "C"
 import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"log"
 	"sync"
+	"time"
 )
 
 type EntradaCache struct {
@@ -57,6 +57,8 @@ func (c *CachePaginas) Agregar(nroPagina int, contenido string, modificado bool)
 }
 
 func (c *CachePaginas) Buscar(nroPagina int) (string, bool) {
+	time.Sleep(time.Millisecond * time.Duration(globals.ClientConfig.CacheDelay))
+
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -89,6 +91,8 @@ func (c *CachePaginas) MarcarUso(nroPagina int) {
 }
 
 func LeerEnCache(nroPagina int, tamanio int) (string, error) {
+	time.Sleep(time.Millisecond * time.Duration(globals.ClientConfig.CacheDelay))
+
 	contenido, ok := Cache.Buscar(nroPagina)
 	if !ok {
 		err := fmt.Errorf("Página %d no encontrada en la caché", nroPagina)
@@ -101,6 +105,8 @@ func LeerEnCache(nroPagina int, tamanio int) (string, error) {
 }
 
 func EscribirEnCache(nroPagina int, datos string) error {
+	time.Sleep(time.Millisecond * time.Duration(globals.ClientConfig.CacheDelay))
+
 	for i := range Cache.Entradas {
 		if Cache.Entradas[i].NroPagina == nroPagina {
 			Cache.Entradas[i].Contenido = datos
@@ -130,11 +136,23 @@ func (c *CachePaginas) reemplazoClock(nueva EntradaCache) {
 	for {
 		entrada := &c.Entradas[c.Puntero]
 		if !entrada.Usado {
-			log.Printf("Reemplazo CLOCK - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
-			c.Entradas[c.Puntero] = nueva
-			c.Puntero = (c.Puntero + 1) % c.MaxEntradas // Para volver a 0 si se pasa de las entradas -> (3+1) % 4 = 0
-			return
+			tamPagina := globals.TamanioPagina
+			dirLogica := entrada.NroPagina * tamPagina
+			dirFisica := Traducir(dirLogica)
+			if dirFisica != -1 {
+				err := EscribirEnMemoria(dirFisica, entrada.Contenido)
+				if err != nil {
+					log.Printf("Error al escribir página modificada %d en dirección física %d: %v", entrada.NroPagina, dirFisica, err)
+				} else {
+					log.Printf("Página modificada %d escrita en dirección física %d antes de reemplazo", entrada.NroPagina, dirFisica)
+				}
+			}
 		}
+		log.Printf("Reemplazo CLOCK - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
+		c.Entradas[c.Puntero] = nueva
+		c.Puntero = (c.Puntero + 1) % c.MaxEntradas // Para volver a 0 si se pasa de las entradas -> (3+1) % 4 = 0
+		return
+
 		entrada.Usado = false
 		c.Puntero = (c.Puntero + 1) % c.MaxEntradas
 	}
@@ -158,6 +176,17 @@ func (c *CachePaginas) reemplazoClockM(nueva EntradaCache) {
 		indice := (c.Puntero + i) % c.MaxEntradas
 		entrada := &c.Entradas[indice]
 		if !entrada.Usado && entrada.Modificado {
+			tamPagina := globals.TamanioPagina
+			dirLogica := entrada.NroPagina * tamPagina
+			dirFisica := Traducir(dirLogica)
+			if dirFisica != -1 {
+				err := EscribirEnMemoria(dirFisica, entrada.Contenido)
+				if err != nil {
+					log.Printf("Error al escribir página modificada %d en dirección física %d: %v", entrada.NroPagina, dirFisica, err)
+				} else {
+					log.Printf("Página modificada %d escrita en dirección física %d antes de reemplazo", entrada.NroPagina, dirFisica)
+				}
+			}
 			log.Printf("Reemplazo CLOCK-M (0,1) - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
 			c.Entradas[indice] = nueva
 			c.Puntero = (indice + 1) % c.MaxEntradas
