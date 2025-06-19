@@ -15,23 +15,21 @@ import (
 func CrearPrimerProceso(fileName string, tamanio int) {
 	// Paso 1: Crear el PCB
 	pid := globals.GenerarNuevoPID()
-	estimado := globals.Config.InitialEstimate
 	pcbNuevo := pcb.PCB{
 		PID:            pid,
 		PC:             0,
 		ME:             make(map[string]int),
 		MT:             make(map[string]float64),
-		EstimadoRafaga: estimado,
-		RafagaRestante: 0,
+		EstimadoRafaga: globals.Config.InitialEstimate,
 		FileName:       fileName,
 		ProcessSize:    tamanio,
+		Estado:         "NEW", //Estado actual
 		TiempoEstado:   time.Now(),
 		CpuID:          "",
 	}
 
 	//Paso 2: Agregar el primero a la cola NEW
 	algoritmos.ColaNuevo.Add(&pcbNuevo)
-	pcb.CambiarEstado(&pcbNuevo, pcb.EstadoNew)
 	logger.Info("## (<%d>) Se crea el Primer proceso - Estado: <%s>", pcbNuevo.PID, pcbNuevo.Estado)
 
 	//PASO 3: Intentar crear en Memoria
@@ -314,6 +312,6 @@ func MostrarColaNew() {
 
 	logger.Info("Contenido de la cola New:")
 	for _, proceso := range lista {
-		logger.Info(" - PCB EN COLA New con PID: %d", proceso.PID)
+		logger.Info(" - PCB EN COLA New con PID: %d, TAMAÑO: %d", proceso.PID, proceso.ProcessSize)
 	}
 }

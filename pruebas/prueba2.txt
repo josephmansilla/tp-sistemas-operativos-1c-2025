@@ -1,4 +1,6 @@
 NOOP
-IO TECLADO 1
+INIT_PROC proceso2.txt 2
+INIT_PROC proceso1.txt 3
+INIT_PROC proceso3.txt 1
 NOOP
 EXIT

@@ -6,6 +6,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
+	"github.com/sisoputnfrba/tp-golang/kernel/planificadores"
 	"log"
 	"net/http"
 	"strconv"
@@ -104,8 +105,8 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 			ME:             make(map[string]int),
 			MT:             make(map[string]float64),
 			EstimadoRafaga: estimado,
-			RafagaRestante: 0,
 			TiempoEstado:   time.Now(),
+			Estado:         "NEW",
 			CpuID:          "",
 		}
 		logger.Info("## (<%d>) Se crea el proceso - Estado: NEW", pid)
@@ -125,6 +126,7 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		planificadores.MostrarColaNew()
 		// Notificar al planificador de largo plazo
 		args := []string{
 			fileName,

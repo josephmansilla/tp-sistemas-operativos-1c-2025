@@ -8,28 +8,9 @@ import (
 	"time"
 )
 
-func SeleccionarSRT() *pcb.PCB {
-	if len(ColaReady.elements) == 0 {
-		return nil
-	}
-
-	// Empezar con el primero
-	menor := ColaReady.elements[0]
-	for _, p := range ColaReady.elements {
-		if p.RafagaRestante < menor.RafagaRestante {
-			menor = p
-		}
-	}
-	return menor
-}
-
 /*
 Si no hay CPUs libres, se debe evaluar si dicho proceso
 tiene una rafaga más corta que los que se encuentran en ejecución.
-
-En caso de ser así, se debe informar a la CPU
-que posee al Proceso con el tiempo restante más alto que
-debe desalojar al mismo para que pueda ser planificado el nuevo.
 */
 func Desalojo(procesoEntrante *pcb.PCB) {
 	Utils.MutexEjecutando.Lock()
@@ -48,7 +29,7 @@ func Desalojo(procesoEntrante *pcb.PCB) {
 
 	for _, p := range ColaEjecutando.Values() {
 		duracion := time.Since(p.TiempoEstado)
-		tiempoEjecutado := float64(duracion.Microseconds()) / 1000.0
+		tiempoEjecutado := float64(duracion.Microseconds())
 		tiempoRestante := p.EstimadoRafaga - tiempoEjecutado
 
 		// Queremos interrumpir al que tenga MAYOR tiempo restante

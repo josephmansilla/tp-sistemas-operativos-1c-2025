@@ -3,6 +3,7 @@ package pcb
 import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"time"
 )
 
@@ -27,7 +28,6 @@ type PCB struct {
 	FileName       string             // nombre de archivo de pseudoCodigo
 	ProcessSize    int                //tamaño en memoria
 	EstimadoRafaga float64            // Para SJF/SRT
-	RafagaRestante int                // Para SRT
 	Estado         string             //Estado actual
 	TiempoEstado   time.Time          //Saber cuanto estuvo en un estado reciente
 	CpuID          string             //conocer CpuID
@@ -66,6 +66,8 @@ func (p *PCB) ImprimirMetricas() string {
 	if len(salida) > 0 {
 		salida = salida[:len(salida)-1]
 	}
+
+	logger.Info(salida)
 	return salida
 }
 
@@ -75,7 +77,7 @@ func CambiarEstado(p *PCB, nuevoEstado string) {
 
 	if estadoAnterior == EstadoExecute {
 		duracion := time.Since(p.TiempoEstado)
-		rafagaReal := float64(duracion.Microseconds()) / 1000.0
+		rafagaReal := float64(duracion.Microseconds())
 		//Actualizar rafaga real de CPU si viene de Execute
 		ActualizarEstimacionRafaga(p, rafagaReal)
 	}
@@ -90,7 +92,7 @@ func CambiarEstado(p *PCB, nuevoEstado string) {
 // Calcula antes de irse el tiempo que estuvo en ese estado
 func FinalizarEstado(p *PCB, estadoAnterior string) {
 	duracion := time.Since(p.TiempoEstado) //p.TiempoEnEstado()
-	ms := float64(duracion.Microseconds()) / 1000.0
+	ms := float64(duracion.Microseconds())
 	p.MT[estadoAnterior] += ms
 }
 

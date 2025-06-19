@@ -32,7 +32,7 @@ func DespacharProceso() {
 		case "SJF":
 			proceso = algoritmos.SeleccionarSJF() //Toma la estimacion mas corta
 		case "SRT":
-			proceso = algoritmos.SeleccionarSRT()
+			proceso = algoritmos.SeleccionarSJF() //Toma la estimacion mas corta
 		default:
 			logger.Error("Algoritmo de planificación desconocido")
 			return
