@@ -106,7 +106,6 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 			MT:             make(map[string]float64),
 			EstimadoRafaga: estimado,
 			TiempoEstado:   time.Now(),
-			Estado:         "NEW",
 			CpuID:          "",
 		}
 		logger.Info("## (<%d>) Se crea el proceso - Estado: NEW", pid)
@@ -116,10 +115,12 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 		case "FIFO":
 			Utils.MutexNuevo.Lock()
 			algoritmos.ColaNuevo.Add(&pcbNuevo)
+			pcb.CambiarEstado(&pcbNuevo, pcb.EstadoNew)
 			Utils.MutexNuevo.Unlock()
 			logger.Info("PCB <%d> añadido a NEW", pid)
 		case "PMCP":
 			algoritmos.AddPMCP(&pcbNuevo)
+			pcb.CambiarEstado(&pcbNuevo, pcb.EstadoNew)
 			logger.Info("PCB <%d> añadido a NEW", pid)
 		default:
 			logger.Error("Algoritmo de ingreso desconocido")

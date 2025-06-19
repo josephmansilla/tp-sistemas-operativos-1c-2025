@@ -23,13 +23,13 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 		EstimadoRafaga: globals.Config.InitialEstimate,
 		FileName:       fileName,
 		ProcessSize:    tamanio,
-		Estado:         "NEW", //Estado actual
 		TiempoEstado:   time.Now(),
 		CpuID:          "",
 	}
 
 	//Paso 2: Agregar el primero a la cola NEW
 	algoritmos.ColaNuevo.Add(&pcbNuevo)
+	pcb.CambiarEstado(&pcbNuevo, pcb.EstadoNew)
 	logger.Info("## (<%d>) Se crea el Primer proceso - Estado: <%s>", pcbNuevo.PID, pcbNuevo.Estado)
 
 	//PASO 3: Intentar crear en Memoria
