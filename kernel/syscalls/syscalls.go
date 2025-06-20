@@ -231,3 +231,79 @@ func Io(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+//REFACTOR EN PROCESO DE SYSCAL DE IO NECESARIO PARA EL MANEJO DE MEDIANO PLAZO Y LARGO PLAZO
+/*
+func Io(w http.ResponseWriter, r *http.Request) {
+	var msg MensajeIo
+	if err := data.LeerJson(w, r, &msg); err != nil {
+		return
+	}
+	pid := msg.PID
+	pc := msg.PC
+	nombre := msg.Nombre
+	dur := msg.Duracion
+
+	logger.Info("Syscall recibida: IO pid=%d nombre=%s duración=%dms", pid, nombre, dur)
+
+	// 1) Mover de EXECUTING a BLOCKED
+	Utils.MutexEjecutando.Lock()
+	var pcbPtr *pcb.PCB
+	for _, p := range algoritmos.ColaEjecutando.Values() {
+		if p.PID == pid {
+			pcbPtr = p
+			algoritmos.ColaEjecutando.Remove(p)
+			break
+		}
+	}
+	Utils.MutexEjecutando.Unlock()
+	if pcbPtr == nil {
+		logger.Error("Io: no estaba en ejecutando pid=%d", pid)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	pcb.CambiarEstado(pcbPtr, pcb.EstadoBlocked)
+	algoritmos.ColaBloqueado.Add(pcbPtr)
+	logger.Info("## (<%d>) pasa EXECUTE→BLOCKED", pid)
+
+	// 2) Notificar al mediano plazo: bloqueo y arranque de timer
+	go func(p *pcb.PCB, duration int) {
+		timer := time.NewTimer(time.Duration(duration) * time.Millisecond)
+		select {
+		case <-timer.C:
+			// expiró antes de recibir finIO
+			Utils.MutexBloqueado.Lock()
+			// si aún está BLOCKED, pasar a SUSP.BLOCKED
+			if p.Estado == pcb.EstadoBlocked {
+				algoritmos.ColaBloqueado.Remove(p)
+				pcb.CambiarEstado(p, pcb.EstadoSuspBlocked)
+				algoritmos.ColaBloqueadoSuspendido.Add(p)
+				logger.Info("## (<%d>) BLK→SUSP.BLK tras %dms", p.PID, duration)
+				// avisar a memoria swap‑out
+				comunicacion.SolicitarSwapOut(p.PID)
+				// y despertar largo plazo
+				Utils.InitProcess <- struct{}{}
+			}
+			Utils.MutexBloqueado.Unlock()
+
+		case finished := <-Utils.NotificarFinIO:
+			// finIO llegó antes del timer
+			if finished == p.PID {
+				if !timer.Stop() {
+					<-timer.C
+				}
+				// mover a READY directo
+				Utils.MutexBloqueado.Lock()
+				algoritmos.ColaBloqueado.Remove(p)
+				pcb.CambiarEstado(p, pcb.EstadoReady)
+				algoritmos.ColaReady.Add(p)
+				logger.Info("## (<%d>) BLK→READY por finIO", p.PID)
+				Utils.NotificarDespachador <- p.PID
+				Utils.MutexBloqueado.Unlock()
+			}
+		}
+	}(pcbPtr, msg.Duracion)
+
+	w.WriteHeader(http.StatusOK)
+}
+*/
