@@ -1,10 +1,22 @@
-1. ver funciones que manejen las interrupciones que envia IO(fin de io) y CPU
-2. ver funciones que manejen la concurrencia de los procesos e hilos
-3. ver funcion que piden a memoria crear proceso
-4. ver funciones que manejen el intercambio de *PCB  entre colas.
-5. buscar en la documentacion funciones para medir el tiempo necesario para las rafagas cpu(para hacer calculo de sjf con D) y gestionar el tiempo q un proceso estara en cola bloqueado y para gestionar el tiempo de un proceso en IO
-6. ver funciones para las Syscalls
-7. ver funciones para manejo de swap y preguntar si corresponde a otro modulo o podemos manejarlo como parte de kernell como una lista de procesos que pasaron a swap
-8. ver como crear hilos en go
-9. estudiar situaciones que necesitan sincronizar.
-10. estudiar multicore con concurrencia.
+Mediano plazo, pasos funcionales que debe cumplir:
+cuando llegue una syscall de io, pasar el proceso de running a bloqueado.
+luego, en esa funcion q maneja la syscall abrir un hilo y empezar a tomar el tiempo
+segun el archivo de configuracion.seguramente en dos if contemple los dos posibles caminos:
+si la notificacion del modulo de io(de que termino su IO para ese proceso) llega antes que termine el
+timer el proceso pasa de bloqueado a ready, de lo contrario pasara a suspendidoBLoqueado
+y en ese caso ocurren dos cosas mas dentro de ese if principa, avisar a memoria
+que ese proceso lo "saque" y lo pase a swap; tambien eso lleva a tener mas
+espacio libre entonces se debera intentar pasar un proceso de new a ready(avisandole)
+al largo plazo mediante una tuberia/señal, aca el largo plazo tiene que ver 
+primero la cola de suspReady y luego la de New.
+En ese punto tenemos el proceso o en la cola de ready (porque la io termino antes
+que el timer) o en suspBloqueado porque se acabo el timer.
+Entonces de todas formas kernel recibira en algun momento la noticia
+de que termino la IO de un proceso dado por el endpoint correspondiente.
+aca kernel va a evaluar seguro en un if donde primero buscara el pid en la
+cola Bloqueados y luego si no lo encuentra(porque paso a ready antes del timer) buscara 
+en la cola de SuspBloqueado para pasarlo finalmente a la cola de SuspReady, para que finalmente el 
+largo plazo pueda planificarlo segun su algoritmo y pasarlo a ready.
+Una vez que el proceso llegue a SUSP. READY tendrá el mismo comportamiento, es decir, utilizará el 
+mismo algoritmo que la cola NEW teniendo más prioridad que esta última. De esta manera, ningún proceso que 
+esté esperando en la cola de NEW podrá ingresar al sistema si hay al menos un proceso en SUSP. READY
