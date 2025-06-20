@@ -89,7 +89,7 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 	fileName := msg.Filename
 	tamanio := msg.Tamanio
 
-	estimado := globals.Config.InitialEstimate
+	estimado := globals.KConfig.InitialEstimate
 
 	logger.Info("## (<%d>) - Solicitó syscall: <INIT_PROC>", pid)
 	logger.Info("Se ha recibido: Filename: %s Tamaño Memoria: %d", fileName, tamanio)
@@ -183,7 +183,7 @@ func DumpMemory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Armar URL del módulo Memoria
-	url := fmt.Sprintf("http://%s:%d/memoria/dump", globals.Config.MemoryAddress, globals.Config.MemoryPort)
+	url := fmt.Sprintf("http://%s:%d/memoria/dump", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
 
 	// Usar helper para enviar datos
 	if err := data.EnviarDatos(url, req); err != nil {

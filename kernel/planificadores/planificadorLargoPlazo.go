@@ -20,7 +20,7 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 		PC:             0,
 		ME:             make(map[string]int),
 		MT:             make(map[string]float64),
-		EstimadoRafaga: globals.Config.InitialEstimate,
+		EstimadoRafaga: globals.KConfig.InitialEstimate,
 		FileName:       fileName,
 		ProcessSize:    tamanio,
 		TiempoEstado:   time.Now(),
@@ -171,7 +171,7 @@ func ManejadorFinalizacionProcesos() {
 		if err != nil {
 			logger.Error("Error avisando fin proceso pid=%d: %v", pid, err)
 			continue
-		}*/ //MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
+		}*///MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
 
 		//ACA PONER UN WAIT/TUBERIA que espere a que memoria libere el proceso, ES PARA TENER UN ORDEN
 

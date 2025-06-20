@@ -98,7 +98,7 @@ func FinalizarEstado(p *PCB, estadoAnterior string) {
 
 // Utilizar despues de una rafaga en CPU
 func ActualizarEstimacionRafaga(proceso *PCB, rafagaReal float64) float64 {
-	alpha := globals.Config.Alpha
+	alpha := globals.KConfig.Alpha
 	proceso.EstimadoRafaga = alpha*rafagaReal + (1-alpha)*proceso.EstimadoRafaga
 	return proceso.EstimadoRafaga
 }
@@ -111,7 +111,7 @@ ActualizarEstimacionRafaga(proceso, 7.001) // 7.001ms es el tiempo real que tard
 
 // Esta función no se recomienda: usa el tiempo total acumulado en EXECUTE y no solo la última ráfaga.
 func CalcularEstimacionRafaga(proceso *PCB) float64 {
-	alpha := globals.Config.Alpha
+	alpha := globals.KConfig.Alpha
 	proceso.EstimadoRafaga = alpha*float64(proceso.MT[EstadoExecute]) + (1-alpha)*proceso.EstimadoRafaga
 	return proceso.EstimadoRafaga
 }
