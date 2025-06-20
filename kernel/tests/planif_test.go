@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
 	"testing"
 	"time"
 
@@ -10,15 +11,17 @@ import (
 )
 
 func TestCambiarEstadoYMetricas(t *testing.T) {
-	globals.Config.InitialEstimate = 1000
-	globals.Config.Alpha = 0.5
+	globals.KConfig = &globals.KernelConfig{
+		InitialEstimate: 1000,
+		Alpha:           0.5,
+	}
 
 	p := &pcb.PCB{
 		PID:            1,
 		PC:             0,
 		ME:             make(map[string]int),
 		MT:             make(map[string]float64),
-		EstimadoRafaga: globals.Config.InitialEstimate,
+		EstimadoRafaga: globals.KConfig.InitialEstimate,
 		FileName:       "test.txt",
 		ProcessSize:    5,
 		TiempoEstado:   time.Now(), //time desde que se crea
@@ -52,6 +55,49 @@ func TestCambiarEstadoYMetricas(t *testing.T) {
 	assert.Contains(t, metricas, "EXIT (1)")
 }
 
+func TestAddPMCP(t *testing.T) {
+	// Reset cola NEW antes de testear
+	algoritmos.ColaNuevo = algoritmos.Cola[*pcb.PCB]{}
+
+	// Crear procesos de distintos tamaños
+	p1 := &pcb.PCB{PID: 1, ProcessSize: 50}
+	p2 := &pcb.PCB{PID: 2, ProcessSize: 20}
+	p3 := &pcb.PCB{PID: 3, ProcessSize: 30}
+
+	//Los deberia ordenar por tamaño en memoria en cola NEW
+	algoritmos.AddPMCP(p1)
+	algoritmos.AddPMCP(p2)
+	algoritmos.AddPMCP(p3)
+
+	col := algoritmos.ColaNuevo.GetElements()
+
+	assert.Equal(t, 3, len(col), "Debe haber 3 elementos")
+	assert.Equal(t, 2, col[0].PID, "El primero debe ser el de menor tamaño (20)")
+	assert.Equal(t, 3, col[1].PID, "Luego el de tamaño 30")
+	assert.Equal(t, 1, col[2].PID, "Luego el de tamaño 50")
+}
+
+func TestSeleccionarSJF(t *testing.T) {
+	// Reset cola Ready
+	algoritmos.ColaReady = algoritmos.Cola[*pcb.PCB]{}
+
+	// Crear procesos con distintas estimaciones
+	p1 := &pcb.PCB{PID: 1, EstimadoRafaga: 1000}
+	p2 := &pcb.PCB{PID: 2, EstimadoRafaga: 500}
+	p3 := &pcb.PCB{PID: 3, EstimadoRafaga: 2000}
+
+	//Cola Ready se ordena por FIFO
+	algoritmos.ColaReady.Add(p1)
+	algoritmos.ColaReady.Add(p2)
+	algoritmos.ColaReady.Add(p3)
+
+	//Deberia tomar la estimacion mas corta primero
+	resultado := algoritmos.SeleccionarSJF()
+
+	assert.NotNil(t, resultado, "Debe retornar un proceso")
+	assert.Equal(t, 2, resultado.PID, "Debe retornar el proceso con menor rafaga estimada (PID 2)")
+}
+
 func TestProcesoAInterrumpir(t *testing.T) {
 	now := time.Now()
 
@@ -80,6 +126,7 @@ func TestProcesoAInterrumpir(t *testing.T) {
 	}
 }
 
+// MOCKEO LOGICA DE LOS DESALOJOS
 func ProcesoAInterrumpir(procesoEntrante *pcb.PCB, ejecutando []*pcb.PCB) *pcb.PCB {
 	mayorTiempoRestante := -1.0
 	var procesoAInterrumpir *pcb.PCB
