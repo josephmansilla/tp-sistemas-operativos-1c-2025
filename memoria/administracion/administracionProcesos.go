@@ -8,31 +8,45 @@ import (
 )
 
 func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo string) (err error) {
+	logger.Info("Inicializando proceso PID=%d, tamaño=%d, pseudocódigo=%s", pid, tamanioProceso, nombreArchPseudocodigo)
+
 	if !TieneTamanioNecesario(tamanioProceso) {
-		logger.Error("No hay memoria")
+		logger.Error("No hay memoria suficiente para proceso PID=%d", pid)
 		return fmt.Errorf("no hay memoria disponible para el proceso: %v", logger.ErrNoMemory)
 	}
+
 	nuevoProceso := &g.Proceso{
 		PID:                 pid,
 		TablaRaiz:           InicializarTablaRaiz(),
 		Metricas:            InicializarMetricas(),
 		OffsetInstrucciones: make(map[int]int),
 	}
+
+	if nuevoProceso.TablaRaiz == nil {
+		logger.Error("TablaRaiz es nil para proceso PID=%d", pid)
+		return fmt.Errorf("tabla raíz no inicializada")
+	}
+	logger.Info("TablaRaiz inicializada para PID=%d", pid)
+
 	pseudo, err := LecturaPseudocodigo(nuevoProceso, nombreArchPseudocodigo, tamanioProceso)
 	if err != nil {
-		logger.Error("Error al leer el pseudocodigo: %v", err)
-		return fmt.Errorf("error al leer el pseudocodigo: %v", logger.ErrBadRequest)
+		logger.Error("Error al leer pseudocódigo para PID=%d: %v", pid, err)
+		return fmt.Errorf("error al leer pseudocódigo: %v", logger.ErrBadRequest)
 	}
+	logger.Info("Pseudocódigo leído correctamente para PID=%d. Cantidad instrucciones: %d", pid, len(pseudo))
 
 	err = AsignarDatosAPaginacion(nuevoProceso, pseudo)
 	if err != nil {
-		logger.Error("Error al asignarDatosAPaginacion %v", err)
-		return fmt.Errorf("error al asignar datos para el proceso: %v", logger.ErrInternalFailure)
+		logger.Error("Error asignando datos a paginación para PID=%d: %v", pid, err)
+		return fmt.Errorf("error asignando datos para el proceso: %v", logger.ErrInternalFailure)
 	}
+	logger.Info("Datos asignados correctamente a paginación para PID=%d", pid)
 
 	g.MutexProcesosPorPID.Lock()
 	g.ProcesosPorPID[pid] = nuevoProceso
 	g.MutexProcesosPorPID.Unlock()
+	logger.Info("Proceso PID=%d agregado a la lista global", pid)
+
 	return nil
 } // TODO: le falta el err handling
 

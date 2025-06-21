@@ -12,9 +12,9 @@ import (
 
 // Body JSON a recibir
 type MensajeAMemoria struct {
-	Filename string `json:"filename"` //filename
-	Tamanio  int    `json:"tamanio_memoria"`
-	PID      int    `json:"pid"`
+	Pseudocodigo   string `json:"filename"` //filename
+	TamanioMemoria int    `json:"tamanio_memoria"`
+	PID            int    `json:"pid"`
 }
 
 type ConsultaAMemoria struct {
@@ -38,8 +38,8 @@ func SolicitarEspacioEnMemoria(fileName string, tamanio int) int {
 	url := fmt.Sprintf("http://%s:%d/memoria/espaciolibre", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
 
 	mensaje := MensajeAMemoria{
-		Filename: fileName,
-		Tamanio:  tamanio,
+		Pseudocodigo:   fileName,
+		TamanioMemoria: tamanio,
 	}
 
 	resp, err := data.EnviarDatosConRespuesta(url, mensaje)
@@ -60,12 +60,12 @@ func SolicitarEspacioEnMemoria(fileName string, tamanio int) int {
 
 // ENVIAR ARCHIVO DE PSEUDOCODIGO Y TAMAÑO
 func EnviarArchivoMemoria(fileName string, tamanio int, pid int) {
-	url := fmt.Sprintf("http://%s:%d/memoria/kernel", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
+	url := fmt.Sprintf("http://%s:%d/memoria/inicializacionProceso", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
 
 	mensaje := MensajeAMemoria{
-		Filename: fileName,
-		Tamanio:  tamanio,
-		PID:      pid,
+		Pseudocodigo:   fileName,
+		TamanioMemoria: tamanio,
+		PID:            pid,
 	}
 
 	err := data.EnviarDatos(url, mensaje)

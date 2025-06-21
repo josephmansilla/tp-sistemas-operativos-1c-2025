@@ -35,7 +35,7 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 	//PASO 3: Intentar crear en Memoria
 	espacio := comunicacion.SolicitarEspacioEnMemoria(fileName, tamanio)
 	if espacio < tamanio {
-		logger.Info("Memoria sin espacio. Abortando")
+		logger.Warn("Memoria sin espacio. Abortando")
 		return
 	}
 
@@ -171,7 +171,7 @@ func ManejadorFinalizacionProcesos() {
 		if err != nil {
 			logger.Error("Error avisando fin proceso pid=%d: %v", pid, err)
 			continue
-		}*///MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
+		}*/ //MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
 
 		//ACA PONER UN WAIT/TUBERIA que espere a que memoria libere el proceso, ES PARA TENER UN ORDEN
 

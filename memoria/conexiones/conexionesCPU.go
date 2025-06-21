@@ -42,12 +42,22 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 	pid := mensaje.PID
 	pc := mensaje.PC
 
+	logger.Info("Petición de instrucción para PID: %d - PC: %d", mensaje.PID, mensaje.PC)
+
 	g.MutexProcesosPorPID.Lock()
-	proceso := g.ProcesosPorPID[pid]
+	proceso, ok := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
+
+	if !ok || proceso == nil {
+		logger.Error("Proceso con PID %d no existe o es nil", mensaje.PID)
+		http.Error(w, "Proceso no encontrado", http.StatusNotFound)
+		return
+	}
 
 	respuesta, err := adm.ObtenerInstruccion(proceso, pc)
 	if err != nil {
+		logger.Error("Error al obtener instrucción: %v", err)
+		http.Error(w, "Error al obtener instrucción", http.StatusInternalServerError)
 		return
 	}
 

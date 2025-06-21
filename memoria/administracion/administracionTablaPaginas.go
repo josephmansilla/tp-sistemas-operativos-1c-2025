@@ -12,7 +12,11 @@ import (
 
 func InicializarTablaRaiz() g.TablaPaginas {
 	cantidadEntradasPorTabla := g.MemoryConfig.EntriesPerPage
-	return make(g.TablaPaginas, cantidadEntradasPorTabla)
+	tabla := make(g.TablaPaginas, cantidadEntradasPorTabla)
+	for i := 0; i < cantidadEntradasPorTabla; i++ {
+		tabla[i] = &g.TablaPagina{} // inicializo cada entrada con un puntero válido
+	}
+	return tabla
 }
 
 func CrearIndicePara(nroPagina int) (indices []int) {
@@ -30,37 +34,55 @@ func CrearIndicePara(nroPagina int) (indices []int) {
 }
 
 func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDeseada *g.EntradaPagina, err error) {
-	err = nil
+	if procesoBuscado == nil {
+		logger.Error("Proceso es nil en BuscarEntradaPagina")
+		return nil, fmt.Errorf("proceso nil")
+	}
 
-	tamanioIndices := len(indices)
-	if tamanioIndices == 0 {
-		logger.Error("Índice vacío")
-		return nil, fmt.Errorf("el indice indicado es vacío: %w", logger.ErrIsEmpty)
+	if procesoBuscado.TablaRaiz == nil {
+		logger.Error("TablaRaiz es nil en BuscarEntradaPagina")
+		return nil, fmt.Errorf("tabla raiz nil")
+	}
+
+	if len(indices) == 0 {
+		logger.Error("Indices vacíos en BuscarEntradaPagina")
+		return nil, fmt.Errorf("indice vacío")
 	}
 
 	tablaApuntada := procesoBuscado.TablaRaiz[indices[0]]
 	if tablaApuntada == nil {
-		logger.Fatal("La tabla no existe o nunca fue inicializada")
-		return nil, fmt.Errorf("la tabla no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
+		logger.Error("La tabla no existe o nunca fue inicializada")
+		return nil, fmt.Errorf("la tabla no existe o nunca fue inicializada")
 	}
 
-	for i := 1; i <= tamanioIndices-1; i++ {
+	for i := 1; i < len(indices)-1; i++ {
 		if tablaApuntada.Subtabla == nil {
 			logger.Error("La subtabla no existe o nunca fue inicializada")
-			return nil, fmt.Errorf("la subtabla no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
+			return nil, fmt.Errorf("la subtabla no existe o nunca fue inicializada")
 		}
 		tablaApuntada = tablaApuntada.Subtabla[indices[i]]
-	}
-	if tablaApuntada == nil {
-		logger.Error("La tabla no exite o no fue nunca inicializada")
-		return nil, fmt.Errorf("la tabla no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
-	}
-	if tablaApuntada.EntradasPaginas == nil {
-		logger.Error("La entrada no fue nunca inicializada")
-		return nil, fmt.Errorf("la entrada nunca fue inicializada %w", logger.ErrNoInstance)
+		if tablaApuntada == nil {
+			logger.Error("La subtabla no existe en índice %d", indices[i])
+			return nil, fmt.Errorf("la subtabla no existe en índice %d", indices[i])
+		}
 	}
 
-	entradaDeseada = tablaApuntada.EntradasPaginas[indices[tamanioIndices-1]]
+	if tablaApuntada == nil {
+		logger.Error("La tabla no existe o nunca fue inicializada")
+		return nil, fmt.Errorf("la tabla no existe o nunca fue inicializada")
+	}
+
+	if tablaApuntada.EntradasPaginas == nil {
+		logger.Error("La entrada no fue nunca inicializada")
+		return nil, fmt.Errorf("la entrada nunca fue inicializada")
+	}
+
+	entradaDeseada = tablaApuntada.EntradasPaginas[indices[len(indices)-1]]
+	if entradaDeseada == nil {
+		logger.Error("La entrada buscada no existe")
+		return nil, fmt.Errorf("la entrada buscada no existe")
+	}
+
 	logger.Info("Se encontró la entrada de número: %d", entradaDeseada.NumeroFrame)
 
 	if entradaDeseada.EstaPresente == false {
@@ -70,7 +92,7 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 	}
 
 	IncrementarMetrica(procesoBuscado, 1, IncrementarAccesosTablasPaginas)
-	return
+	return entradaDeseada, nil
 } // TODO: Testear casos, pero por importancia, no porque tenga dudas
 
 func BuscarEntradaEspecifica(tablaRaiz g.TablaPaginas, numeroEntrada int) (numeroFrameMemReal int) {
@@ -202,12 +224,21 @@ func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, en
 	indices := CrearIndicePara(numeroPagina)
 	actual := tablaRaiz[indices[0]]
 
+	if actual == nil {
+		actual = &g.TablaPagina{}
+		tablaRaiz[indices[0]] = actual
+	}
+
 	for i := 1; i < len(indices)-1; i++ {
 		if actual.Subtabla == nil {
 			actual.Subtabla = make(map[int]*g.TablaPagina)
 		}
+		if actual.Subtabla[indices[i]] == nil {
+			actual.Subtabla[indices[i]] = &g.TablaPagina{}
+		}
 		actual = actual.Subtabla[indices[i]]
 	}
+
 	if actual.EntradasPaginas == nil {
 		actual.EntradasPaginas = make(map[int]*g.EntradaPagina)
 	}
@@ -249,7 +280,15 @@ func ModificarEstadoEntradaLectura(pid int) {
 
 func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU, err error) {
 	respuesta = g.InstruccionCPU{Exito: nil, Instruccion: ""}
+
+	//n
+	if proceso == nil {
+		logger.Error("Proceso recibido es nil")
+		return respuesta, fmt.Errorf("proceso nil")
+	}
+
 	cantInstrucciones := len(proceso.OffsetInstrucciones)
+	logger.Info("PID <%d> - PC: %d - Cant. Instrucciones: %d", proceso.PID, pc, cantInstrucciones)
 
 	var base int
 	var tamanioALeer int
@@ -258,22 +297,33 @@ func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU,
 		base = 0
 		tamanioALeer = proceso.OffsetInstrucciones[pc]
 	} else if pc == cantInstrucciones {
+		logger.Warn("PC llegó al final de las instrucciones")
 		return
 	} else { // Esto indica fin del archivo o error de PC
 		base = proceso.OffsetInstrucciones[pc-1]
 		tamanioALeer = proceso.OffsetInstrucciones[pc] - base
 	}
+
+	logger.Info("Base: %d, Tamanio a leer: %d", base, tamanioALeer)
+
 	tamanioPagina := g.MemoryConfig.PagSize
 	numeroEntradaABuscar := base / tamanioPagina
 	offsetDir := base % tamanioPagina
 
+	logger.Info("Entrada a buscar: %d, Offset dentro de la página: %d", numeroEntradaABuscar, offsetDir)
+
 	direccionFisica := (BuscarEntradaEspecifica(proceso.TablaRaiz, numeroEntradaABuscar) * tamanioPagina) + offsetDir
+
+	logger.Info("PID <%d>: Dirección física obtenida: %d", proceso.PID, direccionFisica)
+
 	var memoria g.ExitoLecturaMemoria
 	memoria, err = LeerEspacioMemoria(proceso.PID, direccionFisica, tamanioALeer)
 	if err != nil {
+		logger.Error("Error al leer memoria: %v", err)
 		return respuesta, err
 	}
 	respuesta = g.InstruccionCPU{Instruccion: memoria.DatosAEnviar}
+	logger.Info("PID <%d>: Instrucción leída correctamente: <%s>", proceso.PID, respuesta.Instruccion)
 	return
 }
 

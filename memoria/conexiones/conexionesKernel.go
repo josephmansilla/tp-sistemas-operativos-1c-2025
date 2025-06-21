@@ -39,30 +39,29 @@ func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		Mensaje: "Proceso creado correctamente en memoria",
 	}
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
+		logger.Error("Error al leer JSON desde Kernel: %v", err)
+		http.Error(w, "Error de parseo de JSON", http.StatusBadRequest)
 		return
 	}
 
 	pid := mensaje.PID
 	tamanioProceso := mensaje.TamanioMemoria
-	err := adm.InicializarProceso(pid, tamanioProceso, mensaje.Pseudocodigo)
-	if err != nil {
-		logger.Error("Error: %v", err)
-		respuesta = g.RespuestaMemoria{
-			Exito:   false,
-			Mensaje: "",
-		}
-	}
-
 	logger.Info("## PID: <%d> - Proceso Creado - Tamaño: <%d>", pid, tamanioProceso)
 
-	if errEnconde := json.NewEncoder(w).Encode(respuesta); errEnconde != nil {
-		logger.Error("Error al serializar mock de espacio: %v", errEnconde)
-		return
+	err := adm.InicializarProceso(pid, tamanioProceso, mensaje.Pseudocodigo)
+	if err != nil {
+		logger.Error("Error al inicializar proceso PID=%d: %v", pid, err)
+		respuesta.Exito = false
+		respuesta.Mensaje = err.Error()
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		w.WriteHeader(http.StatusOK)
 	}
 
-	json.NewEncoder(w).Encode(respuesta)
-	w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("Respuesta devuelta"))
+	w.Header().Set("Content-Type", "application/json")
+	if errEncode := json.NewEncoder(w).Encode(respuesta); errEncode != nil {
+		logger.Error("Error al codificar respuesta JSON: %v", errEncode)
+	}
 }
 
 func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
