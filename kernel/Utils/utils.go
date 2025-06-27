@@ -59,6 +59,7 @@ var (
 	SemProcessCreateOK      chan struct{}
 	ChannelFinishProcess2   chan bool
 	ChannelFinishprocess    chan FinishProcess
+	ChannelProcessBlocked   chan int
 
 	//AVISAR AL DESPACHADOR CUANDO UN PROCESO CAMBIA SU ESTADO
 	NotificarDespachador chan int              //PASA A READY
@@ -87,6 +88,7 @@ func InicializarCanales() {
 	NotificarComienzoIO = make(chan MensajeIOChannel, 10)
 	NotificarFinIO = make(chan int, 10)
 	ContextoInterrupcion = make(chan InterruptProcess, 10)
+	ChannelProcessBlocked = make(chan int, 10)
 }
 
 type MensajeIOChannel struct {
