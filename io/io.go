@@ -154,3 +154,5 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("IO finalizada correctamente"))
 }
+
+// ver el tema de FINALIZACION DE IO != FIN de timer de IO

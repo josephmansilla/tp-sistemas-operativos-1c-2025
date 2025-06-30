@@ -48,6 +48,8 @@ func monitorBloqueado(pid int) {
 			// TODO comunicacion.SolicitarSuspenderEnMemoria(pid)
 			// señal al largo plazo para reintentar NEW/SUSP.READY
 			Utils.InitProcess <- struct{}{}
+			//aca meter un signal/tuberia al endpoint que atiende los fin de IO para que pueda pasar el proceso a susp.ready
+			//
 		}
 	}
 }
