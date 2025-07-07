@@ -8,7 +8,7 @@ import (
 )
 
 func TestBuscarPagina(t *testing.T) {
-	err := CargarConfigCPU("../configs/cpu_3config.json")
+	err := CargarConfigCPU("../configs/PLANI.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -24,7 +24,7 @@ func TestBuscarPagina(t *testing.T) {
 }
 
 func TestActivacionCache(t *testing.T) {
-	err := CargarConfigCPU("../configs/cpu_3config.json")
+	err := CargarConfigCPU("../configs/PLANI.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -38,7 +38,7 @@ func TestActivacionCache(t *testing.T) {
 }
 
 func TestAgregarEntrada(t *testing.T) {
-	err := CargarConfigCPU("../configs/cpu_3config.json")
+	err := CargarConfigCPU("../configs/PLANI.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestAgregarEntrada(t *testing.T) {
 }
 
 func TestReemplazoClock(t *testing.T) {
-	err := CargarConfigCPU("../configs/cpu_1config.json")
+	err := CargarConfigCPU("../configs/1CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestReemplazoClock(t *testing.T) {
 }
 
 func TestReemplazoClockM(t *testing.T) {
-	err := CargarConfigCPU("../configs/cpu_1config.json")
+	err := CargarConfigCPU("../configs/1CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestReemplazoClockM(t *testing.T) {
 }
 
 func TestReemplazoClockM2(t *testing.T) {
-	err := CargarConfigCPU("../configs/cpu_1config.json")
+	err := CargarConfigCPU("../configs/1CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestReemplazoClockM2(t *testing.T) {
 }
 
 func TestReemplazoClockM3(t *testing.T) {
-	err := CargarConfigCPU("../configs/cpu_1config.json")
+	err := CargarConfigCPU("../configs/1CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -147,7 +147,7 @@ func TestReemplazoClockM3(t *testing.T) {
 }
 
 func TestLimpiarCache(t *testing.T) {
-	err := CargarConfigCPU("../configs/cpu_1config.json")
+	err := CargarConfigCPU("../configs/1CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}

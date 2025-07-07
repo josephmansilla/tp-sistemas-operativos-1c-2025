@@ -5,10 +5,10 @@
   "port_memory": 8083,
   "ip_kernel": "127.0.0.1",
   "port_kernel": 8081,
-  "tlb_entries": 5,
-  "tlb_replacement": "LRU",
-  "cache_entries": 5,
-  "cache_delay": 10,
+  "tlb_entries": 0,
+  "tlb_replacement": "FIFO",
+  "cache_entries": 0,
+  "cache_delay": 0,
   "cache_replacement" : "CLOCK",
-  "log_level": "DEBUG"
+  "log_level": "INFO"
 }

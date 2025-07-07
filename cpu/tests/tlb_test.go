@@ -7,7 +7,7 @@ import (
 )
 
 func TestTLBHit(t *testing.T) {
-	err := CargarConfigCPU("../configs/cpu_1config.json")
+	err := CargarConfigCPU("../configs/1CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -22,7 +22,7 @@ func TestTLBHit(t *testing.T) {
 }
 
 func TestTLBMiss(t *testing.T) {
-	err := CargarConfigCPU("../configs/cpu_1config.json")
+	err := CargarConfigCPU("../configs/1CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestTLBMiss(t *testing.T) {
 }
 
 func TestReemplazoPorFifo(t *testing.T) {
-	err := CargarConfigCPU("../configs/cpu_1config.json")
+	err := CargarConfigCPU("../configs/1CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestReemplazoPorFifo(t *testing.T) {
 }
 
 func TestReemplazoPorLRU(t *testing.T) {
-	err := CargarConfigCPU("../configs/cpu_3config.json")
+	err := CargarConfigCPU("../configs/PLANI.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}

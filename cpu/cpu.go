@@ -12,8 +12,8 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Falta el parametro: identificador de CPU")
+	if len(os.Args) < 3 {
+		fmt.Println("Uso: go run cpu.go <ID_CPU> <archivo_config_sin_extension_json>")
 		os.Exit(1)
 	}
 	globals.ID = os.Args[1]
@@ -26,37 +26,30 @@ func main() {
 	}
 	log.SetOutput(logFile)
 
-	/*err = logger.SetLevel(globals.ClientConfig.LogLevel)
-	if err != nil {
-		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
-	}*/
-
 	logger.Info("=========================================================")
-	logger.Info("======== Comenzo la ejecucion del CPU con ID: %s ========", globals.ID)
+	logger.Info("======== Comenzó la ejecución del CPU con ID: %s ========", globals.ID)
 	logger.Info("=========================================================")
 
-	//CPU CLIENTE
-	configpath := fmt.Sprintf("configs/cpu_%sconfig.json", globals.ID)
-	globals.ClientConfig = utils.Config(configpath)
-
+	// CONFIGURACIÓN
+	configPath := fmt.Sprintf("configs/%s.json", os.Args[2])
+	globals.ClientConfig = utils.Config(configPath)
 	if globals.ClientConfig == nil {
-		log.Fatal("No se pudo cargar el archivo de configuracion")
+		log.Fatalf("No se pudo cargar el archivo de configuración: %s", configPath)
 	}
 	traducciones.Max = globals.ClientConfig.CacheEntries
 
-	//Solicito la configuracion de memoria
+	// Configuración de Memoria
 	err = utils.RecibirConfiguracionMemoria(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
 	if err != nil {
 		log.Fatalf("Error al obtener la configuración de memoria: %v", err)
 	}
-	//Solicito PID y PC para ejecutar Instrucciones
-	//1. Creo el handler
+
+	// Servidor HTTP
 	mux := http.NewServeMux()
 	mux.HandleFunc("/cpu/kernel", utils.RecibirContextoDeKernel)
 	mux.HandleFunc("/cpu/interrupcion", utils.RecibirInterrupcion)
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/cpu\n", globals.ClientConfig.PortSelf)
-	//2. Uso una goroutine para que no se bloquee el modulo
 	go func() {
 		log.Printf("Escuchando en %s:%d...", globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf)
 		err = http.ListenAndServe(fmt.Sprintf("%s:%d", globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf), mux)
@@ -64,12 +57,10 @@ func main() {
 			log.Fatalf("Error al iniciar servidor HTTP: %v", err)
 		}
 	}()
-	//utils.SimularSyscallInitProcess("127.0.0.1", 8081, 0, 0, "holiii", 64)
 
-	//Las CPUs deberán conectarse al Kernel (destino)
-	//3. Envi0 su IP, su PUERTO y su ID. (self)
+	// Conexión con Kernel
 	utils.EnviarIpPuertoIDAKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf, globals.ID)
 
-	//4. Evito que el modulo termine
+	// Bloqueo el main
 	select {}
 }
