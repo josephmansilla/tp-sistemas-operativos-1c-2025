@@ -65,6 +65,7 @@ var (
 	NotificarDespachador chan int              //PASA A READY
 	NotificarComienzoIO  chan MensajeIOChannel //PASA A BLOQUEADO
 	NotificarFinIO       chan int              //FIN DE IO
+	NotificarDesconexion chan int              //Desconexion DE IO
 	ContextoInterrupcion chan InterruptProcess //FIN DE EXECUTE
 )
 
@@ -87,6 +88,7 @@ func InicializarCanales() {
 	NotificarDespachador = make(chan int, 10) // buffer 10 procesos listos
 	NotificarComienzoIO = make(chan MensajeIOChannel, 10)
 	NotificarFinIO = make(chan int, 10)
+	NotificarDesconexion = make(chan int, 10)
 	ContextoInterrupcion = make(chan InterruptProcess, 10)
 	ChannelProcessBlocked = make(chan int, 10)
 }

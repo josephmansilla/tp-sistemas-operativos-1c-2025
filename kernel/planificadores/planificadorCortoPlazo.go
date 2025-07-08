@@ -14,6 +14,7 @@ func PlanificarCortoPlazo() {
 	go DespacharProceso()
 	go BloquearProceso()
 	go FinDeIO()
+	go DesconexionIO()
 	go DesalojarProceso()
 }
 
@@ -189,5 +190,29 @@ func FinDeIO() {
 
 		//Notificar al despachador llegada a READY
 		Utils.NotificarDespachador <- pid
+	}
+}
+
+func DesconexionIO() {
+	for {
+		//WAIT mensaje desconexion de IO
+		pid := <-Utils.NotificarDesconexion
+
+		//BUSCAR EN PCB BLOCKED
+		var proceso *pcb.PCB
+		Utils.MutexBloqueado.Lock()
+		for _, p := range algoritmos.ColaBloqueado.Values() {
+			if p.PID == pid {
+				proceso = p
+				algoritmos.ColaBloqueado.Remove(proceso)
+			}
+		}
+		Utils.MutexBloqueado.Unlock()
+
+		Utils.MutexSalida.Lock()
+		pcb.CambiarEstado(proceso, pcb.EstadoExit)
+		algoritmos.ColaSalida.Add(proceso)
+		logger.Info("## (%d) finalizó IO y pasa a EXIT", pid)
+		Utils.MutexSalida.Unlock()
 	}
 }

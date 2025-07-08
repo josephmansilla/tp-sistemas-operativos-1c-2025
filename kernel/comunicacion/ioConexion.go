@@ -23,8 +23,8 @@ type MensajeAIO struct {
 }
 
 type MensajeFin struct {
-	PID    int    `json:"pid"`
-	Nombre string `json:"nombre"` // en segundos
+	PID         int  `json:"pid"`
+	Desconexion bool `json:"desconexion"`
 }
 
 // w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
@@ -92,9 +92,12 @@ func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 		return //hubo error
 	}
 
-	nombre := mensajeRecibido.Nombre
 	pid := mensajeRecibido.PID
-	logger.Info("FIN de IO: Nombre: %s PID: %d", nombre, pid)
-
-	Utils.NotificarFinIO <- mensajeRecibido.PID
+	if mensajeRecibido.Desconexion {
+		logger.Info("Desconexion de IO: PID %d", pid)
+		Utils.NotificarDesconexion <- mensajeRecibido.PID
+	} else {
+		logger.Info("FIN de IO: PID %d", pid)
+		Utils.NotificarFinIO <- mensajeRecibido.PID
+	}
 }
