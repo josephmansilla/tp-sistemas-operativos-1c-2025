@@ -297,7 +297,7 @@ func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU,
 		return respuesta, fmt.Errorf("proceso nil")
 	}
 
-	cantInstrucciones := len(proceso.OffsetInstrucciones)
+	cantInstrucciones := len(proceso.OffsetInstruccionesEnBytes)
 	logger.Info("PID <%d> - PC: %d - Cant. Instrucciones: %d", proceso.PID, pc, cantInstrucciones)
 
 	var base int
@@ -305,20 +305,26 @@ func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU,
 
 	if pc == 0 {
 		base = 0
-		tamanioALeer = proceso.OffsetInstrucciones[pc]
+		tamanioALeer = proceso.OffsetInstruccionesEnBytes[pc]
 	} else if pc == cantInstrucciones {
-		logger.Warn("PC llegó al final de las instrucciones")
+		logger.Info("## Se llegó al final de las instrucciones")
 		return
 	} else { // Esto indica fin del archivo o error de PC
-		base = proceso.OffsetInstrucciones[pc-1]
-		tamanioALeer = proceso.OffsetInstrucciones[pc] - base
+		base = proceso.OffsetInstruccionesEnBytes[pc-1]
+		tamanioALeer = proceso.OffsetInstruccionesEnBytes[pc] - base
 	}
 
 	logger.Info("Base: %d, Tamanio a leer: %d", base, tamanioALeer)
 
 	tamanioPagina := g.MemoryConfig.PagSize
 	numeroEntradaABuscar := base / tamanioPagina
-	offsetDir := base % tamanioPagina
+	var offsetDir int
+
+	if base != 0 {
+		offsetDir = base % tamanioPagina
+	} else {
+		offsetDir = tamanioALeer
+	}
 
 	logger.Info("Entrada a buscar: %d, Offset dentro de la página: %d", numeroEntradaABuscar, offsetDir)
 

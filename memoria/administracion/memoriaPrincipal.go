@@ -72,7 +72,7 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, taman
 
 		stringEnBytes = append(stringEnBytes, lineaEnBytes...)
 		logger.Info("String en bytes: %d", stringEnBytes)
-		proceso.OffsetInstrucciones[cantidadInstrucciones] = len(stringEnBytes)
+		proceso.OffsetInstruccionesEnBytes[cantidadInstrucciones] = len(stringEnBytes)
 		cantidadInstrucciones++
 		// TODO: si los tests cuentan al EOF como instruccion queda así
 		// TODO: sino despues del if
