@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	pidEnEjecucion int
+	pidEnEjecucion = -1
 	mu             sync.Mutex
 )
 
@@ -198,6 +198,11 @@ func FinDeIO(pid int) {
 		logger.Info("Error enviando PID y Nombre a Kernel: %s", err.Error())
 		return
 	}
+
+	// Reiniciar PID
+	mu.Lock()
+	pidEnEjecucion = -1
+	mu.Unlock()
 }
 
 // Mecanismo del SO para notificar a un proceso que debe hacer algo.

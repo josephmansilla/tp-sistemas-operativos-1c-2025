@@ -198,6 +198,10 @@ func DesconexionIO() {
 		//WAIT mensaje desconexion de IO
 		pid := <-Utils.NotificarDesconexion
 
+		if pid < 0 {
+			continue // ignorar PIDs inválidos
+		}
+
 		//BUSCAR EN PCB BLOCKED
 		var proceso *pcb.PCB
 		Utils.MutexBloqueado.Lock()
@@ -209,10 +213,18 @@ func DesconexionIO() {
 		}
 		Utils.MutexBloqueado.Unlock()
 
+		if proceso == nil {
+			logger.Warn("## PID <%d> desconectado pero no estaba en BLOCKED", pid)
+			continue
+		}
+
+		//MOVER A EXIT
 		Utils.MutexSalida.Lock()
 		pcb.CambiarEstado(proceso, pcb.EstadoExit)
 		algoritmos.ColaSalida.Add(proceso)
-		logger.Info("## (%d) finalizó IO y pasa a EXIT", pid)
+		logger.Info("## (%d) finalizó IO y pasa a EXIT por desconexión", pid)
 		Utils.MutexSalida.Unlock()
+
+		logger.Info("## IO desconectado correctamente para PID <%d>", pid)
 	}
 }
