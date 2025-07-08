@@ -65,15 +65,24 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, taman
 	stringEnBytes := make([]byte, 0, tamanioMaximo)
 	cantidadInstrucciones := 0
 
+	pc := 0
 	for scanner.Scan() {
 		lineaEnString := scanner.Text()
 		logger.Info("Línea leída: %s", lineaEnString)
-		lineaEnBytes := []byte(lineaEnString)
 
-		stringEnBytes = append(stringEnBytes, lineaEnBytes...)
-		logger.Info("String en bytes: %d", stringEnBytes)
-		proceso.OffsetInstruccionesEnBytes[cantidadInstrucciones] = len(stringEnBytes)
+		// Convertir línea a bytes y agrega al offset segun PC
+		lineaEnBytes := []byte(lineaEnString)
+		proceso.OffsetInstruccionesEnBytes[pc] = lineaEnBytes
+
+		logger.Info("String en bytes: %d", lineaEnBytes)
+
+		//stringEnBytes = append(stringEnBytes, lineaEnBytes...)
+		//logger.Info("String en bytes: %d", stringEnBytes)
+		//proceso.OffsetInstruccionesEnBytes[cantidadInstrucciones] = len(stringEnBytes)
+
+		pc++
 		cantidadInstrucciones++
+
 		// TODO: si los tests cuentan al EOF como instruccion queda así
 		// TODO: sino despues del if
 

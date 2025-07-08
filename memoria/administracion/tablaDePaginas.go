@@ -300,47 +300,12 @@ func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU,
 	cantInstrucciones := len(proceso.OffsetInstruccionesEnBytes)
 	logger.Info("PID <%d> - PC: %d - Cant. Instrucciones: %d", proceso.PID, pc, cantInstrucciones)
 
-	var base int
-	var tamanioALeer int
+	lineaInstruccion := proceso.OffsetInstruccionesEnBytes[pc]
+	logger.Info("PC a buscar: %d, Instrucción en bytes: %v", pc, lineaInstruccion)
+	logger.Info("PC a buscar: %d, Instrucción: %s", pc, string(lineaInstruccion))
 
-	if pc == 0 {
-		base = 0
-		tamanioALeer = proceso.OffsetInstruccionesEnBytes[pc]
-	} else if pc == cantInstrucciones {
-		logger.Info("## Se llegó al final de las instrucciones")
-		return
-	} else { // Esto indica fin del archivo o error de PC
-		base = proceso.OffsetInstruccionesEnBytes[pc-1]
-		tamanioALeer = proceso.OffsetInstruccionesEnBytes[pc] - base
-	}
-
-	logger.Info("Base: %d, Tamanio a leer: %d", base, tamanioALeer)
-
-	tamanioPagina := g.MemoryConfig.PagSize
-	numeroEntradaABuscar := base / tamanioPagina
-	var offsetDir int
-
-	if base != 0 {
-		offsetDir = base % tamanioPagina
-	} else {
-		offsetDir = tamanioALeer
-	}
-
-	logger.Info("Entrada a buscar: %d, Offset dentro de la página: %d", numeroEntradaABuscar, offsetDir)
-
-	direccionFisica := (BuscarEntradaEspecifica(proceso.TablaRaiz, numeroEntradaABuscar) * tamanioPagina) + offsetDir
-
-	logger.Info("PID <%d>: Dirección física obtenida: %d", proceso.PID, direccionFisica)
-
-	var memoria g.ExitoLecturaMemoria
-	memoria, err = LeerEspacioMemoria(proceso.PID, direccionFisica, tamanioALeer)
-	if err != nil {
-		logger.Error("Error al leer memoria: %v", err)
-		return respuesta, err
-	}
-	respuesta = g.InstruccionCPU{Instruccion: memoria.DatosAEnviar}
-	logger.Info("PID <%d>: Instrucción leída correctamente: <%s>", proceso.PID, respuesta.Instruccion)
-	return
+	respuesta.Instruccion = string(lineaInstruccion)
+	return respuesta, nil
 }
 
 func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
