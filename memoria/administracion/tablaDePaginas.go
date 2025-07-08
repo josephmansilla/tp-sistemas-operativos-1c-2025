@@ -97,9 +97,9 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 } // TODO: Testear casos, pero por importancia, no porque tenga dudas
 
 func BuscarEntradaEspecifica(tablaRaiz g.TablaPaginas, numeroEntrada int) (numeroFrameMemReal int) {
-	var contador int
+	var contador *int
 	for _, tabla := range tablaRaiz {
-		numeroFrameMemReal, encontrado := RecorrerTablasBuscandoEntrada(tabla, numeroEntrada, &contador)
+		numeroFrameMemReal, encontrado := RecorrerTablasBuscandoEntrada(tabla, numeroEntrada, contador)
 		if encontrado {
 			return numeroFrameMemReal
 		}
@@ -291,7 +291,6 @@ func ModificarEstadoEntradaLectura(pid int) {
 func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU, err error) {
 	respuesta = g.InstruccionCPU{Exito: nil, Instruccion: ""}
 
-	//n
 	if proceso == nil {
 		logger.Error("Proceso recibido es nil")
 		return respuesta, fmt.Errorf("proceso nil")
