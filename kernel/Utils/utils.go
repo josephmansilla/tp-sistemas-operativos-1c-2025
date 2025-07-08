@@ -62,11 +62,12 @@ var (
 	ChannelProcessBlocked   chan int
 
 	//AVISAR AL DESPACHADOR CUANDO UN PROCESO CAMBIA SU ESTADO
-	NotificarDespachador chan int              //PASA A READY
-	NotificarComienzoIO  chan MensajeIOChannel //PASA A BLOQUEADO
-	NotificarFinIO       chan int              //FIN DE IO
-	NotificarDesconexion chan int              //Desconexion DE IO
-	ContextoInterrupcion chan InterruptProcess //FIN DE EXECUTE
+	NotificarDespachador    chan int              //PASA A READY
+	NotificarComienzoIO     chan MensajeIOChannel //PASA A BLOQUEADO
+	NotificarFinIO          chan int              //FIN DE IO
+	NotificarDesconexion    chan int              //Desconexion DE IO
+	ContextoInterrupcion    chan InterruptProcess //FIN DE EXECUTE
+	NotificarTimeoutBlocked chan struct{}
 )
 
 // InicializarMutexes deja listas las variables de mutex.
@@ -91,6 +92,7 @@ func InicializarCanales() {
 	NotificarDesconexion = make(chan int, 10)
 	ContextoInterrupcion = make(chan InterruptProcess, 10)
 	ChannelProcessBlocked = make(chan int, 10)
+	NotificarTimeoutBlocked = make(chan struct{}, 1)
 }
 
 type MensajeIOChannel struct {

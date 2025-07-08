@@ -171,6 +171,8 @@ func BloquearProceso() {
 
 func FinDeIO() {
 	for {
+		// wait del mediano plazo para que indique orden. el proceso esta efectivamente en la cola susp. Bloqueado.
+		Utils.NotificarTimeoutBlocked <- struct{}{}
 		//WAIT mensaje fin de IO (bloqueante)
 		pid := <-Utils.NotificarFinIO
 
