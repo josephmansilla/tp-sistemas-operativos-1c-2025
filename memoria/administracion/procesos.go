@@ -42,7 +42,7 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 		logger.Error("Error al leer pseudocódigo para PID=%d: %v", pid, err)
 		return fmt.Errorf("error al leer pseudocódigo: %v", logger.ErrBadRequest)
 	}
-	logger.Info("Pseudocódigo leído correctamente para PID=%d. Cantidad instrucciones: %d", pid, len(pseudo))
+	logger.Info("Pseudocódigo leído correctamente para PID=%d. Longitud en bytes: %d", pid, len(pseudo))
 
 	err = AsignarDatosAPaginacion(nuevoProceso, pseudo)
 	if err != nil {

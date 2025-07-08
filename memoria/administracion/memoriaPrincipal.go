@@ -32,17 +32,20 @@ func ConfigurarFrames(cantidadFrames int) {
 	}
 	g.MutexEstructuraFramesLibres.Unlock()
 	g.CantidadFramesLibres = cantidadFrames
-	logger.Info("Todos los frames están libres.")
+	logger.Info("Todos los frames se liberaron.")
 }
 
 func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
-	var framesNecesarios = float64(tamanioProceso) / float64(g.MemoryConfig.PagSize)
-
+	framesNecesarios := tamanioProceso / g.MemoryConfig.PagSize
+	if tamanioProceso%g.MemoryConfig.PagSize != 0 {
+		framesNecesarios++
+	}
 	g.MutexCantidadFramesLibres.Lock()
-	resultado = framesNecesarios <= float64(g.CantidadFramesLibres)
+	resultado = framesNecesarios <= g.CantidadFramesLibres
 	g.MutexCantidadFramesLibres.Unlock()
+	logger.Info("Se probó si había %d frames necesarios", framesNecesarios)
 	return
-} //TODO: testear
+}
 
 func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, tamanioMaximo int) ([]byte, error) {
 	if direccionPseudocodigo == "" {
@@ -73,7 +76,8 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, taman
 		// TODO: si los tests cuentan al EOF como instruccion queda así
 		// TODO: sino despues del if
 
-		if strings.TrimSpace(lineaEnString) == "EOF" {
+		if strings.TrimSpace(lineaEnString) == "EXIT" {
+			logger.Info("Se llegó al final del archivo")
 			break
 		}
 	}
@@ -98,9 +102,7 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 	bytesRestantes := tamanioPagina - offset
 
 	if direccionFisica+bytesRestantes > finFrame {
-		logger.Error("Se está leyendo afuera del frame")
-		// TODO:		panic("Segment Fault - Lectura fuera del marco asignado")
-		// TODO: tirar error pero sin panic porque no es un caso en los tests
+		logger.Error("Out of range - Lectura fuera del marco asignado")
 	}
 
 	pseudocodigoEnBytes := make([]byte, bytesRestantes)
@@ -108,6 +110,8 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 	g.MutexMemoriaPrincipal.Lock()
 	copy(pseudocodigoEnBytes, g.MemoriaPrincipal[direccionFisica:direccionFisica+bytesRestantes])
 	g.MutexMemoriaPrincipal.Unlock()
+
+	logger.Info("Se obtuvo el pseudocodigo de memoria")
 
 	pseudocodigoEnString := string(pseudocodigoEnBytes)
 
@@ -128,13 +132,15 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	finFrame := inicioFrame + tamanioPagina
 
 	if direccionFisica+len(datosEnBytes) > finFrame {
-		logger.Error("Segment Fault - Escritura fuera del marco asignado")
+		logger.Error("Out of range - Escritura fuera del marco asignado")
 		return logger.ErrSegmentFault
 	}
 
 	g.MutexMemoriaPrincipal.Lock()
 	copy(g.MemoriaPrincipal[direccionFisica:], datosEnBytes)
 	g.MutexMemoriaPrincipal.Unlock()
+
+	logger.Error("Se escribió en memoria")
 
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
@@ -154,6 +160,8 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	if entrada != nil {
 		entrada.FueModificado = true
 		entrada.EstaEnUso = true
+	} else {
+		logger.Error("Entrada vacia")
 	}
 
 	IncrementarMetrica(proceso, 1, IncrementarEscrituraDeMemoria)
