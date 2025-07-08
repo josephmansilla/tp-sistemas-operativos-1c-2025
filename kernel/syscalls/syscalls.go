@@ -22,7 +22,7 @@ type MensajeInit struct {
 	PID      int    `json:"pid"`
 	PC       int    `json:"pc"`
 	Filename string `json:"filename"`
-	Tamanio  int    `json:"tamanio"`
+	Tamanio  int    `json:"tamanio_memoria"`
 }
 
 type MensajeIo struct {
