@@ -3,7 +3,6 @@ package comunicacion
 import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
-	"io"
 	"net/http"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
@@ -21,6 +20,11 @@ type MensajeDeIO struct {
 type MensajeAIO struct {
 	Pid      int `json:"pid"`
 	Duracion int `json:"duracion"` //en segundos
+}
+
+type MensajeFin struct {
+	PID    int    `json:"pid"`
+	Nombre string `json:"nombre"` // en segundos
 }
 
 // w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
@@ -70,19 +74,27 @@ func EnviarContextoIO(nombreIO string, pid int, duracion int) {
 
 	logger.Info("## (%d) - Bloqueado por IO: %s", mensaje.Pid, nombreIO)
 
-	resp, err := data.EnviarDatosConRespuesta(url, mensaje)
+	err := data.EnviarDatos(url, mensaje)
 	if err != nil {
 		logger.Info("Error enviando PID y Duracion a IO: %s", err.Error())
 		return
 	}
-	defer resp.Body.Close()
+}
 
-	// Leer el cuerpo del response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logger.Info("Error leyendo respuesta de IO: %s", err.Error())
-		return
+// Al momento de recibir un mensaje de una IO se deberá verificar
+// que el mismo sea una confirmación de fin de IO, en caso afirmativo,
+// se deberá validar si hay más procesos esperando realizar dicha IO.
+// En caso de que el mensaje corresponda a una desconexión de la IO,
+// el proceso que estaba ejecutando en dicha IO, se deberá pasar al estado EXIT.
+func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
+	var mensajeRecibido MensajeFin
+	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
+		return //hubo error
 	}
-	logger.Info("Respuesta del módulo IO: %s", string(body))
-	Utils.NotificarFinIO <- mensaje.Pid
+
+	nombre := mensajeRecibido.Nombre
+	pid := mensajeRecibido.PID
+	logger.Info("FIN de IO: Nombre: %s PID: %d", nombre, pid)
+
+	Utils.NotificarFinIO <- mensajeRecibido.PID
 }

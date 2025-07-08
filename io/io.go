@@ -23,6 +23,11 @@ type MensajeDeKernel struct {
 	Duracion int `json:"duracion"` // en segundos
 }
 
+type MensajeFin struct {
+	PID    int    `json:"pid"`
+	Nombre string `json:"nombre"` // en segundos
+}
+
 func main() {
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DE PARAMETROS ---------------
@@ -138,7 +143,9 @@ func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje Me
 	logger.Info("Mensaje enviado a Kernel")
 }
 
-// Recibir PID Y Tiempo de Kernel
+// Al momento de recibir una petición del Kernel,
+// el módulo deberá iniciar un usleep
+// por el tiempo indicado en la request.
 func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	var mensajeRecibido MensajeDeKernel
 	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
@@ -155,4 +162,26 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("IO finalizada correctamente"))
 }
 
+// Al finalizar deberá informar al Kernel que finalizó la solicitud de I/O
+// quedará a la espera de la siguiente petición.
 // ver el tema de FINALIZACION DE IO != FIN de timer de IO
+
+//El Módulo IO, deberá notificar al Kernel de su finalización,
+//para esto se deberá implementar el manejo de las señales SIGINT y SIGTERM,
+//para enviar la notificación y finalizar de manera controlada.
+
+func FinDeIO(pid int, nombre string) {
+	url := fmt.Sprintf("http://%s:%d/kernel/fin_io", globals.IoConfig.IpKernel, globals.IoConfig.PortKernel)
+
+	mensaje := MensajeFin{
+		PID:    pid,
+		Nombre: nombre,
+	}
+	logger.Info("Enviando PID <%d> y Nombre <%s> a Kernel", mensaje.PID, mensaje.Nombre)
+
+	err := data.EnviarDatos(url, mensaje)
+	if err != nil {
+		logger.Info("Error enviando PID y Nombre a Kernel: %s", err.Error())
+		return
+	}
+}

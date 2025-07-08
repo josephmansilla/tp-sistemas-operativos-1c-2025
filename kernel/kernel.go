@@ -109,6 +109,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/kernel/io", comunicacion.RecibirMensajeDeIO)
 	mux.HandleFunc("/kernel/cpu", comunicacion.RecibirMensajeDeCPU)
+	mux.HandleFunc("/kernel/fin_io", comunicacion.RecibirFinDeIO)
 
 	// ------------------------------------------------------
 	// --------------------- SYSCALLS -----------------------
