@@ -73,6 +73,7 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 	}
 
 	if tablaApuntada.EntradasPaginas == nil {
+		logger.Error("EntradasPaginas era nil para indices=%v", indices)
 		logger.Error("La entrada no fue nunca inicializada")
 		return nil, fmt.Errorf("la entrada nunca fue inicializada")
 	}
@@ -183,6 +184,8 @@ func LiberarEntradaPagina(numeroFrameALiberar int) {
 }
 
 func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) error {
+	logger.Info("Asignando datos a paginación para PID=%d", proceso.PID)
+
 	tamanioPagina := g.MemoryConfig.PagSize
 	totalBytes := len(informacionEnBytes)
 
@@ -210,12 +213,17 @@ func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) erro
 		}
 
 		direccionFisica := numeroPagina * tamanioPagina
+
+		//ASEGURAR QUE EXISTE LA ENTRADA ANTES
+		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entradaPagina)
+		logger.Info("Entrada insertada en tabla de PID=%d para página lógica %d", proceso.PID, numeroPagina)
+
 		errMod := ModificarEstadoEntradaEscritura(direccionFisica, proceso.PID, fragmentoACargar)
 		if errMod != nil {
 			logger.Error("error al modificar estado entrada de pagina: %v", errMod)
 			return errMod
 		}
-		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entradaPagina)
+
 	}
 	return nil
 }
@@ -243,6 +251,8 @@ func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, en
 		actual.EntradasPaginas = make(map[int]*g.EntradaPagina)
 	}
 	actual.EntradasPaginas[indices[len(indices)-1]] = entrada
+
+	logger.Info("Insertada entrada para página %d (indices=%v) en PID desconocido", numeroPagina, indices)
 }
 
 func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string) g.ExitoEscrituraPagina {

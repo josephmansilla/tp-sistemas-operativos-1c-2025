@@ -23,7 +23,7 @@ func CargarConfigCPU(path string) error {
 }
 
 func TestTraducirDireccionTLB(t *testing.T) {
-	err := CargarConfigCPU("../configs/1CP.json")
+	err := CargarConfigCPU("../configs/CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -44,7 +44,7 @@ func TestTraducirDireccionTLB(t *testing.T) {
 }
 
 func TestDescomponerPagina(t *testing.T) {
-	err := CargarConfigCPU("../configs/1CP.json")
+	err := CargarConfigCPU("../configs/CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 

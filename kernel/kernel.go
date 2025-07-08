@@ -28,10 +28,14 @@ func main() {
 	} else if len(os.Args) < 3 {
 		fmt.Println("Falta el parametro: tamaño del proceso")
 		os.Exit(1)
+	} else if len(os.Args) < 4 {
+		fmt.Println("Falta el parametro: ruta config")
+		os.Exit(1)
 	}
 
 	archivoPseudocodigo := os.Args[1]
 	tamanioStr := os.Args[2] //Convertir a Double
+	config := os.Args[3]
 
 	tamanioProceso, err := strconv.Atoi(tamanioStr)
 	if err != nil {
@@ -54,7 +58,8 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DEL CONFIG ------------------
 	// ----------------------------------------------------
-	configData, err := os.ReadFile("config.json")
+	configPath := fmt.Sprintf("configs/%s.json", config)
+	configData, err := os.ReadFile(configPath)
 	if err != nil {
 		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
 	}

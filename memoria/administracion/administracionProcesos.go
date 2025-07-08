@@ -21,6 +21,15 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 		Metricas:            InicializarMetricas(),
 		OffsetInstrucciones: make(map[int]int),
 	}
+	logger.Info("Proceso creado en memoria para PID=%d", pid)
+
+	//Guardar proceso: asi cualquier función que acceda por pid
+	//(como ModificarEstadoEntradaEscritura o AsignarDatosAPaginacion)
+	//encuentre la estructura ya guardada.
+	g.MutexProcesosPorPID.Lock()
+	g.ProcesosPorPID[pid] = nuevoProceso
+	g.MutexProcesosPorPID.Unlock()
+	logger.Info("Proceso PID=%d agregado a la lista global", pid)
 
 	if nuevoProceso.TablaRaiz == nil {
 		logger.Error("TablaRaiz es nil para proceso PID=%d", pid)
@@ -41,11 +50,6 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 		return fmt.Errorf("error asignando datos para el proceso: %v", logger.ErrInternalFailure)
 	}
 	logger.Info("Datos asignados correctamente a paginación para PID=%d", pid)
-
-	g.MutexProcesosPorPID.Lock()
-	g.ProcesosPorPID[pid] = nuevoProceso
-	g.MutexProcesosPorPID.Unlock()
-	logger.Info("Proceso PID=%d agregado a la lista global", pid)
 
 	return nil
 } // TODO: le falta el err handling
@@ -76,6 +80,7 @@ func DesocuparProcesoEnVectorMapeable(pid int) (proceso *g.Proceso, err error) {
 	proceso = g.ProcesosPorPID[pid]
 	delete(g.ProcesosPorPID, pid)
 	g.MutexProcesosPorPID.Unlock()
+
 	if proceso == nil {
 		logger.Error("El proceso no está en el Slice de procesos mapeado por PID")
 		return proceso, fmt.Errorf("no hay una instancia de pid \"%d\" en el slice de procesos por PID %v", pid, logger.ErrNoInstance)

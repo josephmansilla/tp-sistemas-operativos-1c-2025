@@ -55,7 +55,7 @@ func TestAgregarEntrada(t *testing.T) {
 }
 
 func TestReemplazoClock(t *testing.T) {
-	err := CargarConfigCPU("../configs/1CP.json")
+	err := CargarConfigCPU("../configs/CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestReemplazoClock(t *testing.T) {
 }
 
 func TestReemplazoClockM(t *testing.T) {
-	err := CargarConfigCPU("../configs/1CP.json")
+	err := CargarConfigCPU("../configs/CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestReemplazoClockM(t *testing.T) {
 }
 
 func TestReemplazoClockM2(t *testing.T) {
-	err := CargarConfigCPU("../configs/1CP.json")
+	err := CargarConfigCPU("../configs/CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestReemplazoClockM2(t *testing.T) {
 }
 
 func TestReemplazoClockM3(t *testing.T) {
-	err := CargarConfigCPU("../configs/1CP.json")
+	err := CargarConfigCPU("../configs/CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}
@@ -147,7 +147,7 @@ func TestReemplazoClockM3(t *testing.T) {
 }
 
 func TestLimpiarCache(t *testing.T) {
-	err := CargarConfigCPU("../configs/1CP.json")
+	err := CargarConfigCPU("../configs/CP.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}

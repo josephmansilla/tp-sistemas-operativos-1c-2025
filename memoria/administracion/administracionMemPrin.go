@@ -140,6 +140,11 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
 
+	if proceso == nil {
+		logger.Error("Se intentó acceder a un proceso inexistente o nil para PID=%d", pid)
+		return fmt.Errorf("proceso nil para PID=%d", pid)
+	}
+
 	indices := CrearIndicePara(numeroPagina)
 	entrada, err := BuscarEntradaPagina(proceso, indices)
 	if err != nil {
@@ -178,6 +183,7 @@ func SeleccionarEntradas(pid int, direccionFisica int, entradasNecesarias int) (
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
+
 	if proceso == nil {
 		return nil, fmt.Errorf("no existe el proceso con el PID: %d ; %v", pid, logger.ErrNoInstance)
 	}
