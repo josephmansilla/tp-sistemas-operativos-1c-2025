@@ -158,7 +158,10 @@ func BloquearProceso() {
 		algoritmos.ColaBloqueado.Add(proceso)
 		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado BLOCKED", proceso.PID)
 		Utils.MutexBloqueado.Unlock()
-		//Cuando el corto plazo termina de bloquear al proceso en particular le avisa al Mediano plazo para que empiece el Timer para ESE proceso por eso le manda PID como señal
+
+		//Cuando el corto plazo termina de bloquear al proceso en particular
+		//le avisa al Mediano plazo para que empiece el Timer para ESE proceso
+		//le manda PID como señal
 		Utils.ChannelProcessBlocked <- pid
 
 		//Enviar al módulo IO (usando los datos del mensaje recibido)

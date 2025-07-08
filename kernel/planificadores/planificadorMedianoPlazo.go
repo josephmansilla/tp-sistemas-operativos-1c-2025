@@ -32,7 +32,7 @@ func monitorBloqueado(pid int) {
 	defer timer.Stop()
 
 	select {
-	// ESte Case vendria desde el Endpoint que atiende a IO cuando  un dispisitivo termino la IO pedida para un Proceso
+	//Cuando un dispositivo termina la IO pedida para un Proceso
 	case pidIO := <-Utils.NotificarFinIO:
 		if pidIO == pid {
 			// llegó fin de IO antes del timeout: pasa a READY directo
