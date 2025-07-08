@@ -28,7 +28,7 @@ func ObtenerEspacioLibreHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
 	json.NewEncoder(w).Encode(respuesta)
-	w.WriteHeader(http.StatusOK)
+	//w.WriteHeader(http.StatusOK)
 	//w.Write([]byte("ESPACIO DEVUELTO"))
 }
 

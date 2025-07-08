@@ -64,7 +64,7 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DEL CONFIG ------------------
 	// ----------------------------------------------------
-	configFilename := fmt.Sprintf("%sconfig.json", nombre)
+	configFilename := fmt.Sprintf("%s.json", nombre)
 	configPath := fmt.Sprintf("./configs/%s", configFilename)
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
