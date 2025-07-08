@@ -6,6 +6,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/cpu/traducciones"
 	"github.com/sisoputnfrba/tp-golang/cpu/utils"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -24,7 +25,8 @@ func main() {
 		fmt.Printf("Error al crear archivo de log para CPU %s: %v\n", globals.ID, err)
 		os.Exit(1)
 	}
-	log.SetOutput(logFile)
+	multiWriter := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(multiWriter)
 
 	logger.Info("=========================================================")
 	logger.Info("======== Comenzó la ejecución del CPU con ID: %s ========", globals.ID)

@@ -64,7 +64,7 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("## PID: <%d>  - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, respuesta.Instruccion)
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(mensaje); err != nil {
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al codificar la respuesta JSON: %v", err)
 		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 	}

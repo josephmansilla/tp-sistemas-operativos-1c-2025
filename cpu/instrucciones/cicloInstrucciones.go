@@ -55,11 +55,6 @@ func FaseFetch(ipDestino string, puertoDestino int) {
 			break
 		}
 
-		if respuesta.Instruccion == "" {
-			log.Printf("No hay instrucción para PID %d (PC %d)", globals.PIDActual, globals.PCActual)
-			break
-		}
-
 		log.Printf("Instrucción recibida (PC %d): %s", globals.PCActual, respuesta.Instruccion)
 
 		// Parsear y ejecutar instrucción
