@@ -85,10 +85,15 @@ func FaseDecode(instruccion string) bool {
 }
 
 func FaseExecute(nombre string, args []string) bool {
+	if nombre == "EXIT" {
+		log.Printf("PID %d ejecutó EXIT. Finalizando ejecución.", globals.PIDActual)
+		return false
+	}
+
 	instrucFunc, existe := InstruccionSet[nombre]
 	if !existe {
 		log.Printf("Instrucción desconocida: %s", nombre)
-		return true
+		return false
 	}
 
 	err := instrucFunc(args)
@@ -102,6 +107,7 @@ func FaseExecute(nombre string, args []string) bool {
 		log.Printf("Error ejecutando %s: %v", nombre, err)
 		return false
 	}
+
 	if FaseCheckInterrupt() {
 		log.Println("Finalizando ejecución por interrupción.")
 		return false
