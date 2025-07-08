@@ -71,6 +71,7 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, taman
 		lineaEnBytes := []byte(lineaEnString)
 
 		stringEnBytes = append(stringEnBytes, lineaEnBytes...)
+		logger.Info("String en bytes: %d", stringEnBytes)
 		proceso.OffsetInstrucciones[cantidadInstrucciones] = len(stringEnBytes)
 		cantidadInstrucciones++
 		// TODO: si los tests cuentan al EOF como instruccion queda así
@@ -111,7 +112,7 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 	copy(pseudocodigoEnBytes, g.MemoriaPrincipal[direccionFisica:direccionFisica+bytesRestantes])
 	g.MutexMemoriaPrincipal.Unlock()
 
-	logger.Info("Se obtuvo el pseudocodigo de memoria")
+	logger.Info("Se obtuvo el pseudocodigo de memoria: %d", pseudocodigoEnBytes)
 
 	pseudocodigoEnString := string(pseudocodigoEnBytes)
 
@@ -140,7 +141,7 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	copy(g.MemoriaPrincipal[direccionFisica:], datosEnBytes)
 	g.MutexMemoriaPrincipal.Unlock()
 
-	logger.Error("Se escribió en memoria")
+	logger.Error("Se escribió en memoria: %d", datosEnBytes)
 
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
@@ -209,12 +210,21 @@ func SeleccionarEntradas(pid int, direccionFisica int, entradasNecesarias int) (
 		}
 		if !entrada.EstaPresente {
 			// TODO: BUSCAR DE SWAPPPP ====================================================
+			// TODO:
+			// TODO:
+			// TODO:
+			// TODO:
+			// TODO:
+			// TODO:
+			// TODO:
+			// TODO:
+			// TODO:
 		}
 		entradas = append(entradas, *entrada)
 	}
 
 	return
-} //TODO: rever no se usa el tamanioALeer
+} //TODO: re ver no se usa el tamanioALeer
 
 func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionLectura g.ExitoLecturaMemoria, err error) {
 	confirmacionLectura = g.ExitoLecturaMemoria{Exito: err, DatosAEnviar: ""}
@@ -231,7 +241,7 @@ func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirm
 
 	bytesRestantes := tamanioALeer
 	cant := len(entradas)
-	datos := make([]byte, tamanioALeer)
+	var datos []byte
 
 	for i, entrada := range entradas {
 		inicioLectura, finLectura, err := LogicaRecorrerMemoria(i, cant, entrada, direccionFisica, bytesRestantes)
@@ -242,6 +252,8 @@ func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirm
 		g.MutexMemoriaPrincipal.Lock()
 		datos = append(datos, g.MemoriaPrincipal[inicioLectura:finLectura]...)
 		g.MutexMemoriaPrincipal.Unlock()
+
+		logger.Error("Datos en bytes leidos: %d", datos)
 
 		bytesRestantes -= finLectura - inicioLectura
 		if bytesRestantes <= 0 {
@@ -281,7 +293,8 @@ func LogicaRecorrerMemoria(i int, cantEntradas int, entrada g.EntradaPagina, dir
 		err = logger.ErrSegmentFault
 		return 0, 0, err
 	}
-
+	logger.Error("Inicio de lectura: %d", inicio)
+	logger.Error("Limite de lectura: %d", limite)
 	return inicio, limite, nil
 }
 
