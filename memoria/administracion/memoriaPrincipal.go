@@ -1,12 +1,9 @@
 package administracion
 
 import (
-	"bufio"
 	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
-	"os"
-	"strings"
 )
 
 func InicializarMemoriaPrincipal() {
@@ -32,74 +29,22 @@ func ConfigurarFrames(cantidadFrames int) {
 	}
 	g.MutexEstructuraFramesLibres.Unlock()
 	g.CantidadFramesLibres = cantidadFrames
-	logger.Info("Todos los frames se liberaron.")
+	logger.Info("Todos los frames se crearon y se liberaron correctamente.")
 }
 
 func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
-	framesNecesarios := tamanioProceso / g.MemoryConfig.PagSize
-	if tamanioProceso%g.MemoryConfig.PagSize != 0 {
-		framesNecesarios++
-	}
+	framesNecesarios := g.CalcularCantidadFrames(tamanioProceso)
+
 	g.MutexCantidadFramesLibres.Lock()
 	resultado = framesNecesarios <= g.CantidadFramesLibres
 	g.MutexCantidadFramesLibres.Unlock()
-	logger.Info("Se probó si había %d frames necesarios", framesNecesarios)
+
+	if resultado {
+		logger.Info("Se consultó si había %d frames y retornó TRUE...", framesNecesarios)
+	} else {
+		logger.Info("Se consultó si había %d frames y retornó FALSE...", framesNecesarios)
+	}
 	return
-}
-
-func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, tamanioMaximo int) ([]byte, error) {
-	if direccionPseudocodigo == "" {
-		return nil, fmt.Errorf("el string es vacio")
-	}
-	ruta := "../pruebas/" + direccionPseudocodigo
-	file, err := os.Open(ruta)
-	if err != nil {
-		logger.Error("Error al abrir el archivo: %s\n", err)
-		return nil, err
-	}
-	defer file.Close()
-
-	logger.Info("Se leyó el archivo")
-	scanner := bufio.NewScanner(file)
-
-	stringEnBytes := make([]byte, 0, tamanioMaximo)
-	cantidadInstrucciones := 0
-
-	pc := 0
-	for scanner.Scan() {
-		lineaEnString := scanner.Text()
-		logger.Info("Línea leída: %s", lineaEnString)
-
-		// Convertir línea a bytes y agrega al offset segun PC
-		lineaEnBytes := []byte(lineaEnString)
-		proceso.OffsetInstruccionesEnBytes[pc] = lineaEnBytes
-
-		logger.Info("String en bytes: %d", lineaEnBytes)
-
-		//stringEnBytes = append(stringEnBytes, lineaEnBytes...)
-		//logger.Info("String en bytes: %d", stringEnBytes)
-		//proceso.OffsetInstruccionesEnBytes[cantidadInstrucciones] = len(stringEnBytes)
-
-		pc++
-		cantidadInstrucciones++
-
-		// TODO: si los tests cuentan al EOF como instruccion queda así
-		// TODO: sino despues del if
-
-		if strings.TrimSpace(lineaEnString) == "EXIT" {
-			logger.Info("Se llegó al final del archivo")
-			break
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		logger.Error("Error al leer el archivo: %s", err)
-	}
-
-	IncrementarMetrica(proceso, cantidadInstrucciones, IncrementarInstruccionesSolicitadas)
-
-	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", proceso.PID, cantidadInstrucciones)
-
-	return stringEnBytes, nil
 }
 
 func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
@@ -233,7 +178,7 @@ func SeleccionarEntradas(pid int, direccionFisica int, entradasNecesarias int) (
 	}
 
 	return
-} //TODO: re ver no se usa el tamanioALeer
+} //TODO: rever no se usa el tamanioALeer
 
 func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionLectura g.ExitoLecturaMemoria, err error) {
 	confirmacionLectura = g.ExitoLecturaMemoria{Exito: err, DatosAEnviar: ""}

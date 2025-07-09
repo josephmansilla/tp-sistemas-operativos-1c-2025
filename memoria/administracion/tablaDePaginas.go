@@ -67,11 +67,6 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 		}
 	}
 
-	if tablaApuntada == nil {
-		logger.Error("La tabla no existe o nunca fue inicializada")
-		return nil, fmt.Errorf("la tabla no existe o nunca fue inicializada")
-	}
-
 	if tablaApuntada.EntradasPaginas == nil {
 		logger.Error("EntradasPaginas era nil para indices=%v", indices)
 		logger.Error("La entrada no fue nunca inicializada")
@@ -142,26 +137,23 @@ func ObtenerEntradaPagina(pid int, indices []int) (int, error) {
 	return entradaPagina.NumeroFrame, nil
 }
 
-func AsignarNumeroEntradaPagina() int {
-	numeroEntradaLibre := -1
-	tamanioMaximo := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
+func AsignarFrameLibre() (int, error) {
+	cantidadFramesTotales := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
 
-	for numeroFrame := 0; numeroFrame < tamanioMaximo; numeroFrame++ {
+	for numeroFrame := 0; numeroFrame < cantidadFramesTotales; numeroFrame++ {
 		g.MutexEstructuraFramesLibres.Lock()
 		booleano := g.FramesLibres[numeroFrame]
 		g.MutexEstructuraFramesLibres.Unlock()
 
 		if booleano == true {
-			numeroEntradaLibre = numeroFrame
-			MarcarOcupadoFrame(numeroEntradaLibre)
-
-			logger.Info("Marco Libre encontrado: %d", numeroEntradaLibre)
-			return numeroEntradaLibre
+			MarcarOcupadoFrame(numeroFrame)
+			logger.Info("Marco Libre encontrado: %d", numeroFrame)
+			return numeroFrame, nil
 		}
 	}
-	return numeroEntradaLibre
+	return -10, logger.ErrNoMemory
 
-} // TODO: ERR HANDLING
+}
 
 func MarcarOcupadoFrame(numeroFrame int) {
 	g.MutexEstructuraFramesLibres.Lock()
@@ -183,48 +175,27 @@ func LiberarEntradaPagina(numeroFrameALiberar int) {
 	g.MutexCantidadFramesLibres.Unlock()
 }
 
-func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) error {
-	logger.Info("Asignando datos a paginación para PID=%d", proceso.PID)
+func AsignarPaginasParaPID(proceso *g.Proceso, tamanio int) error {
+	logger.Info("Asignando espacio de páginas para PID <%d>...", proceso.PID)
 
-	tamanioPagina := g.MemoryConfig.PagSize
-	totalBytes := len(informacionEnBytes)
-
-	for offset := 0; offset < totalBytes; offset += tamanioPagina {
-		end := offset + tamanioPagina
-		if end > totalBytes {
-			end = totalBytes
-			// raro caso que no debería pasar pero bue,
-			// por las re dudas y que no rompa nada
-		}
-
-		fragmentoACargar := informacionEnBytes[offset:end]
-		numeroPagina := AsignarNumeroEntradaPagina()
-		if numeroPagina == -1 {
-			err := logger.ErrNoMemory
-			logger.Error("No hay marcos libres %v", err)
+	cantidadFrames := g.CalcularCantidadFrames(tamanio)
+	for i := 1; i <= cantidadFrames; i++ {
+		numeroFrame, err := AsignarFrameLibre()
+		if err != nil {
+			logger.Error("no hay frames libres en el sistema %v", err)
 			return err
 		}
-
 		entradaPagina := &g.EntradaPagina{
-			NumeroFrame:   numeroPagina,
+			NumeroFrame:   numeroFrame,
 			EstaPresente:  true,
-			EstaEnUso:     true,
+			EstaEnUso:     false,
 			FueModificado: false,
 		}
-
-		direccionFisica := numeroPagina * tamanioPagina
-
-		//ASEGURAR QUE EXISTE LA ENTRADA ANTES
-		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entradaPagina)
-		logger.Info("Entrada insertada en tabla de PID=%d para página lógica %d", proceso.PID, numeroPagina)
-
-		errMod := ModificarEstadoEntradaEscritura(direccionFisica, proceso.PID, fragmentoACargar)
-		if errMod != nil {
-			logger.Error("error al modificar estado entrada de pagina: %v", errMod)
-			return errMod
-		}
-
+		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroFrame, entradaPagina)
+		logger.Info("El entrada #%d para el PID: <%d> se guardó en el frame <%d>...", i, proceso.PID, numeroFrame)
 	}
+	logger.Info("Se reservó correctamente el espacio para el PID: <%d>.", proceso.PID)
+	logger.Info("Quendan <%d> frames libes", g.CantidadFramesLibres)
 	return nil
 }
 
@@ -252,7 +223,7 @@ func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, en
 	}
 	actual.EntradasPaginas[indices[len(indices)-1]] = entrada
 
-	logger.Info("Insertada entrada para página %d (indices=%v) en PID desconocido", numeroPagina, indices)
+	logger.Info("Insertada entrada para página %d (indices=%v)", numeroPagina, indices)
 }
 
 func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string) g.ExitoEscrituraPagina {
@@ -296,10 +267,10 @@ func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU,
 		return respuesta, fmt.Errorf("proceso nil")
 	}
 
-	cantInstrucciones := len(proceso.OffsetInstruccionesEnBytes)
+	cantInstrucciones := len(proceso.InstruccionesEnBytes)
 	logger.Info("PID <%d> - PC: %d - Cant. Instrucciones: %d", proceso.PID, pc, cantInstrucciones)
 
-	lineaInstruccion := proceso.OffsetInstruccionesEnBytes[pc]
+	lineaInstruccion := proceso.InstruccionesEnBytes[pc]
 	logger.Info("PC a buscar: %d, Instrucción en bytes: %v", pc, lineaInstruccion)
 	logger.Info("PC a buscar: %d, Instrucción: %s", pc, string(lineaInstruccion))
 
@@ -364,7 +335,10 @@ func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## Lectura Éxitosa")
 
-	json.NewEncoder(w).Encode(respuesta)
+	err := json.NewEncoder(w).Encode(respuesta)
+	if err != nil {
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	//w.Write([]byte("Respuesta devuelta"))
 }
@@ -403,7 +377,10 @@ func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## Escritura Éxitosa")
 
-	json.NewEncoder(w).Encode(respuesta)
+	errr := json.NewEncoder(w).Encode(respuesta)
+	if errr != nil {
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	//w.Write([]byte("Respuesta devuelta"))
 }

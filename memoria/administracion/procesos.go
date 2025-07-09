@@ -8,51 +8,52 @@ import (
 )
 
 func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo string) (err error) {
-	logger.Info("Inicializando proceso PID=%d, tamaño=%d, pseudocódigo=%s", pid, tamanioProceso, nombreArchPseudocodigo)
+	logger.Info("Inicializando proceso PID <%d>, Tamaño: <%d>, Pseudocódigo <%s>", pid, tamanioProceso, nombreArchPseudocodigo)
 
 	if !TieneTamanioNecesario(tamanioProceso) {
-		logger.Error("No hay memoria suficiente para proceso PID=%d", pid)
+		logger.Error("No hay memoria suficiente para proceso PID <%d>", pid)
 		return fmt.Errorf("no hay memoria disponible para el proceso: %v", logger.ErrNoMemory)
 	}
 
-	nuevoProceso := &g.Proceso{
-		PID:                        pid,
-		TablaRaiz:                  InicializarTablaRaiz(),
-		Metricas:                   InicializarMetricas(),
-		OffsetInstruccionesEnBytes: make(map[int][]byte),
+	g.MutexProcesosPorPID.Lock()
+	if g.ProcesosPorPID[pid] != nil {
+		g.MutexProcesosPorPID.Unlock()
+		logger.Error("El proceso PID <%d> ya existe", pid)
+		return fmt.Errorf("el proceso PID <%d> ya existe", pid)
+	} else {
+		g.MutexProcesosPorPID.Unlock()
 	}
-	logger.Info("Proceso creado en memoria para PID=%d", pid)
+	nuevoProceso := &g.Proceso{
+		PID:                  pid,
+		TablaRaiz:            InicializarTablaRaiz(),
+		Metricas:             InicializarMetricas(),
+		InstruccionesEnBytes: make(map[int][]byte),
+	}
+	logger.Info("Proceso creado en memoria para PID <%d>", pid)
 
-	//Guardar proceso: asi cualquier función que acceda por pid
-	//(como ModificarEstadoEntradaEscritura o AsignarDatosAPaginacion)
-	//encuentre la estructura ya guardada.
 	g.MutexProcesosPorPID.Lock()
 	g.ProcesosPorPID[pid] = nuevoProceso
 	g.MutexProcesosPorPID.Unlock()
-	logger.Info("Proceso PID=%d agregado a la lista global", pid)
 
 	if nuevoProceso.TablaRaiz == nil {
-		logger.Error("TablaRaiz es nil para proceso PID=%d", pid)
+		logger.Error("TablaRaiz es nil para proceso PID <%d>", pid)
 		return fmt.Errorf("tabla raíz no inicializada")
 	}
-	logger.Info("TablaRaiz inicializada para PID=%d", pid)
 
-	pseudo, err := LecturaPseudocodigo(nuevoProceso, nombreArchPseudocodigo, tamanioProceso)
+	err = LecturaPseudocodigo(nuevoProceso, nombreArchPseudocodigo)
 	if err != nil {
-		logger.Error("Error al leer pseudocódigo para PID=%d: %v", pid, err)
 		return fmt.Errorf("error al leer pseudocódigo: %v", logger.ErrBadRequest)
 	}
-	logger.Info("Pseudocódigo leído correctamente para PID=%d. Longitud en bytes: %d", pid, len(pseudo))
+	logger.Info("Pseudocódigo leído correctamente para PID <%d>, Longitud en bytes: <%d>",
+		pid,
+		len(nuevoProceso.InstruccionesEnBytes))
 
-	err = AsignarDatosAPaginacion(nuevoProceso, pseudo)
-	if err != nil {
-		logger.Error("Error asignando datos a paginación para PID=%d: %v", pid, err)
-		return fmt.Errorf("error asignando datos para el proceso: %v", logger.ErrInternalFailure)
-	}
-	logger.Info("Datos asignados correctamente a paginación para PID=%d", pid)
+	err = AsignarPaginasParaPID(nuevoProceso, tamanioProceso)
+
+	logger.Info("Datos asignados correctamente para PID <%d>", pid)
 
 	return nil
-} // TODO: le falta el err handling
+}
 
 func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
 	var proceso *g.Proceso

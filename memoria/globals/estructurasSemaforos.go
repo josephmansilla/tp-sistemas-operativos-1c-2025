@@ -15,6 +15,6 @@ var MutexSwapBool sync.Mutex
 // pero sería conceptualmente correcto
 
 func InicializarSemaforos() {
-	MutexMetrica = make([]sync.Mutex, MemoryConfig.MemorySize*1000) // tamaño totalmente arbitrario
+	MutexMetrica = make([]sync.Mutex, MemoryConfig.MemorySize) // tamaño totalmente arbitrario
 	// MutexDump = make([]sync.Mutex, MemoryConfig.MemorySize)
 }
