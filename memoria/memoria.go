@@ -98,9 +98,9 @@ func main() {
 
 	mux.HandleFunc("/memoria/escritura", conex.EscribirEspacioUsuarioHandler)
 
-	mux.HandleFunc("/memoria/suspension", adm.SuspensionProcesoHandler)
+	mux.HandleFunc("/memoria/suspension", conex.SuspensionProcesoHandler)
 
-	mux.HandleFunc("/memoria/desuspension", adm.DesuspensionProcesoHandler)
+	mux.HandleFunc("/memoria/desuspension", conex.DesuspensionProcesoHandler)
 
 	mux.HandleFunc("/memoria/dump", conex.MemoriaDumpHandler)
 
