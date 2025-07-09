@@ -3,7 +3,7 @@ package traducciones
 import (
 	"container/list"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
-	"log"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"sync"
 	"time"
 )
@@ -26,7 +26,7 @@ func NuevaTLB() *TLB {
 	algoritmo := globals.ClientConfig.TlbReplacement
 
 	if algoritmo != "FIFO" && algoritmo != "LRU" {
-		log.Printf("Algoritmo TLB inválido: %s", algoritmo)
+		logger.Info("Algoritmo TLB inválido: %s", algoritmo)
 	}
 	return &TLB{
 		entradas:    make(map[int]*list.Element),
@@ -46,10 +46,10 @@ func (tlb *TLB) Buscar(nroPagina int) (int, bool) {
 		if tlb.algoritmo == "LRU" {
 			tlb.orden.MoveToFront(elem)
 		}
-		log.Printf("PID: %d - TLB HIT - Pagina: %d", globals.PIDActual, nroPagina)
+		logger.Info("PID: %d - TLB HIT - Pagina: %d", globals.PIDActual, nroPagina)
 		return elem.Value.(EntradaTLB).Marco, true
 	}
-	log.Printf("PID: %d - TLB MISS - Pagina: %d", globals.PIDActual, nroPagina)
+	logger.Info("PID: %d - TLB MISS - Pagina: %d", globals.PIDActual, nroPagina)
 	return -1, false
 }
 

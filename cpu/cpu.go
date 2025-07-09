@@ -14,7 +14,7 @@ import (
 
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Println("Uso: go run cpu.go <ID_CPU> <archivo_config_sin_extension_json>")
+		logger.Info("Uso: go run cpu.go <ID_CPU> <archivo_config_sin_extension_json>")
 		os.Exit(1)
 	}
 	globals.ID = os.Args[1]
@@ -22,7 +22,7 @@ func main() {
 	logFileName := fmt.Sprintf("logs/cpu_%s.log", globals.ID)
 	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
-		fmt.Printf("Error al crear archivo de log para CPU %s: %v\n", globals.ID, err)
+		logger.Error("Error al crear archivo de log para CPU %s: %v\n", globals.ID, err)
 		os.Exit(1)
 	}
 	multiWriter := io.MultiWriter(os.Stdout, logFile)
@@ -36,14 +36,14 @@ func main() {
 	configPath := fmt.Sprintf("configs/%s.json", os.Args[2])
 	globals.ClientConfig = utils.Config(configPath)
 	if globals.ClientConfig == nil {
-		log.Fatalf("No se pudo cargar el archivo de configuración: %s", configPath)
+		logger.Fatal("No se pudo cargar el archivo de configuración: %s", configPath)
 	}
 	traducciones.Max = globals.ClientConfig.CacheEntries
 
 	// Configuración de Memoria
 	err = utils.RecibirConfiguracionMemoria(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
 	if err != nil {
-		log.Fatalf("Error al obtener la configuración de memoria: %v", err)
+		logger.Fatal("Error al obtener la configuración de memoria: %v", err)
 	}
 
 	// Servidor HTTP
@@ -53,10 +53,10 @@ func main() {
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/cpu\n", globals.ClientConfig.PortSelf)
 	go func() {
-		log.Printf("Escuchando en %s:%d...", globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf)
+		logger.Info("Escuchando en %s:%d...", globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf)
 		err = http.ListenAndServe(fmt.Sprintf("%s:%d", globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf), mux)
 		if err != nil {
-			log.Fatalf("Error al iniciar servidor HTTP: %v", err)
+			logger.Fatal("Error al iniciar servidor HTTP: %v", err)
 		}
 	}()
 
