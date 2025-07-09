@@ -31,7 +31,6 @@ type MensajeInitProc struct {
 	PC       int    `json:"pc"`
 	Filename string `json:"filename"` //filename
 	Tamanio  int    `json:"tamanio_memoria"`
-	ID       string `json:"id"`
 }
 
 type MensajeExit struct {
