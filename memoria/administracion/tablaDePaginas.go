@@ -154,6 +154,8 @@ func AsignarFrameLibre() (numeroEntradaLibre int, err error) {
 			MarcarOcupadoFrame(numeroFrame)
 			logger.Info("Marco Libre encontrado: %d", numeroEntradaLibre)
 			return numeroEntradaLibre, nil
+		} else {
+			logger.Error("## Soy un BUTITOOOOO")
 		}
 	}
 	return -10, logger.ErrNoMemory
