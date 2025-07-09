@@ -10,8 +10,8 @@ type Config struct {
 	LogLevel   string `json:"log_level"`
 }
 
+var Nombre string
 var IoConfig *Config
-
 
 func (cfg Config) Validate() error {
 	if cfg.IpKernel == "" {

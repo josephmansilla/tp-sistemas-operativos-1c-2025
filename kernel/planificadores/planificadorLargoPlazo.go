@@ -7,7 +7,6 @@ import (
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
-	"strconv"
 	"time"
 )
 
@@ -60,96 +59,106 @@ func PlanificadorLargoPlazo() {
 	logger.Info("## (<%d>) Pasa de estado NEW a estado %s", primerProceso.PID, primerProceso.Estado)
 
 	go ManejadorCreacionProcesos()
+	go ManejadorInicializacionProcesos()
 	go ManejadorFinalizacionProcesos()
 }
 
-func ManejadorCreacionProcesos() {
-	logger.Info("Esperando solicitudes de INIT_PROC para creación de procesos")
+func ManejadorInicializacionProcesos() {
 	for {
 		//SIGNAL llega PROCESO a COLA NEW
-		// Recibir args [filename, size, pid]
-		args := <-Utils.ChannelProcessArguments
-		fileName := args[0]
-		size, _ := strconv.Atoi(args[1])
-		pid, _ := strconv.Atoi(args[2])
+		<-Utils.InitProcess
+
+		//Al llegar un nuevo proceso a esta cola
+		//y la misma esté vacía
+		//y no se tengan procesos en la cola de SUSP READY,
+		//se enviará un pedido a Memoria para inicializar el mismo.
+
+		//SE TOMA EL SIGUIENTE PROCESO A ENVIAR A READY
+		//(ORDENADOS PREVIAMENTE POR ALGORITMO)
+		var p = algoritmos.ColaNuevo.First()
+
+		if !algoritmos.ColaSuspendidoReady.IsEmpty() {
+			//SI NO ESTA VACIA -> TIENE PRIORIDAD SUSP.READY
+			p = algoritmos.ColaBloqueadoSuspendido.First()
+		}
+
+		if p == nil {
+			logger.Warn("No hay procesos para inicializar")
+			continue
+		}
+
+		filename := p.FileName
+		size := p.ProcessSize
+
+		//Intentar crear en Memoria
+		espacio := comunicacion.SolicitarEspacioEnMemoria(filename, size)
+		if espacio < size {
+			logger.Info("Memoria sin espacio, pid=%d queda pendiente", p)
+			// Esperar señal de que un proceso finalizó
+			<-Utils.LiberarMemoria
+			logger.Info("Recibida señal de espacio libre, reintentando pid=%d", p)
+			espacio = comunicacion.SolicitarEspacioEnMemoria(filename, size)
+			if espacio < size {
+				logger.Error("Reintento falló para pid=%d, abortando", p)
+				return
+			}
+		}
+
+		//DICE QUE SI, HAY ESPACIO
+		//MANDAR PROCESO A READY
+		agregarProcesoAReady(p, p.Estado)
+		comunicacion.EnviarArchivoMemoria(filename, size, p.PID)
+	}
+}
+
+// RECIBIR SYSCALLS DE CREAR PROCESO
+func ManejadorCreacionProcesos() {
+	logger.Debug("Esperando solicitudes de INIT_PROC para creación de procesos")
+	for {
+		//SIGNAL de SYSCALL INIT_PROC
+		// Recibir filename, size, pid
+		msg := <-Utils.ChannelProcessArguments
+		fileName := msg.Filename
+		size := msg.Tamanio
+		pid := msg.PID
 		logger.Info("Solicitud INIT_PROC recibida: filename=%s, size=%d, pid=%d", fileName, size, pid)
 
-		/*
-			Al llegar un nuevo proceso a esta cola
-			y la misma esté vacía
-			y no se tengan procesos en la cola de SUSP READY,
-			se enviará un pedido a Memoria para inicializar el mismo.
-		*/
-
-		go func(fn string, sz, p int) {
-			if !algoritmos.ColaNuevo.IsEmpty() || !algoritmos.ColaSuspendidoReady.IsEmpty() {
-				//CAMINO NEGATIVO
-			}
-
-			//Intentar crear en Memoria
-			espacio := comunicacion.SolicitarEspacioEnMemoria(fn, sz)
-			if espacio < size {
-				logger.Info("Memoria sin espacio, pid=%d queda pendiente", p)
-				// Esperar señal de que un proceso finalizó
-				<-Utils.InitProcess
-				logger.Info("Recibida señal de espacio libre, reintentando pid=%d", p)
-				espacio = comunicacion.SolicitarEspacioEnMemoria(fn, sz)
-				if espacio < size {
-					logger.Error("Reintento falló para pid=%d, abortando", p)
-					return
-				}
-			}
-
-			//DICE QUE SI, HAY ESPACIO
-			//MANDAR PROCESO A READY
-			agregarProcesoAReady(p)
-			comunicacion.EnviarArchivoMemoria(fileName, size, pid)
-
-			//return //este return hay que sacarlo cuando pepe complete lo suyo
-		}(fileName, size, pid)
-	}
-}
-
-func reintentarCreacion(pid int, fileName string, processSize int) {
-	for {
-		logger.Info("<PID: %v> Esperando liberacion de memoria", pid)
+		//AVISAR QUE SE CREO UN PROCESO AL LARGO PLAZO
 		<-Utils.InitProcess
-		espacio := comunicacion.SolicitarEspacioEnMemoria(fileName, processSize)
-		if espacio > processSize {
-			agregarProcesoAReady(pid)
-			Utils.MutexPuedoCrearProceso.Unlock()
-			break
-		}
 	}
 }
 
-func agregarProcesoAReady(pid int) {
-	// 1) Buscar el PCB en NEW con mutex
-	Utils.MutexNuevo.Lock()
-	pcbPtr := BuscarPCBPorPID(pid)
-	Utils.MutexNuevo.Unlock()
-	if pcbPtr == nil {
-		logger.Error("agregarProcesoAReady: PCB pid=%d no existe en NEW", pid)
+func agregarProcesoAReady(proceso *pcb.PCB, estadoAnterior string) {
+	// 1) Chequear el PCB existe?
+	if proceso == nil {
+		logger.Error("PCB no existe (agregarProcesoAReady)")
 		return
 	}
 
 	// 2) Agregar a READY
 	Utils.MutexReady.Lock()
-	pcb.CambiarEstado(pcbPtr, pcb.EstadoReady)
-	algoritmos.ColaReady.Add(pcbPtr)
+	pcb.CambiarEstado(proceso, pcb.EstadoReady)
+	algoritmos.ColaReady.Add(proceso)
 	Utils.MutexReady.Unlock()
 
-	// 3) Remover de NEW
-	Utils.MutexNuevo.Lock()
-	algoritmos.ColaNuevo.Remove(pcbPtr)
-	Utils.MutexNuevo.Unlock()
+	// 3) Remover de su cola anterior
+	if estadoAnterior == pcb.EstadoSuspReady {
+		Utils.MutexSuspendidoReady.Lock()
+		algoritmos.ColaSuspendidoReady.Remove(proceso)
+		Utils.MutexSuspendidoReady.Unlock()
 
-	logger.Info("## (<%d>) Pasa de estado NEW a estado READY", pcbPtr.PID)
+	} else if estadoAnterior == pcb.EstadoNew {
+		Utils.MutexNuevo.Lock()
+		algoritmos.ColaNuevo.Remove(proceso)
+		Utils.MutexNuevo.Unlock()
+	}
+
+	logger.Info("## (<%d>) Pasa de estado %s a estado READY", proceso.PID, estadoAnterior)
 
 	// 4) Señal al planificador de corto plazo
-	Utils.NotificarDespachador <- pcbPtr.PID //MANDO PID
+	Utils.NotificarDespachador <- proceso.PID //MANDO PID
 
-	// 5) Señal al planificador largo para continuar
+	// 5) Señal al planificador Largo para continuar
 	Utils.SemProcessCreateOK <- struct{}{}
 
 	//MUESTRO LA COLA DE READY PARA VER SI SE AGREGAN CORRECTAMENTE
@@ -158,6 +167,7 @@ func agregarProcesoAReady(pid int) {
 	MostrarColaNew()
 }
 
+// RECIBIR SYSCALLS DE EXIT
 func ManejadorFinalizacionProcesos() {
 	for {
 		msg := <-Utils.ChannelFinishprocess
@@ -207,84 +217,7 @@ func ManejadorFinalizacionProcesos() {
 		liberarCPU(cpuID)
 
 		// Señal para reintentos de creación pendientes
-		Utils.InitProcess <- struct{}{}
-	}
-}
-
-// ESTO ES PARA MANEJAR LAS SYSCALLS, ES DISTINTO AL LA CRACION DEL PRIMER PROCESO, PORQUE A LA SYSCALL pueden
-// llamarla varias CPU entonces muchas cpu pueden estar tocando la listas de NEW, y no la añade de una a ready como el primer proceso
-// YA QUE ESTO DEPENDE DEL PLANIFICADOR DE LARGO PLAZO
-func CrearProceso(fileName string, tamanio int) {
-	// Paso 1: Crear el PCB
-	pid := globals.GenerarNuevoPID()
-	pcbNuevo := pcb.PCB{
-		PID:         pid,
-		PC:          0,
-		ME:          make(map[string]int),
-		MT:          make(map[string]float64),
-		FileName:    fileName,
-		ProcessSize: tamanio,
-	}
-
-	logger.Info("## (<%d>) Se crea el proceso - Estado: NEW", pid)
-
-	// Paso 2: Agregar a la cola NEW con protección de mutex
-	Utils.MutexNuevo.Lock()
-	algoritmos.ColaNuevo.Add(&pcbNuevo)
-	logger.Info("SE AÑADIO A LA COLA nuevo DESDE SYSCALL")
-	Utils.MutexNuevo.Unlock()
-
-	args := []string{pcbNuevo.FileName, strconv.Itoa(pcbNuevo.ProcessSize), strconv.Itoa(pcbNuevo.PID)}
-	Utils.ChannelProcessArguments <- args
-
-}
-
-func intentarInicializarDesdeNew() {
-	Utils.MutexNuevo.Lock()
-	defer Utils.MutexNuevo.Unlock()
-
-	if algoritmos.ColaNuevo.IsEmpty() {
-		return
-	}
-
-	proceso := algoritmos.ColaNuevo.First()
-	espacio := comunicacion.SolicitarEspacioEnMemoria(proceso.FileName, proceso.ProcessSize)
-	if espacio < proceso.ProcessSize {
-		logger.Info("No se pudo inicializar proceso desde NEW PID <%d>", proceso.PID)
-		return
-	}
-	Utils.MutexNuevo.Lock()
-	algoritmos.ColaNuevo.Remove(proceso)
-	Utils.MutexNuevo.Unlock()
-
-	Utils.MutexReady.Lock()
-	algoritmos.ColaReady.Add(proceso)
-	Utils.MutexReady.Unlock()
-	Utils.NotificarDespachador <- proceso.PID
-
-	logger.Info("PID <%d> pasó de NEW a READY", proceso.PID)
-}
-
-func BuscarPCBPorPID(pid int) *pcb.PCB {
-	for _, p := range algoritmos.ColaNuevo.Values() {
-		if p.PID == pid {
-			return p
-		}
-	}
-	return nil
-}
-
-func MostrarPCBsEnNew() {
-	Utils.MutexNuevo.Lock()
-	defer Utils.MutexNuevo.Unlock()
-
-	if algoritmos.ColaReady.IsEmpty() {
-		logger.Info("La cola READYYY está vacía.")
-		return
-	}
-
-	for _, proceso := range algoritmos.ColaReady.Values() {
-		logger.Info("- esto son los PCB en NEW CON PID: %d", proceso.PID)
+		Utils.LiberarMemoria <- struct{}{}
 	}
 }
 

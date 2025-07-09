@@ -10,6 +10,7 @@ type DatosIO struct {
 	Ip      string
 	Puerto  int
 	Ocupada bool
+	PID     int
 }
 
 func (d *DatosIO) Null() *DatosIO {
@@ -46,7 +47,7 @@ var CPUCond = sync.NewCond(&CPUMu)
 
 // MAP CLAVE: TIPO IO VALOR: ARREGLO DE INSTANCIAS DE TIPO DatosIO
 var IO DatosIO
-var IOs map[string][]DatosIO
+var IOs map[string][]DatosIO = make(map[string][]DatosIO)
 
 var IOMu sync.Mutex
 

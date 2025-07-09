@@ -20,6 +20,18 @@ var (
 	mu             sync.Mutex
 )
 
+func setPID(pid int) {
+	mu.Lock()
+	defer mu.Unlock()
+	pidEnEjecucion = pid
+}
+
+func getPID() int {
+	mu.Lock()
+	defer mu.Unlock()
+	return pidEnEjecucion
+}
+
 type MensajeAKernel struct {
 	Ip     string `json:"ip"`
 	Puerto int    `json:"puerto"`
@@ -32,8 +44,10 @@ type MensajeDeKernel struct {
 }
 
 type MensajeFin struct {
-	PID         int  `json:"pid"`
-	Desconexion bool `json:"desconexion"`
+	PID         int    `json:"pid"`
+	Desconexion bool   `json:"desconexion"`
+	Nombre      string `json:"nombre"`
+	Puerto      int    `json:"puerto"`
 }
 
 func main() {
@@ -44,8 +58,8 @@ func main() {
 		fmt.Println("Falta el parametro: nombre de la interfaz de io")
 		os.Exit(1)
 	}
-
 	nombre := os.Args[1]
+	globals.Nombre = nombre
 
 	// ----------------------------------------------------
 	// ------------- CARGO LOGS DE IO EN TXT --------------
@@ -114,30 +128,6 @@ func main() {
 	}
 }
 
-func Config(filepath string) *globals.Config {
-	//Recibe un string filepath (ruta al archivo de configuración).
-	var config *globals.Config
-
-	//Abrir archivo en la ruta filepath
-	configFile, err := os.Open(filepath)
-
-	if err != nil {
-		logger.Fatal("%s", err.Error())
-	}
-	//defer se usa para asegurarse de cerrar recursos (archivos, conexiones, etc.)
-	//incluso si hay errores más adelante.
-	defer configFile.Close()
-
-	//Crear decoder JSON que lee desde el archivo abierto (configFile).
-	jsonParser := json.NewDecoder(configFile)
-
-	//Deserializa el contenido del archivo JSON en una estructura Go.
-	//llena el struct config con los valores que están en el archivo.
-	jsonParser.Decode(&config)
-
-	return config
-}
-
 // Enviar IP y Puerto al Kernel
 func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje MensajeAKernel) {
 	// Construye la URL del endpoint (url + path) a donde se va a enviar el mensaje
@@ -150,7 +140,7 @@ func EnviarIpPuertoNombreAKernel(ipDestino string, puertoDestino int, mensaje Me
 		logger.Error("Error enviando mensaje: %s", err.Error())
 		return
 	}
-	// Si no hubo error, logueo que todo salió bien
+	// Si no hubo error, logueo que salió bien
 	logger.Info("Mensaje enviado a Kernel")
 }
 
@@ -163,9 +153,7 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 		return //hubo error
 	}
 
-	mu.Lock()
-	pidEnEjecucion = mensajeRecibido.PID
-	mu.Unlock()
+	setPID(mensajeRecibido.PID)
 
 	//Realizo la operacion
 	logger.Info("## PID: <%d> - Inicio de IO - Tiempo: %d", mensajeRecibido.PID, mensajeRecibido.Duracion)
@@ -179,7 +167,7 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 // quedará a la espera de la siguiente petición.
 // ver el tema de FINALIZACION DE IO != FIN de timer de IO
 
-//El Módulo IO, deberá notificar al Kernel de su finalización,
+//*El Módulo IO, deberá notificar al Kernel de su desconexion,
 //para esto se deberá implementar el manejo de las señales SIGINT y SIGTERM,
 //para enviar la notificación y finalizar de manera controlada.
 
@@ -188,8 +176,10 @@ func FinDeIO(pid int) {
 	url := fmt.Sprintf("http://%s:%d/kernel/fin_io", globals.IoConfig.IpKernel, globals.IoConfig.PortKernel)
 
 	mensaje := MensajeFin{
-		PID:         pid,
+		PID:         getPID(),
 		Desconexion: false,
+		Nombre:      globals.Nombre,
+		Puerto:      globals.IoConfig.PortIo,
 	}
 	logger.Info("Enviando PID <%d> a Kernel", mensaje.PID)
 
@@ -200,9 +190,7 @@ func FinDeIO(pid int) {
 	}
 
 	// Reiniciar PID
-	mu.Lock()
-	pidEnEjecucion = -1
-	mu.Unlock()
+	setPID(-1)
 }
 
 // Mecanismo del SO para notificar a un proceso que debe hacer algo.
@@ -215,13 +203,13 @@ func desconexion() {
 		logger.Info("Se recibió una señal de finalización. Cerrando IO...")
 
 		//Notificar al Kernel
-		mu.Lock()
-		pid := pidEnEjecucion
-		mu.Unlock()
+		pid := getPID()
 
 		mensaje := MensajeFin{
 			PID:         pid,
 			Desconexion: true,
+			Nombre:      globals.Nombre,
+			Puerto:      globals.IoConfig.PortIo,
 		}
 
 		url := fmt.Sprintf("http://%s:%d/kernel/fin_io", globals.IoConfig.IpKernel, globals.IoConfig.PortKernel)

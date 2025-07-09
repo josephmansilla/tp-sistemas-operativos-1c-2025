@@ -22,8 +22,10 @@ type MensajeAIO struct {
 }
 
 type MensajeFin struct {
-	PID         int  `json:"pid"`
-	Desconexion bool `json:"desconexion"`
+	PID         int    `json:"pid"`
+	Desconexion bool   `json:"desconexion"`
+	Nombre      string `json:"nombre"`
+	Puerto      int    `json:"puerto"`
 }
 
 // w http.ResponseWriter. Se usa para escribir la respuesta al Cliente
@@ -78,18 +80,27 @@ func EnviarContextoIO(instanciaIO globals.DatosIO, pid int, duracion int) {
 // se deberá validar si hay más procesos esperando realizar dicha IO.
 // En caso de que el mensaje corresponda a una desconexión de la IO,
 // el proceso que estaba ejecutando en dicha IO, se deberá pasar al estado EXIT.
+
 func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 	var mensajeRecibido MensajeFin
 	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
-		return //hubo error
+		logger.Error("Error al recibir mensaje de fin de IO %s", err.Error())
 	}
 
 	pid := mensajeRecibido.PID
 	if mensajeRecibido.Desconexion {
-		logger.Info("Desconexion de IO: PID %d", pid)
-		Utils.NotificarDesconexion <- mensajeRecibido.PID //PID -1
+		logger.Info("Desconexion de IO: Puerto %d, PID %d", mensajeRecibido.Puerto, pid)
+		Utils.NotificarDesconexion <- Utils.IODesconexion{
+			PID:    mensajeRecibido.PID,
+			Nombre: mensajeRecibido.Nombre,
+			Puerto: mensajeRecibido.Puerto,
+		}
 	} else {
 		logger.Info("FIN de IO: PID %d", pid)
-		Utils.NotificarFinIO <- mensajeRecibido.PID
+		Utils.NotificarFinIO <- Utils.IODesconexion{
+			PID:    mensajeRecibido.PID,
+			Nombre: mensajeRecibido.Nombre,
+			Puerto: mensajeRecibido.Puerto,
+		}
 	}
 }
