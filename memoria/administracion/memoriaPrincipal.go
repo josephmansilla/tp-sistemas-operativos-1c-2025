@@ -47,38 +47,29 @@ func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
 	return
 }
 
-func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, tamanioMaximo int) ([]byte, error) {
+func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, tamanioMaximo int) error {
 	if direccionPseudocodigo == "" {
-		return nil, fmt.Errorf("el string es vacio")
+		return fmt.Errorf("el string es vacio")
 	}
 	ruta := "../pruebas/" + direccionPseudocodigo
 	file, err := os.Open(ruta)
 	if err != nil {
 		logger.Error("Error al abrir el archivo: %s\n", err)
-		return nil, err
+		return err
 	}
 	defer file.Close()
 
 	logger.Info("Se leyó el archivo")
 	scanner := bufio.NewScanner(file)
 
-	stringEnBytes := make([]byte, 0, tamanioMaximo)
-
 	pc := 0
 	for scanner.Scan() {
 		lineaEnString := scanner.Text()
 		logger.Info("Línea leída: %s", lineaEnString)
-
-		// Convertir línea a bytes y agrega al offset segun PC
 		lineaEnBytes := []byte(lineaEnString)
+
 		proceso.InstruccionesEnBytes[pc] = lineaEnBytes
-
 		logger.Info("String en bytes: %d", len(lineaEnBytes))
-
-		//stringEnBytes = append(stringEnBytes, lineaEnBytes...)
-		//logger.Info("String en bytes: %d", stringEnBytes)
-		//proceso.InstruccionesEnBytes[cantidadInstrucciones] = len(stringEnBytes)
-
 		pc++
 
 		if strings.TrimSpace(lineaEnString) == "EXIT" {
@@ -91,10 +82,9 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, taman
 	}
 
 	IncrementarMetrica(proceso, pc, IncrementarInstruccionesSolicitadas)
-
 	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", proceso.PID, pc)
 
-	return stringEnBytes, nil
+	return nil
 }
 
 func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
