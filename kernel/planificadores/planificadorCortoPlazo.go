@@ -136,6 +136,7 @@ func BloquearProceso() {
 		pid := msg.PID
 		pc := msg.PC
 		cpuID := msg.CpuID
+		tipoIO := msg.Nombre
 
 		//BUSCAR en EXECUTE y actualizar PC proveniente de CPU
 		var proceso *pcb.PCB
@@ -145,12 +146,45 @@ func BloquearProceso() {
 				algoritmos.ColaEjecutando.Remove(p)
 				p.PC = pc
 				proceso = p
+				cpuID = p.CpuID
 				break
 			}
 		}
 		Utils.MutexEjecutando.Unlock()
 
 		liberarCPU(cpuID)
+
+		//Necesito encontrar a que IO libre mandarle
+		globals.IOMu.Lock()
+		//Exista el tipo de IO en el map?
+		for {
+			_, existe := globals.IOs[tipoIO]
+			if existe {
+				break
+			} else {
+				//ENVIAR A EXIT si no existe o cola null
+				Utils.MutexSalida.Lock()
+				pcb.CambiarEstado(proceso, pcb.EstadoExit)
+				algoritmos.ColaSalida.Add(proceso)
+				logger.Info("## %s NO SE ENCUENTRA", tipoIO)
+				logger.Info("## (<%d>) Pasa del estado EXECUTE al estado EXIT", proceso.PID)
+				Utils.MutexSalida.Unlock()
+			}
+		}
+
+		// Buscar una instancia no ocupada
+		var ioData *globals.DatosIO
+		for {
+			for i := range globals.IOs[tipoIO] {
+				if !globals.IOs[tipoIO][i].Ocupada {
+					globals.IOs[tipoIO][i].Ocupada = true
+					ioData = &globals.IOs[tipoIO][i]
+				}
+			}
+			//No hay libres, va a bloqueado igual pero espera en ese estado
+			logger.Info("No hay IOs libres del tipo: %s. Debe esperar", tipoIO)
+		}
+		globals.IOMu.Unlock()
 
 		//ENVIAR A BLOCKED
 		Utils.MutexBloqueado.Lock()
@@ -161,11 +195,15 @@ func BloquearProceso() {
 
 		//Cuando el corto plazo termina de bloquear al proceso en particular
 		//le avisa al Mediano plazo para que empiece el Timer para ESE proceso
-		//le manda PID como señal
-		Utils.ChannelProcessBlocked <- pid
-
-		//Enviar al módulo IO (usando los datos del mensaje recibido)
-		comunicacion.EnviarContextoIO(msg.Nombre, proceso.PID, msg.Duracion)
+		//le manda PID, DURACION y NOMBRE IO como señal
+		go func(p int) {
+			Utils.ChannelProcessBlocked <- Utils.BlockProcess{
+				PID:      pid,
+				PC:       pc,
+				Nombre:   ioData.Tipo,
+				Duracion: msg.Duracion,
+			}
+		}(pid)
 	}
 }
 
@@ -173,8 +211,9 @@ func FinDeIO() {
 	for {
 		// wait del mediano plazo para que indique orden. el proceso esta efectivamente en la cola susp. Bloqueado.
 		Utils.NotificarTimeoutBlocked <- struct{}{}
+
 		//WAIT mensaje fin de IO (bloqueante)
-		pid := <-Utils.NotificarFinIO
+		//pid := <-Utils.NotificarFinIO
 
 		//BUSCAR EN PCB BLOCKED
 		var proceso *pcb.PCB

@@ -203,27 +203,17 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	}
 	pid := mensajeRecibido.PID
 	pc := mensajeRecibido.PC
-	nombre := mensajeRecibido.Nombre
+	tipoIO := mensajeRecibido.Nombre
 
 	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
-
-	// Aquí bloqueas el mutex mientras esperas a que el IO se registre
-	globals.IOMu.Lock()
-	ioData, ok := globals.IOs[nombre]
-	for !ok {
-		globals.IOCond.Wait()
-		ioData, ok = globals.IOs[nombre] // reintenta obtenerlo
-	}
-	globals.IOMu.Unlock()
-
-	logger.Info("Nombre IO: %s Duracion: %d", ioData.Nombre, mensajeRecibido.Duracion)
+	logger.Info("Nombre IO: %s Duracion: %d", tipoIO, mensajeRecibido.Duracion)
 
 	//SIGNAL A Planif. CORTO PLAZO QUE LLEGO I/O
 	go func(p int) {
 		Utils.NotificarComienzoIO <- Utils.MensajeIOChannel{
 			PID:      pid,
 			PC:       pc,
-			Nombre:   ioData.Nombre,
+			Nombre:   mensajeRecibido.Nombre,
 			Duracion: mensajeRecibido.Duracion,
 			CpuID:    mensajeRecibido.ID,
 		}
@@ -232,8 +222,7 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-//REFACTOR EN PROCESO DE SYSCAL DE IO NECESARIO PARA EL MANEJO DE MEDIANO PLAZO Y LARGO PLAZO
-/*
+// REFACTOR EN PROCESO DE SYSCAL DE IO NECESARIO PARA EL MANEJO DE MEDIANO PLAZO Y LARGO PLAZO
 func Io(w http.ResponseWriter, r *http.Request) {
 	var msg MensajeIo
 	if err := data.LeerJson(w, r, &msg); err != nil {
@@ -247,16 +236,17 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Syscall recibida: IO pid=%d nombre=%s duración=%dms", pid, nombre, dur)
 
 	// 1) Mover de EXECUTING a BLOCKED
-	Utils.MutexEjecutando.Lock()
-	var pcbPtr *pcb.PCB
-	for _, p := range algoritmos.ColaEjecutando.Values() {
-		if p.PID == pid {
-			pcbPtr = p
-			algoritmos.ColaEjecutando.Remove(p)
-			break
+	//SIGNAL A Planif. CORTO PLAZO QUE LLEGO I/O
+	go func(p int) {
+		Utils.NotificarComienzoIO <- Utils.MensajeIOChannel{
+			PID:      pid, //YA TENGO PID
+			PC:       pc,
+			Nombre:   nombre,
+			Duracion: dur,
+			CpuID:    msg.ID, //PARA SABER QUE CPU TENIA
 		}
-	}
-	Utils.MutexEjecutando.Unlock()
+	}(pid)
+
 	if pcbPtr == nil {
 		logger.Error("Io: no estaba en ejecutando pid=%d", pid)
 		w.WriteHeader(http.StatusBadRequest)
@@ -306,4 +296,3 @@ func Io(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
-*/

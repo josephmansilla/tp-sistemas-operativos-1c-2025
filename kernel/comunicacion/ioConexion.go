@@ -3,11 +3,10 @@ package comunicacion
 import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
-	"net/http"
-
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
+	"net/http"
 )
 
 // Body JSON a recibir
@@ -35,44 +34,37 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 		return //hubo error
 	}
 
-	nombre := mensajeRecibido.Nombre
+	tipo := mensajeRecibido.Nombre
 
-	//Cargar en
 	globals.IOMu.Lock()
-	globals.IOs[nombre] = globals.DatosIO{
-		Nombre: mensajeRecibido.Nombre,
+	instancia := globals.DatosIO{
+		Tipo:   mensajeRecibido.Nombre,
 		Ip:     mensajeRecibido.Ip,
 		Puerto: mensajeRecibido.Puerto,
 	}
-	globals.IOCond.Broadcast() // es como un signal al wait
+
+	// Agrega a la lista correspondiente
+	globals.IOs[tipo] = append(globals.IOs[tipo], instancia)
 	globals.IOMu.Unlock()
 
 	logger.Info("Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
-		globals.IOs[nombre].Nombre, globals.IOs[nombre].Ip, globals.IOs[nombre].Puerto)
+		instancia.Tipo, instancia.Ip, instancia.Puerto)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
 }
 
 // Enviar PID y Duracion a IO
-func EnviarContextoIO(nombreIO string, pid int, duracion int) {
-	//Necesito elegir a que IO mandarle
-	globals.IOMu.Lock()
-	ioData, ok := globals.IOs[nombreIO]
-	for !ok {
-		globals.IOCond.Wait()
-		ioData, ok = globals.IOs[nombreIO]
-	}
-	globals.IOMu.Unlock()
+func EnviarContextoIO(instanciaIO globals.DatosIO, pid int, duracion int) {
 
-	url := fmt.Sprintf("http://%s:%d/io/kernel", ioData.Ip, ioData.Puerto)
+	url := fmt.Sprintf("http://%s:%d/io/kernel", instanciaIO.Ip, instanciaIO.Puerto)
 
 	mensaje := MensajeAIO{
 		Pid:      pid,
 		Duracion: duracion,
 	}
 
-	logger.Info("## (%d) - Bloqueado por IO: %s", mensaje.Pid, nombreIO)
+	logger.Info("## (%d) - Bloqueado por IO: %s", mensaje.Pid, instanciaIO.Tipo)
 
 	err := data.EnviarDatos(url, mensaje)
 	if err != nil {
@@ -95,7 +87,7 @@ func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 	pid := mensajeRecibido.PID
 	if mensajeRecibido.Desconexion {
 		logger.Info("Desconexion de IO: PID %d", pid)
-		Utils.NotificarDesconexion <- mensajeRecibido.PID
+		Utils.NotificarDesconexion <- mensajeRecibido.PID //PID -1
 	} else {
 		logger.Info("FIN de IO: PID %d", pid)
 		Utils.NotificarFinIO <- mensajeRecibido.PID

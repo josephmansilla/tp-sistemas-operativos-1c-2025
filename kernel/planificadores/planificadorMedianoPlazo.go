@@ -3,6 +3,7 @@ package planificadores
 import (
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
+	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
@@ -18,17 +19,43 @@ func PlanificadorMedianoPlazo() {
 // iniciará un timer por cada PID que llegue.
 func ManejadorMedianoPlazo() {
 	for {
-		pid := <-Utils.ChannelProcessBlocked // señal llegada de BLOCKED con el PID del proceso para que arranque su TIMER
-		go monitorBloqueado(pid)
+		procesoBloqueado := <-Utils.ChannelProcessBlocked // señal llegada de BLOCKED con el PID del proceso para que arranque su TIMER
+
+		//EL PEDIDO SE ACUMULA EN LA LISTA FIFO
+		io1
+		102
+		103
+
+		//TODOS SE LLAMAN TECLADO => PERO EXISTEN TECLADO1 TECLADO2 Y TECLADO3
+
+		go monitorBloqueado(procesoBloqueado)
 	}
 }
 
-// ACA el proceso ya esta en la lista bloqueado y  arranca un timer y observa si recibe fin de IO
-func monitorBloqueado(pid int) {
-	logger.Info("Arrancó el TIMER del proceso: PID <%d>", pid)
-	suspensión := time.Duration(globals.KConfig.SuspensionTime) * time.Millisecond
+//Al ingresar un proceso al estado BLOCKED se deberá iniciar un timer
+//el cual se encargará de esperar un tiempo determinado por archivo de configuración,
+//al terminar ese tiempo si el proceso continúa en estado BLOCKED,
+//él mismo deberá transicionar al estado SUSP. BLOCKED.
+//En este momento se debe informar al módulo memoria que debe ser movido de
+//memoria principal a swap. Cabe aclarar que en este momento vamos a tener
+//más memoria libre en el sistema por lo que se debe verificar si uno o
+//más nuevos procesos pueden entrar (tanto de la cola NEW como de SUSP. READY).
 
-	timer := time.NewTimer(suspensión)
+// ACA el proceso ya esta en la lista bloqueado y  arranca un timer y observa si recibe fin de IO
+func monitorBloqueado(proceso Utils.BlockProcess) {
+	logger.Info("Arrancó el TIMER del proceso: PID <%d>", proceso.PID)
+	suspension := time.Duration(globals.KConfig.SuspensionTime) * time.Millisecond
+
+	//Enviar al módulo IO (usando los datos del mensaje recibido)
+	enviarAIO(proceso)
+	//busca si disco libre...
+	//asigna el pedido a io
+
+	//ACITVA IO 5... WAIT 5 SEGUNDOS MANDA FIN
+
+	comunicacion.EnviarContextoIO(proceso.Nombre, pid, msg.Duracion)
+
+	timer := time.NewTimer(suspension)
 	defer timer.Stop()
 
 	select {
