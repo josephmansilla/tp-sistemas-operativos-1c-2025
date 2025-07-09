@@ -67,11 +67,6 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 		}
 	}
 
-	if tablaApuntada == nil {
-		logger.Error("La tabla no existe o nunca fue inicializada")
-		return nil, fmt.Errorf("la tabla no existe o nunca fue inicializada")
-	}
-
 	if tablaApuntada.EntradasPaginas == nil {
 		logger.Error("EntradasPaginas era nil para indices=%v", indices)
 		logger.Error("La entrada no fue nunca inicializada")
@@ -142,7 +137,7 @@ func ObtenerEntradaPagina(pid int, indices []int) (int, error) {
 	return entradaPagina.NumeroFrame, nil
 }
 
-func AsignarFrameLibre() (numeroEntradaLibre int, err error) {
+func AsignarFrameLibre() (int, error) {
 	cantidadFramesTotales := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
 
 	for numeroFrame := 0; numeroFrame < cantidadFramesTotales; numeroFrame++ {
@@ -152,10 +147,8 @@ func AsignarFrameLibre() (numeroEntradaLibre int, err error) {
 
 		if booleano == true {
 			MarcarOcupadoFrame(numeroFrame)
-			logger.Info("Marco Libre encontrado: %d", numeroEntradaLibre)
-			return numeroEntradaLibre, nil
-		} else {
-			logger.Error("## Soy un BUTITOOOOO")
+			logger.Info("Marco Libre encontrado: %d", numeroFrame)
+			return numeroFrame, nil
 		}
 	}
 	return -10, logger.ErrNoMemory
@@ -202,6 +195,7 @@ func AsignarPaginasParaPID(proceso *g.Proceso, tamanio int) error {
 		logger.Info("El entrada #%d para el PID: <%d> se guardó en el frame <%d>...", i, proceso.PID, numeroFrame)
 	}
 	logger.Info("Se reservó correctamente el espacio para el PID: <%d>.", proceso.PID)
+	logger.Info("Quendan <%d> frames libes", g.CantidadFramesLibres)
 	return nil
 }
 
@@ -229,7 +223,7 @@ func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, en
 	}
 	actual.EntradasPaginas[indices[len(indices)-1]] = entrada
 
-	logger.Info("Insertada entrada para página %d (indices=%v) en PID desconocido", numeroPagina, indices)
+	logger.Info("Insertada entrada para página %d (indices=%v)", numeroPagina, indices)
 }
 
 func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string) g.ExitoEscrituraPagina {
@@ -341,7 +335,10 @@ func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## Lectura Éxitosa")
 
-	json.NewEncoder(w).Encode(respuesta)
+	err := json.NewEncoder(w).Encode(respuesta)
+	if err != nil {
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	//w.Write([]byte("Respuesta devuelta"))
 }
@@ -380,7 +377,10 @@ func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## Escritura Éxitosa")
 
-	json.NewEncoder(w).Encode(respuesta)
+	errr := json.NewEncoder(w).Encode(respuesta)
+	if errr != nil {
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	//w.Write([]byte("Respuesta devuelta"))
 }
