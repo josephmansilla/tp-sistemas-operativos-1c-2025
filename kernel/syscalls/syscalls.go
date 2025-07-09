@@ -9,7 +9,6 @@ import (
 	"github.com/sisoputnfrba/tp-golang/kernel/planificadores"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
@@ -85,7 +84,6 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 
 	// 2) Generar el PID dentro del kernel
 	pid := globals.GenerarNuevoPID()
-	//pc := msg.PC           // opcional, vos no lo usás
 	fileName := msg.Filename
 	tamanio := msg.Tamanio
 
@@ -117,25 +115,25 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 			algoritmos.ColaNuevo.Add(&pcbNuevo)
 			pcb.CambiarEstado(&pcbNuevo, pcb.EstadoNew)
 			Utils.MutexNuevo.Unlock()
-			logger.Info("PCB <%d> añadido a NEW", pid)
+			logger.Info("PCB <%d> añadido a NEW (FIFO)", pid)
 		case "PMCP":
 			algoritmos.AddPMCP(&pcbNuevo)
 			pcb.CambiarEstado(&pcbNuevo, pcb.EstadoNew)
-			logger.Info("PCB <%d> añadido a NEW", pid)
+			logger.Info("PCB <%d> añadido a NEW (PMCP)", pid)
 		default:
 			logger.Error("Algoritmo de ingreso desconocido")
 			return
 		}
 
 		planificadores.MostrarColaNew()
-		// Notificar al planificador de largo plazo
-		args := []string{
-			fileName,
-			strconv.Itoa(tamanio),
-			strconv.Itoa(pid), // ahora le paso el PID generado
-		}
-		Utils.ChannelProcessArguments <- args
+		// Notificar al Planificador de Largo Plazo
 		logger.Debug("Notificado planificador de largo plazo para PID <%d>", pid)
+
+		Utils.ChannelProcessArguments <- Utils.NewProcess{
+			PID:      pid,
+			Filename: fileName,
+			Tamanio:  tamanio,
+		}
 	}()
 	<-Utils.SemProcessCreateOK
 
@@ -203,27 +201,17 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	}
 	pid := mensajeRecibido.PID
 	pc := mensajeRecibido.PC
-	nombre := mensajeRecibido.Nombre
+	tipoIO := mensajeRecibido.Nombre
 
 	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
-
-	// Aquí bloqueas el mutex mientras esperas a que el IO se registre
-	globals.IOMu.Lock()
-	ioData, ok := globals.IOs[nombre]
-	for !ok {
-		globals.IOCond.Wait()
-		ioData, ok = globals.IOs[nombre] // reintenta obtenerlo
-	}
-	globals.IOMu.Unlock()
-
-	logger.Info("Nombre IO: %s Duracion: %d", ioData.Nombre, mensajeRecibido.Duracion)
+	logger.Info("Nombre IO: %s Duracion: %d", tipoIO, mensajeRecibido.Duracion)
 
 	//SIGNAL A Planif. CORTO PLAZO QUE LLEGO I/O
 	go func(p int) {
 		Utils.NotificarComienzoIO <- Utils.MensajeIOChannel{
 			PID:      pid,
 			PC:       pc,
-			Nombre:   ioData.Nombre,
+			Nombre:   mensajeRecibido.Nombre,
 			Duracion: mensajeRecibido.Duracion,
 			CpuID:    mensajeRecibido.ID,
 		}
@@ -231,79 +219,3 @@ func Io(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
-
-//REFACTOR EN PROCESO DE SYSCAL DE IO NECESARIO PARA EL MANEJO DE MEDIANO PLAZO Y LARGO PLAZO
-/*
-func Io(w http.ResponseWriter, r *http.Request) {
-	var msg MensajeIo
-	if err := data.LeerJson(w, r, &msg); err != nil {
-		return
-	}
-	pid := msg.PID
-	pc := msg.PC
-	nombre := msg.Nombre
-	dur := msg.Duracion
-
-	logger.Info("Syscall recibida: IO pid=%d nombre=%s duración=%dms", pid, nombre, dur)
-
-	// 1) Mover de EXECUTING a BLOCKED
-	Utils.MutexEjecutando.Lock()
-	var pcbPtr *pcb.PCB
-	for _, p := range algoritmos.ColaEjecutando.Values() {
-		if p.PID == pid {
-			pcbPtr = p
-			algoritmos.ColaEjecutando.Remove(p)
-			break
-		}
-	}
-	Utils.MutexEjecutando.Unlock()
-	if pcbPtr == nil {
-		logger.Error("Io: no estaba en ejecutando pid=%d", pid)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	pcb.CambiarEstado(pcbPtr, pcb.EstadoBlocked)
-	algoritmos.ColaBloqueado.Add(pcbPtr)
-	logger.Info("## (<%d>) pasa EXECUTE→BLOCKED", pid)
-
-	// 2) Notificar al mediano plazo: bloqueo y arranque de timer
-	go func(p *pcb.PCB, duration int) {
-		timer := time.NewTimer(time.Duration(duration) * time.Millisecond)
-		select {
-		case <-timer.C:
-			// expiró antes de recibir finIO
-			Utils.MutexBloqueado.Lock()
-			// si aún está BLOCKED, pasar a SUSP.BLOCKED
-			if p.Estado == pcb.EstadoBlocked {
-				algoritmos.ColaBloqueado.Remove(p)
-				pcb.CambiarEstado(p, pcb.EstadoSuspBlocked)
-				algoritmos.ColaBloqueadoSuspendido.Add(p)
-				logger.Info("## (<%d>) BLK→SUSP.BLK tras %dms", p.PID, duration)
-				// avisar a memoria swap‑out
-				comunicacion.SolicitarSwapOut(p.PID)
-				// y despertar largo plazo
-				Utils.InitProcess <- struct{}{}
-			}
-			Utils.MutexBloqueado.Unlock()
-
-		case finished := <-Utils.NotificarFinIO:
-			// finIO llegó antes del timer
-			if finished == p.PID {
-				if !timer.Stop() {
-					<-timer.C
-				}
-				// mover a READY directo
-				Utils.MutexBloqueado.Lock()
-				algoritmos.ColaBloqueado.Remove(p)
-				pcb.CambiarEstado(p, pcb.EstadoReady)
-				algoritmos.ColaReady.Add(p)
-				logger.Info("## (<%d>) BLK→READY por finIO", p.PID)
-				Utils.NotificarDespachador <- p.PID
-				Utils.MutexBloqueado.Unlock()
-			}
-		}
-	}(pcbPtr, msg.Duracion)
-
-	w.WriteHeader(http.StatusOK)
-}
-*/

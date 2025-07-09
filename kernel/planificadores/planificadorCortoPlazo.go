@@ -13,7 +13,6 @@ func PlanificarCortoPlazo() {
 	logger.Info("Iniciando el Planificador de Corto Plazo")
 	go DespacharProceso()
 	go BloquearProceso()
-	go FinDeIO()
 	go DesconexionIO()
 	go DesalojarProceso()
 }
@@ -131,11 +130,12 @@ func DesalojarProceso() {
 
 func BloquearProceso() {
 	for {
-		//WAIT mensaje de IO (bloqueante)
+		// Esperar señal del CPU para bloquear por IO
 		msg := <-Utils.NotificarComienzoIO
 		pid := msg.PID
 		pc := msg.PC
 		cpuID := msg.CpuID
+		tipoIO := msg.Nombre
 
 		//BUSCAR en EXECUTE y actualizar PC proveniente de CPU
 		var proceso *pcb.PCB
@@ -145,12 +145,43 @@ func BloquearProceso() {
 				algoritmos.ColaEjecutando.Remove(p)
 				p.PC = pc
 				proceso = p
+				cpuID = p.CpuID
 				break
 			}
 		}
 		Utils.MutexEjecutando.Unlock()
 
 		liberarCPU(cpuID)
+
+		// Buscar IO disponible
+		globals.IOMu.Lock()
+
+		//Exista el tipo de IO en el map?
+		ioList, existe := globals.IOs[tipoIO]
+		if !existe || len(ioList) == 0 {
+			// No existe el tipo de IO o no hay ninguna instancia
+			globals.IOMu.Unlock()
+
+			Utils.MutexSalida.Lock()
+			pcb.CambiarEstado(proceso, pcb.EstadoExit)
+			algoritmos.ColaSalida.Add(proceso)
+			logger.Info("## %s NO SE ENCUENTRA", tipoIO)
+			logger.Info("## (<%d>) Pasa del estado EXECUTE al estado EXIT", proceso.PID)
+			Utils.MutexSalida.Unlock()
+			continue
+		}
+
+		// Buscar una instancia libre
+		var ioAsignada *globals.DatosIO
+		for i := range ioList {
+			if !ioList[i].Ocupada {
+				ioList[i].Ocupada = true
+				ioList[i].PID = pid
+				ioAsignada = &ioList[i]
+				break
+			}
+		}
+		globals.IOMu.Unlock()
 
 		//ENVIAR A BLOCKED
 		Utils.MutexBloqueado.Lock()
@@ -159,59 +190,74 @@ func BloquearProceso() {
 		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado BLOCKED", proceso.PID)
 		Utils.MutexBloqueado.Unlock()
 
+		if ioAsignada == nil {
+			// No se encontró una IO libre, el proceso debe esperar (pero igual se bloquea)
+			logger.Info("No hay IOs libres del tipo: %s. <%d> debe esperar", tipoIO, pid)
+		} else {
+			//Lo envia a IO hallada para bloquearse
+			logger.Info("Asignada IO <%s> a proceso <%d>", tipoIO, pid)
+			comunicacion.EnviarContextoIO(*ioAsignada, pid, msg.Duracion)
+		}
+
 		//Cuando el corto plazo termina de bloquear al proceso en particular
 		//le avisa al Mediano plazo para que empiece el Timer para ESE proceso
-		//le manda PID como señal
-		Utils.ChannelProcessBlocked <- pid
-
-		//Enviar al módulo IO (usando los datos del mensaje recibido)
-		comunicacion.EnviarContextoIO(msg.Nombre, proceso.PID, msg.Duracion)
-	}
-}
-
-func FinDeIO() {
-	for {
-		// wait del mediano plazo para que indique orden. el proceso esta efectivamente en la cola susp. Bloqueado.
-		Utils.NotificarTimeoutBlocked <- struct{}{}
-		//WAIT mensaje fin de IO (bloqueante)
-		pid := <-Utils.NotificarFinIO
-
-		//BUSCAR EN PCB BLOCKED
-		var proceso *pcb.PCB
-		Utils.MutexBloqueado.Lock()
-		for _, p := range algoritmos.ColaBloqueado.Values() {
-			if p.PID == pid {
-				proceso = p
-				algoritmos.ColaBloqueado.Remove(proceso)
+		//le manda PID, DURACION y NOMBRE IO como señal
+		go func(p int) {
+			Utils.ChannelProcessBlocked <- Utils.BlockProcess{
+				PID:      pid,
+				PC:       pc,
+				Nombre:   msg.Nombre,
+				Duracion: msg.Duracion,
 			}
-		}
-		Utils.MutexBloqueado.Unlock()
-
-		Utils.MutexReady.Lock()
-		pcb.CambiarEstado(proceso, pcb.EstadoReady)
-		algoritmos.ColaReady.Add(proceso)
-		logger.Info("## (%d) finalizó IO y pasa a READY", pid)
-		Utils.MutexReady.Unlock()
-
-		//Notificar al despachador llegada a READY
-		Utils.NotificarDespachador <- pid
+		}(pid)
 	}
 }
 
 func DesconexionIO() {
 	for {
-		//WAIT mensaje desconexion de IO
-		pid := <-Utils.NotificarDesconexion
+		//WAIT mensaje desconexion de IO (Tipo, PID y Puerto)
+		io := <-Utils.NotificarDesconexion
 
-		if pid < 0 {
-			continue // ignorar PIDs inválidos
+		// 1) Remover instancia de IO que tenga ese puerto
+		globals.IOMu.Lock()
+
+		// Buscar el tipo de IO directamente
+		instancias, existe := globals.IOs[io.Nombre]
+		if !existe {
+			logger.Warn("No se encontró el tipo de IO <%s>", io.Nombre)
+			globals.IOMu.Unlock()
+			return
 		}
 
-		//BUSCAR EN PCB BLOCKED
+		// Crear nueva lista de instancias, excluyendo la desconectada
+		nuevaLista := []globals.DatosIO{}
+		for _, instancia := range instancias {
+			if instancia.Puerto != io.Puerto {
+				nuevaLista = append(nuevaLista, instancia)
+			} else {
+				logger.Info("Removida instancia IO <%s> con Puerto <%d>", io.Nombre, io.Puerto)
+			}
+		}
+
+		// Si no quedan más instancias, eliminar el tipo del mapa
+		if len(nuevaLista) == 0 {
+			delete(globals.IOs, io.Nombre)
+			logger.Info("No quedan IOs activas del tipo <%s>, eliminado del mapa", io.Nombre)
+		} else {
+			globals.IOs[io.Nombre] = nuevaLista
+		}
+		globals.IOMu.Unlock()
+
+		if io.PID < 0 {
+			continue // ignorar PIDs inválidos de procesos y desconectar
+		}
+
+		//Si la IO se desconecta mientras tiene un proceso...
+		//2) BUSCAR PCB en BLOCKED
 		var proceso *pcb.PCB
 		Utils.MutexBloqueado.Lock()
 		for _, p := range algoritmos.ColaBloqueado.Values() {
-			if p.PID == pid {
+			if p.PID == io.PID {
 				proceso = p
 				algoritmos.ColaBloqueado.Remove(proceso)
 			}
@@ -219,17 +265,17 @@ func DesconexionIO() {
 		Utils.MutexBloqueado.Unlock()
 
 		if proceso == nil {
-			logger.Warn("## PID <%d> desconectado pero no estaba en BLOCKED", pid)
+			logger.Warn("## PID <%d> desconectado pero no estaba en BLOCKED", io.PID)
 			continue
 		}
 
-		//MOVER A EXIT
+		//3) MOVER A PROCESO A EXIT
 		Utils.MutexSalida.Lock()
 		pcb.CambiarEstado(proceso, pcb.EstadoExit)
 		algoritmos.ColaSalida.Add(proceso)
-		logger.Info("## (%d) finalizó IO y pasa a EXIT por desconexión", pid)
+		logger.Info("## (%d) finalizó IO y pasa a EXIT por desconexión", io.PID)
 		Utils.MutexSalida.Unlock()
 
-		logger.Info("## IO desconectado correctamente para PID <%d>", pid)
+		logger.Info("## IO desconectado correctamente para PID <%d>", io.PID)
 	}
 }

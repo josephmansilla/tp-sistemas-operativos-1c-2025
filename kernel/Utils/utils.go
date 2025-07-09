@@ -54,18 +54,19 @@ var (
 	MutexSuspendidoReady     sync.Mutex
 
 	//Canales de señalización
-	ChannelProcessArguments chan []string
+	ChannelProcessArguments chan NewProcess
 	InitProcess             chan struct{}
+	LiberarMemoria          chan struct{}
 	SemProcessCreateOK      chan struct{}
-	ChannelFinishProcess2   chan bool
 	ChannelFinishprocess    chan FinishProcess
-	ChannelProcessBlocked   chan int
+	ChannelProcessBlocked   chan BlockProcess
 
 	//AVISAR AL DESPACHADOR CUANDO UN PROCESO CAMBIA SU ESTADO
 	NotificarDespachador    chan int              //PASA A READY
 	NotificarComienzoIO     chan MensajeIOChannel //PASA A BLOQUEADO
-	NotificarFinIO          chan int              //FIN DE IO
-	NotificarDesconexion    chan int              //Desconexion DE IO
+	NotificarFinIO          chan IODesconexion    //FIN DE IO
+	NotificarIOLibre        chan IODesconexion
+	NotificarDesconexion    chan IODesconexion    //Desconexion DE IO
 	ContextoInterrupcion    chan InterruptProcess //FIN DE EXECUTE
 	NotificarTimeoutBlocked chan struct{}
 )
@@ -80,18 +81,19 @@ func InicializarMutexes() {
 
 // InicializarCanales crea y configura los canales con buffers adecuados.
 func InicializarCanales() {
-	ChannelProcessArguments = make(chan []string, 10) // buffer para hasta 10 peticiones
+	ChannelProcessArguments = make(chan NewProcess, 10) // buffer para hasta 10 peticiones
 	ChannelFinishprocess = make(chan FinishProcess, 5)
 	InitProcess = make(chan struct{})           // sin buffer para sincronización exacta
 	SemProcessCreateOK = make(chan struct{}, 1) // semáforo de 1 slot
-	ChannelFinishProcess2 = make(chan bool, 5)
+	LiberarMemoria = make(chan struct{}, 1)
 
 	NotificarDespachador = make(chan int, 10) // buffer 10 procesos listos
 	NotificarComienzoIO = make(chan MensajeIOChannel, 10)
-	NotificarFinIO = make(chan int, 10)
-	NotificarDesconexion = make(chan int, 10)
+	NotificarFinIO = make(chan IODesconexion, 10)
+	NotificarIOLibre = make(chan IODesconexion, 10)
+	NotificarDesconexion = make(chan IODesconexion, 10)
 	ContextoInterrupcion = make(chan InterruptProcess, 10)
-	ChannelProcessBlocked = make(chan int, 10)
+	ChannelProcessBlocked = make(chan BlockProcess, 10)
 	NotificarTimeoutBlocked = make(chan struct{}, 1)
 }
 
@@ -101,6 +103,12 @@ type MensajeIOChannel struct {
 	Nombre   string
 	Duracion int
 	CpuID    string
+}
+
+type IODesconexion struct {
+	Nombre string
+	PID    int
+	Puerto int
 }
 type FinishProcess struct {
 	PID   int
@@ -112,4 +120,16 @@ type InterruptProcess struct {
 	PC     int
 	CpuID  string
 	Motivo string
+}
+type BlockProcess struct {
+	PID      int
+	PC       int
+	Nombre   string
+	Duracion int
+	CpuID    string
+}
+type NewProcess struct {
+	Filename string
+	Tamanio  int
+	PID      int
 }

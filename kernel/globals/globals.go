@@ -6,9 +6,25 @@ import (
 
 // Datos recibidos por el Kernel
 type DatosIO struct {
-	Nombre string
-	Ip     string
-	Puerto int
+	Tipo    string
+	Ip      string
+	Puerto  int
+	Ocupada bool
+	PID     int
+}
+
+func (d *DatosIO) Null() *DatosIO {
+	return nil
+}
+
+func (d *DatosIO) Equal(other *DatosIO) bool {
+	if d == nil && other == nil {
+		return true
+	}
+	if d == nil || other == nil {
+		return false
+	}
+	return d.Tipo == d.Tipo && d.Ip == other.Ip && d.Puerto == other.Puerto
 }
 
 type DatosCPU struct {
@@ -29,10 +45,11 @@ var CPUs map[string]DatosCPU = make(map[string]DatosCPU) // clave: ID del CPU
 var CPUMu sync.Mutex
 var CPUCond = sync.NewCond(&CPUMu)
 
+// MAP CLAVE: TIPO IO VALOR: ARREGLO DE INSTANCIAS DE TIPO DatosIO
 var IO DatosIO
-var IOs map[string]DatosIO = make(map[string]DatosIO) // clave: nombre del IO
+var IOs map[string][]DatosIO = make(map[string][]DatosIO)
+
 var IOMu sync.Mutex
-var IOCond = sync.NewCond(&IOMu)
 
 var EspacioLibreProceso EspacioLibreRTA
 var UltimoPID int = 0
