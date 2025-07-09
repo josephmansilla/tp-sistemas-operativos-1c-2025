@@ -296,10 +296,10 @@ func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU,
 		return respuesta, fmt.Errorf("proceso nil")
 	}
 
-	cantInstrucciones := len(proceso.OffsetInstruccionesEnBytes)
+	cantInstrucciones := len(proceso.InstruccionesEnBytes)
 	logger.Info("PID <%d> - PC: %d - Cant. Instrucciones: %d", proceso.PID, pc, cantInstrucciones)
 
-	lineaInstruccion := proceso.OffsetInstruccionesEnBytes[pc]
+	lineaInstruccion := proceso.InstruccionesEnBytes[pc]
 	logger.Info("PC a buscar: %d, Instrucción en bytes: %v", pc, lineaInstruccion)
 	logger.Info("PC a buscar: %d, Instrucción: %s", pc, string(lineaInstruccion))
 

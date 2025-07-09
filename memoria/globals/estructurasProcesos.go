@@ -1,10 +1,10 @@
 package globals
 
 type Proceso struct {
-	PID                        int             `json:"pid"`
-	TablaRaiz                  TablaPaginas    `json:"tabla_paginas"`
-	Metricas                   MetricasProceso `json:"metricas_proceso"`
-	OffsetInstruccionesEnBytes map[int][]byte  `json:"offset_instrucciones_en_bytes"`
+	PID                  int             `json:"pid"`
+	TablaRaiz            TablaPaginas    `json:"tabla_paginas"`
+	Metricas             MetricasProceso `json:"metricas_proceso"`
+	InstruccionesEnBytes map[int][]byte  `json:"instrucciones_en_bytes"`
 }
 
 /*
@@ -15,7 +15,7 @@ las instrucciones del mismo para poder devolverlas una a una a pedido de la CPU.
 Queda a criterio del grupo utilizar
 la estructura que crea conveniente para este caso de uso.
 
-ProcesosPorPID[{{PID}}].OffsetInstruccionesEnBytes[{{PC}}] = [78 89 65 76]
+ProcesosPorPID[{{PID}}].InstruccionesEnBytes[{{PC}}] = [78 89 65 76]
 */
 
 type Ocupante struct {

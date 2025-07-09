@@ -63,7 +63,6 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, taman
 	scanner := bufio.NewScanner(file)
 
 	stringEnBytes := make([]byte, 0, tamanioMaximo)
-	cantidadInstrucciones := 0
 
 	pc := 0
 	for scanner.Scan() {
@@ -72,19 +71,15 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, taman
 
 		// Convertir línea a bytes y agrega al offset segun PC
 		lineaEnBytes := []byte(lineaEnString)
-		proceso.OffsetInstruccionesEnBytes[pc] = lineaEnBytes
+		proceso.InstruccionesEnBytes[pc] = lineaEnBytes
 
-		logger.Info("String en bytes: %d", lineaEnBytes)
+		logger.Info("String en bytes: %d", len(lineaEnBytes))
 
 		//stringEnBytes = append(stringEnBytes, lineaEnBytes...)
 		//logger.Info("String en bytes: %d", stringEnBytes)
-		//proceso.OffsetInstruccionesEnBytes[cantidadInstrucciones] = len(stringEnBytes)
+		//proceso.InstruccionesEnBytes[cantidadInstrucciones] = len(stringEnBytes)
 
 		pc++
-		cantidadInstrucciones++
-
-		// TODO: si los tests cuentan al EOF como instruccion queda así
-		// TODO: sino despues del if
 
 		if strings.TrimSpace(lineaEnString) == "EXIT" {
 			logger.Info("Se llegó al final del archivo")
@@ -95,9 +90,9 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, taman
 		logger.Error("Error al leer el archivo: %s", err)
 	}
 
-	IncrementarMetrica(proceso, cantidadInstrucciones, IncrementarInstruccionesSolicitadas)
+	IncrementarMetrica(proceso, pc, IncrementarInstruccionesSolicitadas)
 
-	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", proceso.PID, cantidadInstrucciones)
+	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", proceso.PID, pc)
 
 	return stringEnBytes, nil
 }

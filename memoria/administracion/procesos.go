@@ -16,10 +16,10 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 	}
 
 	nuevoProceso := &g.Proceso{
-		PID:                        pid,
-		TablaRaiz:                  InicializarTablaRaiz(),
-		Metricas:                   InicializarMetricas(),
-		OffsetInstruccionesEnBytes: make(map[int][]byte),
+		PID:                  pid,
+		TablaRaiz:            InicializarTablaRaiz(),
+		Metricas:             InicializarMetricas(),
+		InstruccionesEnBytes: make(map[int][]byte),
 	}
 	logger.Info("Proceso creado en memoria para PID=%d", pid)
 
