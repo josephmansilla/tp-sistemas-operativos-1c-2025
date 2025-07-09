@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
-	"log"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
 // Estructura del mensaje hacia Memoria
@@ -48,9 +48,9 @@ func Traducir(dirLogica int) int {
 
 	//Primero verifico si la cache esta activa
 	if cache.EstaActiva() {
-		log.Printf("Cache Activa")
+		logger.Info("Cache Activa")
 	} else {
-		log.Printf("Cache Inactiva")
+		logger.Info("Cache Inactiva")
 	}
 
 	// Inicializo la TLB
@@ -66,11 +66,11 @@ func Traducir(dirLogica int) int {
 	entradas := DescomponerPagina(nroPagina, niveles, entradasPorNivel)
 	marco, err := accederTabla(globals.PIDActual, entradas)
 	if err != nil {
-		log.Printf("No se pudo acceder a la tabla de páginas: %s", err.Error())
+		logger.Error("No se pudo acceder a la tabla de páginas: %s", err.Error())
 		return -1
 	}
 	if marco == -1 {
-		log.Printf("No se pudo traducir la dirección lógica %d", dirLogica)
+		logger.Error("No se pudo traducir la dirección lógica %d", dirLogica)
 		return -1
 	}
 
@@ -115,7 +115,7 @@ func accederTabla(pid int, indices []int) (int, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&respuesta); err != nil {
 		return -1, err
 	}
-	log.Printf("Marco Recibido: %d", respuesta.NumeroMarco)
+	logger.Info("Marco Recibido: %d", respuesta.NumeroMarco)
 
 	return respuesta.NumeroMarco, nil
 }
@@ -134,19 +134,19 @@ func LeerEnMemoria(dirFisica int, tamanio int) (string, error) {
 
 	resp, err := data.EnviarDatosConRespuesta(url, msg)
 	if err != nil {
-		log.Printf("Error enviando Direccion Fisica y Tamanio: %s", err.Error())
+		logger.Error("Error enviando Direccion Fisica y Tamanio: %s", err.Error())
 		return "", err
 	}
 	defer resp.Body.Close()
 
 	var respuesta RespuestaLectura
 	if err := json.NewDecoder(resp.Body).Decode(&respuesta); err != nil {
-		log.Printf("Error decodificando respuesta de memoria: %s", err.Error())
+		logger.Error("Error decodificando respuesta de memoria: %s", err.Error())
 		return "", err
 	}
 
-	log.Printf("Direccion Fisica: %d y Tamanio: %d enviados correctamente a memoria", dirFisica, tamanio)
-	log.Printf("Valor leído: %s", respuesta.ValorLeido)
+	logger.Info("Direccion Fisica: %d y Tamanio: %d enviados correctamente a memoria", dirFisica, tamanio)
+	logger.Info("Valor leído: %s", respuesta.ValorLeido)
 
 	return respuesta.ValorLeido, nil
 }
@@ -163,10 +163,10 @@ func EscribirEnMemoria(dirFisica int, datos string) error {
 
 	err := data.EnviarDatos(url, msg)
 	if err != nil {
-		log.Printf("Error enviando Direccion Fisica y Datos: %s", err.Error())
+		logger.Error("Error enviando Direccion Fisica y Datos: %s", err.Error())
 		return err
 	}
 
-	log.Println("Direccion Fisica: %d y Datos: %s enviados correctamente a memoria", dirFisica, datos)
+	logger.Info("Direccion Fisica: %d y Datos: %s enviados correctamente a memoria", dirFisica, datos)
 	return nil
 }

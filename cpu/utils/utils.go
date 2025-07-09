@@ -6,7 +6,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/cpu/instrucciones"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
-	"log"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 	"os"
 )
@@ -38,7 +38,7 @@ func Config(filepath string) *globals.Config {
 	configFile, err := os.Open(filepath)
 
 	if err != nil {
-		log.Fatal(err.Error())
+		logger.Fatal(err.Error())
 	}
 	//defer se usa para asegurarse de cerrar recursos (archivos, conexiones, etc.)
 	//incluso si hay errores más adelante.
@@ -68,11 +68,11 @@ func EnviarIpPuertoIDAKernel(ipDestino string, puertoDestino int, ipPropia strin
 	err := data.EnviarDatos(url, mensaje)
 	//Verifico si hubo error y logueo si lo hubo
 	if err != nil {
-		log.Printf("Error enviando IP, Puerto e ID al Kernel: %s", err.Error())
+		logger.Error("Error enviando IP, Puerto e ID al Kernel: %s", err.Error())
 		return
 	}
 	//Si no hubo error, logueo que salio bien
-	log.Println("IP, Puerto e ID enviados exitosamente al Kernel")
+	logger.Info("IP, Puerto e ID enviados exitosamente al Kernel")
 }
 
 // Recibo PCB de Kernel
@@ -81,7 +81,7 @@ func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
 
 	// Intentar decodificar el JSON del request
 	if err := data.LeerJson(w, r, &msg); err != nil {
-		log.Printf("Error al recibir JSON: %v", err)
+		logger.Error("Error al recibir JSON: %v", err)
 		http.Error(w, "Error procesando datos del Kernel", http.StatusInternalServerError)
 		return
 	}
@@ -90,11 +90,11 @@ func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
 	globals.PIDActual = msg.PID
 	globals.PCActual = msg.PC
 
-	log.Printf("Me llegó el contexto con PID: %d, PC: %d", globals.PIDActual, globals.PCActual)
+	logger.Info("Me llegó el contexto con PID: %d, PC: %d", globals.PIDActual, globals.PCActual)
 
 	// Validar que ClientConfig esté inicializado
 	if globals.ClientConfig == nil {
-		log.Printf("ClientConfig no está inicializado.")
+		logger.Info("ClientConfig no está inicializado.")
 		http.Error(w, "Configuración del cliente no inicializada", http.StatusInternalServerError)
 		return
 	}
@@ -112,12 +112,12 @@ func RecibirInterrupcion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := data.LeerJson(w, r, &interrumpido); err != nil {
-		log.Printf("Error leyendo interrupción: %v", err)
+		logger.Error("Error leyendo interrupción: %v", err)
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("## Llega interrupción al puerto Interrupt")
+	logger.Info("## Llega interrupción al puerto Interrupt")
 
 	globals.MutexInterrupcion.Lock()
 	globals.InterrupcionPendiente = true //aseguro la mutua exclusion
@@ -143,7 +143,7 @@ func RecibirConfiguracionMemoria(ipDestino string, puertoDestino int) error {
 
 	err := data.EnviarDatosYRecibirRespuesta(url, mensaje, &msg)
 	if err != nil {
-		log.Printf("Error al consultar la configuración de memoria: %s", err.Error())
+		logger.Error("Error al consultar la configuración de memoria: %s", err.Error())
 		return err
 	}
 
@@ -151,7 +151,7 @@ func RecibirConfiguracionMemoria(ipDestino string, puertoDestino int) error {
 	globals.EntradasPorNivel = msg.EntradasPorNivel
 	globals.CantidadNiveles = msg.CantidadNiveles
 
-	log.Printf("Configuración de Memoria: Tamaño de Página: %d, Entradas por Página: %d, Niveles: %d",
+	logger.Info("Configuración de Memoria: Tamaño de Página: %d, Entradas por Página: %d, Niveles: %d",
 		msg.TamanioPagina, msg.EntradasPorNivel, msg.CantidadNiveles)
 
 	return nil

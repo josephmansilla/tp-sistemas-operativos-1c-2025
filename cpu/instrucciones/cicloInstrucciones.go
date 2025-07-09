@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/cpu/traducciones"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"log"
 	"net/http"
 	"strings"
@@ -27,7 +28,7 @@ type Interrupcion struct {
 
 func FaseFetch(ipDestino string, puertoDestino int) {
 	for {
-		log.Printf("## PID: %d - FETCH - Program Counter: %d", globals.PIDActual, globals.PCActual)
+		logger.Info("## PID: %d - FETCH - Program Counter: %d", globals.PIDActual, globals.PCActual)
 
 		mensaje := MensajeInstruccion{
 			PID: globals.PIDActual,
@@ -36,7 +37,7 @@ func FaseFetch(ipDestino string, puertoDestino int) {
 
 		jsonData, err := json.Marshal(mensaje)
 		if err != nil {
-			log.Printf("Error codificando mensaje a JSON: %s", err)
+			logger.Info("Error codificando mensaje a JSON: %s", err)
 			break
 		}
 
@@ -44,18 +45,18 @@ func FaseFetch(ipDestino string, puertoDestino int) {
 
 		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 		if err != nil {
-			log.Printf("Error haciendo POST a Memoria: %s", err)
+			logger.Info("Error haciendo POST a Memoria: %s", err)
 			break
 		}
 		defer resp.Body.Close() // <-- mover esto después de confirmar que no hubo error
 
 		var respuesta RespuestaInstruccion
 		if err := json.NewDecoder(resp.Body).Decode(&respuesta); err != nil {
-			log.Printf("Error decodificando respuesta de Memoria: %s", err)
+			logger.Info("Error decodificando respuesta de Memoria: %s", err)
 			break
 		}
 
-		log.Printf("Instrucción recibida (PC %d): %s", globals.PCActual, respuesta.Instruccion)
+		logger.Info("Instrucción recibida (PC %d): %s", globals.PCActual, respuesta.Instruccion)
 
 		// Parsear y ejecutar instrucción
 		if seguir := FaseDecode(respuesta.Instruccion); !seguir {
@@ -88,7 +89,7 @@ func FaseExecute(nombre string, args []string) bool {
 	instrucFunc, existe := InstruccionSet[nombre]
 
 	if !existe {
-		log.Printf("Instrucción desconocida: %s", nombre)
+		logger.Error("Instrucción desconocida: %s", nombre)
 		return false
 	}
 
@@ -96,21 +97,21 @@ func FaseExecute(nombre string, args []string) bool {
 
 	if err != nil {
 		if err == globals.ErrSyscallBloqueante {
-			log.Printf("Proceso %d bloqueado por syscall IO", globals.PIDActual)
+			logger.Error("Proceso %d bloqueado por syscall IO", globals.PIDActual)
 			return false // Detener ejecución por syscall IO
 		}
 
-		log.Printf("Error ejecutando %s: %v", nombre, err)
+		logger.Error("Error ejecutando %s: %v", nombre, err)
 		return false
 	}
 
 	if nombre == "EXIT" {
-		log.Printf("PID %d ejecutó EXIT. Finalizando ejecución.", globals.PIDActual)
+		logger.Info("PID %d ejecutó EXIT. Finalizando ejecución.", globals.PIDActual)
 		return false
 	}
 
 	if FaseCheckInterrupt() {
-		log.Println("Finalizando ejecución por interrupción.")
+		logger.Info("Finalizando ejecución por interrupción.")
 		return false
 	}
 
@@ -126,7 +127,7 @@ func FaseCheckInterrupt() bool {
 	}
 
 	if globals.PIDInterrumpido != globals.PIDActual {
-		log.Printf("Interrupción recibida para PID %d, pero estoy ejecutando PID %d. Ignorando.",
+		logger.Info("Interrupción recibida para PID %d, pero estoy ejecutando PID %d. Ignorando.",
 			globals.PIDInterrumpido, globals.PIDActual)
 		return false
 	}
@@ -144,7 +145,7 @@ func FaseCheckInterrupt() bool {
 
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
-		log.Printf("Error serializando contexto interrumpido: %v", err)
+		logger.Info("Error serializando contexto interrumpido: %v", err)
 		return false
 	}
 
@@ -152,17 +153,17 @@ func FaseCheckInterrupt() bool {
 	url := fmt.Sprintf("http://%s:%d/kernel/contexto_interrumpido", globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonBody))
 	if err != nil {
-		log.Printf("Error enviando contexto interrumpido al Kernel: %v", err)
+		logger.Error("Error enviando contexto interrumpido al Kernel: %v", err)
 		return false
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Kernel respondió con error al recibir interrupción: %s", resp.Status)
+		logger.Error("Kernel respondió con error al recibir interrupción: %s", resp.Status)
 		return false
 	}
 
-	log.Printf("Contexto interrumpido enviado a Kernel. PID: %d, PC: %d", pid, pc)
+	logger.Info("Contexto interrumpido enviado a Kernel. PID: %d, PC: %d", pid, pc)
 
 	// Limpiar la interrupción
 	globals.InterrupcionPendiente = false
