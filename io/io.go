@@ -169,7 +169,7 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 
 	//Realizo la operacion
 	logger.Info("## PID: <%d> - Inicio de IO - Tiempo: %d", mensajeRecibido.PID, mensajeRecibido.Duracion)
-	time.Sleep(time.Duration(mensajeRecibido.Duracion) * time.Second)
+	time.Sleep(time.Duration(mensajeRecibido.Duracion) * time.Millisecond)
 
 	//IO Finalizada
 	FinDeIO(pidEnEjecucion)
