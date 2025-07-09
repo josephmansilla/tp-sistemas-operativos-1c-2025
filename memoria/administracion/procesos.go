@@ -20,6 +20,8 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 		g.MutexProcesosPorPID.Unlock()
 		logger.Error("El proceso PID <%d> ya existe", pid)
 		return fmt.Errorf("el proceso PID <%d> ya existe", pid)
+	} else {
+		g.MutexProcesosPorPID.Unlock()
 	}
 	nuevoProceso := &g.Proceso{
 		PID:                  pid,
@@ -32,31 +34,20 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 	g.MutexProcesosPorPID.Lock()
 	g.ProcesosPorPID[pid] = nuevoProceso
 	g.MutexProcesosPorPID.Unlock()
-	logger.Info("Proceso PID <%d> agregado a la lista global", pid)
-
-	//Guardar proceso: asi cualquier función que acceda por pid
-	//(como ModificarEstadoEntradaEscritura o AsignarDatosAPaginacion)
-	//encuentre la estructura ya guardada.
 
 	if nuevoProceso.TablaRaiz == nil {
 		logger.Error("TablaRaiz es nil para proceso PID <%d>", pid)
-		return fmt.Errorf("Tabla raíz no inicializada")
+		return fmt.Errorf("tabla raíz no inicializada")
 	}
-	logger.Info("TablaRaiz inicializada para PID=%d", pid)
 
-	err = LecturaPseudocodigo(nuevoProceso, nombreArchPseudocodigo, tamanioProceso)
+	err = LecturaPseudocodigo(nuevoProceso, nombreArchPseudocodigo)
 	if err != nil {
-		logger.Error("Error al leer pseudocódigo para PID=%d: %v", pid, err)
 		return fmt.Errorf("error al leer pseudocódigo: %v", logger.ErrBadRequest)
 	}
 	logger.Info("Pseudocódigo leído correctamente para PID <%d>, Longitud en bytes: <%d>", pid)
 
-	err = AsignarDatosAPaginacion(nuevoProceso)
-	err = AsginarEspacioDeSistema(nuevoProceso)
-	if err != nil {
-		logger.Error("Error asignando datos a paginación para PID <%d>: %v", pid, err)
-		return fmt.Errorf("error asignando datos para el proceso: %v", logger.ErrInternalFailure)
-	}
+	err = AsignarPaginasParaPID(nuevoProceso, tamanioProceso)
+
 	logger.Info("Datos asignados correctamente para PID <%d>", pid)
 
 	return nil

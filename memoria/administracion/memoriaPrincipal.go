@@ -1,12 +1,9 @@
 package administracion
 
 import (
-	"bufio"
 	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
-	"os"
-	"strings"
 )
 
 func InicializarMemoriaPrincipal() {
@@ -32,59 +29,22 @@ func ConfigurarFrames(cantidadFrames int) {
 	}
 	g.MutexEstructuraFramesLibres.Unlock()
 	g.CantidadFramesLibres = cantidadFrames
-	logger.Info("Todos los frames se liberaron.")
+	logger.Info("Todos los frames se crearon y se liberaron correctamente.")
 }
 
 func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
-	framesNecesarios := tamanioProceso / g.MemoryConfig.PagSize
-	if tamanioProceso%g.MemoryConfig.PagSize != 0 {
-		framesNecesarios++
-	}
+	framesNecesarios := g.CalcularCantidadFrames(tamanioProceso)
+
 	g.MutexCantidadFramesLibres.Lock()
 	resultado = framesNecesarios <= g.CantidadFramesLibres
 	g.MutexCantidadFramesLibres.Unlock()
-	logger.Info("Se probó si había %d frames necesarios", framesNecesarios)
+
+	if resultado {
+		logger.Info("Se consultó si había %d frames y retornó TRUE...", framesNecesarios)
+	} else {
+		logger.Info("Se consultó si había %d frames y retornó FALSE...", framesNecesarios)
+	}
 	return
-}
-
-func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string, tamanioMaximo int) error {
-	if direccionPseudocodigo == "" {
-		return fmt.Errorf("el string es vacio")
-	}
-	ruta := "../pruebas/" + direccionPseudocodigo
-	file, err := os.Open(ruta)
-	if err != nil {
-		logger.Error("Error al abrir el archivo: %s\n", err)
-		return err
-	}
-	defer file.Close()
-
-	logger.Info("Se leyó el archivo")
-	scanner := bufio.NewScanner(file)
-
-	pc := 0
-	for scanner.Scan() {
-		lineaEnString := scanner.Text()
-		logger.Info("Línea leída: %s", lineaEnString)
-		lineaEnBytes := []byte(lineaEnString)
-
-		proceso.InstruccionesEnBytes[pc] = lineaEnBytes
-		logger.Info("String en bytes: %d", len(lineaEnBytes))
-		pc++
-
-		if strings.TrimSpace(lineaEnString) == "EXIT" {
-			logger.Info("Se llegó al final del archivo")
-			break
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		logger.Error("Error al leer el archivo: %s", err)
-	}
-
-	IncrementarMetrica(proceso, pc, IncrementarInstruccionesSolicitadas)
-	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", proceso.PID, pc)
-
-	return nil
 }
 
 func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
@@ -218,7 +178,7 @@ func SeleccionarEntradas(pid int, direccionFisica int, entradasNecesarias int) (
 	}
 
 	return
-} //TODO: re ver no se usa el tamanioALeer
+} //TODO: rever no se usa el tamanioALeer
 
 func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionLectura g.ExitoLecturaMemoria, err error) {
 	confirmacionLectura = g.ExitoLecturaMemoria{Exito: err, DatosAEnviar: ""}

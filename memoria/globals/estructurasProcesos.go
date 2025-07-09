@@ -7,22 +7,6 @@ type Proceso struct {
 	InstruccionesEnBytes map[int][]byte  `json:"instrucciones_en_bytes"`
 }
 
-/*
-Por cada PID del sistema,
-se deberá leer su archivo de pseudocódigo y guardar de forma estructurada
-las instrucciones del mismo para poder devolverlas una a una a pedido de la CPU.
-
-Queda a criterio del grupo utilizar
-la estructura que crea conveniente para este caso de uso.
-
-ProcesosPorPID[{{PID}}].InstruccionesEnBytes[{{PC}}] = [78 89 65 76]
-*/
-
-type Ocupante struct {
-	PID          int `json:"pid"`
-	NumeroPagina int `json:"numero_pagina"`
-}
-
 type MetricasProceso struct {
 	AccesosTablasPaginas     int `json:"acceso_tablas_paginas"`
 	InstruccionesSolicitadas int `json:"instrucciones_solicitadas"`

@@ -22,6 +22,14 @@ func ConversionEnBytes(stringazo string) []byte {
 	return []byte(stringazo)
 }
 
+func CalcularCantidadFrames(tamanio int) (cantidad int) {
+	cantidad = tamanio / MemoryConfig.PagSize
+	if tamanio%MemoryConfig.PagSize > 0 {
+		cantidad++
+	}
+	return
+}
+
 func CalcularEjecutarSleep(tiempoTranscurrido time.Duration, retraso time.Duration) {
 	tiempoRestante := retraso - tiempoTranscurrido
 	if tiempoRestante < retraso {

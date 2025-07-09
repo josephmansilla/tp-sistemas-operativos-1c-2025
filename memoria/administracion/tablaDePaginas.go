@@ -142,26 +142,23 @@ func ObtenerEntradaPagina(pid int, indices []int) (int, error) {
 	return entradaPagina.NumeroFrame, nil
 }
 
-func AsignarNumeroEntradaPagina() int {
-	numeroEntradaLibre := -1
-	tamanioMaximo := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
+func AsignarFrameLibre() (numeroEntradaLibre int, err error) {
+	cantidadFramesTotales := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
 
-	for numeroFrame := 0; numeroFrame < tamanioMaximo; numeroFrame++ {
+	for numeroFrame := 0; numeroFrame < cantidadFramesTotales; numeroFrame++ {
 		g.MutexEstructuraFramesLibres.Lock()
 		booleano := g.FramesLibres[numeroFrame]
 		g.MutexEstructuraFramesLibres.Unlock()
 
 		if booleano == true {
-			numeroEntradaLibre = numeroFrame
-			MarcarOcupadoFrame(numeroEntradaLibre)
-
+			MarcarOcupadoFrame(numeroFrame)
 			logger.Info("Marco Libre encontrado: %d", numeroEntradaLibre)
-			return numeroEntradaLibre
+			return numeroEntradaLibre, nil
 		}
 	}
-	return numeroEntradaLibre
+	return -10, logger.ErrNoMemory
 
-} // TODO: ERR HANDLING
+}
 
 func MarcarOcupadoFrame(numeroFrame int) {
 	g.MutexEstructuraFramesLibres.Lock()
@@ -183,48 +180,26 @@ func LiberarEntradaPagina(numeroFrameALiberar int) {
 	g.MutexCantidadFramesLibres.Unlock()
 }
 
-func AsignarDatosAPaginacion(proceso *g.Proceso, informacionEnBytes []byte) error {
-	logger.Info("Asignando datos a paginación para PID=%d", proceso.PID)
+func AsignarPaginasParaPID(proceso *g.Proceso, tamanio int) error {
+	logger.Info("Asignando espacio de páginas para PID <%d>...", proceso.PID)
 
-	tamanioPagina := g.MemoryConfig.PagSize
-	totalBytes := len(informacionEnBytes)
-
-	for offset := 0; offset < totalBytes; offset += tamanioPagina {
-		end := offset + tamanioPagina
-		if end > totalBytes {
-			end = totalBytes
-			// raro caso que no debería pasar pero bue,
-			// por las re dudas y que no rompa nada
-		}
-
-		fragmentoACargar := informacionEnBytes[offset:end]
-		numeroPagina := AsignarNumeroEntradaPagina()
-		if numeroPagina == -1 {
-			err := logger.ErrNoMemory
-			logger.Error("No hay marcos libres %v", err)
+	cantidadFrames := g.CalcularCantidadFrames(tamanio)
+	for i := 1; i <= cantidadFrames; i++ {
+		numeroFrame, err := AsignarFrameLibre()
+		if err != nil {
+			logger.Error("no hay frames libres en el sistema %v", err)
 			return err
 		}
-
 		entradaPagina := &g.EntradaPagina{
-			NumeroFrame:   numeroPagina,
+			NumeroFrame:   numeroFrame,
 			EstaPresente:  true,
-			EstaEnUso:     true,
+			EstaEnUso:     false,
 			FueModificado: false,
 		}
-
-		direccionFisica := numeroPagina * tamanioPagina
-
-		//ASEGURAR QUE EXISTE LA ENTRADA ANTES
-		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroPagina, entradaPagina)
-		logger.Info("Entrada insertada en tabla de PID=%d para página lógica %d", proceso.PID, numeroPagina)
-
-		errMod := ModificarEstadoEntradaEscritura(direccionFisica, proceso.PID, fragmentoACargar)
-		if errMod != nil {
-			logger.Error("error al modificar estado entrada de pagina: %v", errMod)
-			return errMod
-		}
-
+		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroFrame, entradaPagina)
+		logger.Info("El entrada #%d para el PID: <%d> se guardó en el frame <%d>...", i, proceso.PID, numeroFrame)
 	}
+	logger.Info("Se reservó correctamente el espacio para el PID: <%d>.", proceso.PID)
 	return nil
 }
 
