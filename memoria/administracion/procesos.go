@@ -4,7 +4,6 @@ import (
 	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
-	"sync"
 )
 
 func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo string) (err error) {
@@ -104,11 +103,11 @@ func RealizarDumpMemoria(pid int) (vector []string, err error) {
 		return vector, logger.ErrNoInstance
 	}
 
-	var entradas []int
-
-	entradas = RecolectarEntradasProcesoDump(*proceso)
-
+	entradas := RecolectarEntradasProcesoDump(*proceso)
 	tamanioPagina := g.MemoryConfig.PagSize
+
+	vector = make([]string, len(g.FramesLibres))
+
 	for i := 0; i < len(entradas); i++ {
 		numeroFrame := entradas[i]
 		inicio := numeroFrame * tamanioPagina
@@ -127,54 +126,19 @@ func RealizarDumpMemoria(pid int) (vector []string, err error) {
 		datosEnString := string(datos)
 		resul := fmt.Sprintf("Direccion Fisica: %d | Frame: %d | Datos: %q\n", inicio, numeroFrame, datosEnString)
 
-		g.MutexDump.Lock()
 		vector[numeroFrame] = resul
-		g.MutexDump.Unlock()
 	}
 
 	return
 }
 func RecolectarEntradasProcesoDump(proceso g.Proceso) (resultados []int) {
-	cantidadEntradas := g.MemoryConfig.EntriesPerPage
-	var wg sync.WaitGroup
-	canal := make(chan int, cantidadEntradas)
-
 	for _, subtabla := range proceso.TablaRaiz {
-		wg.Add(1)
-		go func(st *g.TablaPagina) {
-			defer wg.Done()
-			RecorrerTablaPaginaDeFormaConcurrenteDump(st, canal)
-		}(subtabla)
+		RecorrerTablaPagina(subtabla, &resultados)
 	}
-
-	go func() {
-		wg.Wait()
-		close(canal)
-	}()
-
-	for numeroFrame := range canal {
-		resultados = append(resultados, numeroFrame)
-	}
-
 	return
 }
 
-func RecorrerTablaPaginaDeFormaConcurrenteDump(tabla *g.TablaPagina, canal chan int) {
-
-	if tabla.Subtabla != nil {
-		for _, subTabla := range tabla.Subtabla {
-			RecorrerTablaPaginaDeFormaConcurrenteDump(subTabla, canal)
-		}
-		return
-	}
-	for i, entrada := range tabla.EntradasPaginas {
-		if tabla.EntradasPaginas[i].EstaPresente {
-			canal <- entrada.NumeroFrame
-		}
-	}
-}
-
-/*func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]*g.EntradaDump) {
+func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]int) {
 
 	if tabla.Subtabla != nil {
 		for _, subTabla := range tabla.Subtabla {
@@ -182,29 +146,13 @@ func RecorrerTablaPaginaDeFormaConcurrenteDump(tabla *g.TablaPagina, canal chan 
 		}
 		return
 	}
-	for i, entrada := range tabla.EntradasPaginas {
-		if tabla.EntradasPaginas[i].EstaPresente {
-			*resultados = append(*resultados, &g.EntradaDump{
-				DireccionFisica: g.MemoryConfig.PagSize * entrada.NumeroFrame,
-				NumeroFrame:     entrada.NumeroFrame,
-			})
+	for _, entrada := range tabla.EntradasPaginas {
+		if entrada.EstaPresente {
+			*resultados = append(*resultados, entrada.NumeroFrame)
+			logger.Debug("Agrego frame %d al dump", entrada.NumeroFrame)
 		}
 	}
 }
-
-func DumpGlobal() (resultado string) {
-	g.MutexProcesosPorPID.Lock()
-	for pid := range g.ProcesosPorPID {
-		g.MutexProcesosPorPID.Unlock()
-
-		resultado += RealizarDumpMemoria(pid) + "\n"
-
-		g.MutexProcesosPorPID.Lock()
-	}
-	g.MutexProcesosPorPID.Unlock()
-
-	return
-} */
 
 func InicializarMetricas() (metricas g.MetricasProceso) {
 	metricas = g.MetricasProceso{
