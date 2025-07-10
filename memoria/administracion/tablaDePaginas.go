@@ -14,7 +14,7 @@ func InicializarTablaRaiz() g.TablaPaginas {
 	cantidadEntradasPorTabla := g.MemoryConfig.EntriesPerPage
 	tabla := make(g.TablaPaginas, cantidadEntradasPorTabla)
 	for i := 0; i < cantidadEntradasPorTabla; i++ {
-		tabla[i] = &g.TablaPagina{} // inicializo cada entrada con un puntero válido
+		tabla[i] = &g.TablaPagina{}
 	}
 	return tabla
 }
@@ -41,24 +41,24 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 
 	if procesoBuscado.TablaRaiz == nil {
 		logger.Error("TablaRaiz es nil en BuscarEntradaPagina")
-		return nil, fmt.Errorf("tabla raiz nil")
+		return nil, logger.ErrNoTabla
 	}
 
 	if len(indices) == 0 {
 		logger.Error("Indices vacíos en BuscarEntradaPagina")
-		return nil, fmt.Errorf("indice vacío")
+		return nil, logger.ErrNoIndices
 	}
 
 	tablaApuntada := procesoBuscado.TablaRaiz[indices[0]]
 	if tablaApuntada == nil {
 		logger.Error("La tabla no existe o nunca fue inicializada")
-		return nil, fmt.Errorf("la tabla no existe o nunca fue inicializada")
+		return nil, logger.ErrNoTabla
 	}
 
 	for i := 1; i < len(indices)-1; i++ {
 		if tablaApuntada.Subtabla == nil {
 			logger.Error("La subtabla no existe o nunca fue inicializada")
-			return nil, fmt.Errorf("la subtabla no existe o nunca fue inicializada")
+			return nil, logger.ErrNoTabla
 		}
 		tablaApuntada = tablaApuntada.Subtabla[indices[i]]
 		if tablaApuntada == nil {
@@ -68,8 +68,7 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 	}
 
 	if tablaApuntada.EntradasPaginas == nil {
-		logger.Error("EntradasPaginas era nil para indices=%v", indices)
-		logger.Error("La entrada no fue nunca inicializada")
+		logger.Error("Las EntradasPaginas era nil para el índice <%v>", indices)
 		return nil, fmt.Errorf("la entrada nunca fue inicializada")
 	}
 
@@ -79,17 +78,17 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 		return nil, fmt.Errorf("la entrada buscada no existe")
 	}
 
-	logger.Info("Se encontró la entrada de número: %d", entradaDeseada.NumeroFrame)
+	//logger.Info("Se encontró la entrada de número: %d", entradaDeseada.NumeroFrame)
 
 	if entradaDeseada.EstaPresente == false {
-		logger.Error("No se encuentra presente en memoria el frame")
+		logger.Error("## No se encuentra presente en memoria el frame")
 		// TODO: Debería sacarse de SWAP y cargarse en memoria
 		return entradaDeseada, nil
 	}
 
 	IncrementarMetrica(procesoBuscado, 1, IncrementarAccesosTablasPaginas)
 	return entradaDeseada, nil
-} // TODO: Testear casos, pero por importancia, no porque tenga dudas
+}
 
 func BuscarEntradaEspecifica(tablaRaiz g.TablaPaginas, numeroEntrada int) (numeroFrameMemReal int) {
 	var contador *int
@@ -147,7 +146,7 @@ func AsignarFrameLibre() (int, error) {
 
 		if booleano == true {
 			MarcarOcupadoFrame(numeroFrame)
-			logger.Info("Marco Libre encontrado: %d", numeroFrame)
+			// 			logger.Info("Marco Libre encontrado: %d", numeroFrame)
 			return numeroFrame, nil
 		}
 	}
@@ -176,8 +175,7 @@ func LiberarEntradaPagina(numeroFrameALiberar int) {
 }
 
 func AsignarPaginasParaPID(proceso *g.Proceso, tamanio int) error {
-	logger.Info("Asignando espacio de páginas para PID <%d>...", proceso.PID)
-
+	//	logger.Info("Asignando espacio de páginas para PID <%d>...", proceso.PID)
 	cantidadFrames := g.CalcularCantidadFrames(tamanio)
 	for i := 1; i <= cantidadFrames; i++ {
 		numeroFrame, err := AsignarFrameLibre()
@@ -192,10 +190,9 @@ func AsignarPaginasParaPID(proceso *g.Proceso, tamanio int) error {
 			FueModificado: false,
 		}
 		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroFrame, entradaPagina)
-		logger.Info("El entrada #%d para el PID: <%d> se guardó en el frame <%d>...", i, proceso.PID, numeroFrame)
+		logger.Info("## La entrada <%d> para el PID <%d> se guardó en el frame <%d>...", i, proceso.PID, numeroFrame)
 	}
-	logger.Info("Se reservó correctamente el espacio para el PID: <%d>.", proceso.PID)
-	logger.Info("Quendan <%d> frames libes", g.CantidadFramesLibres)
+	logger.Info("Quedan <%d> frames libes", g.CantidadFramesLibres)
 	return nil
 }
 
@@ -223,7 +220,7 @@ func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, en
 	}
 	actual.EntradasPaginas[indices[len(indices)-1]] = entrada
 
-	logger.Info("Insertada entrada para página %d (indices=%v)", numeroPagina, indices)
+	logger.Info("Insertada entrada para página <%d> (indices=%v)", numeroPagina, indices)
 }
 
 func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string) g.ExitoEscrituraPagina {
@@ -264,15 +261,10 @@ func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU,
 
 	if proceso == nil {
 		logger.Error("Proceso recibido es nil")
-		return respuesta, fmt.Errorf("proceso nil")
+		return respuesta, logger.ErrProcessNil
 	}
 
-	cantInstrucciones := len(proceso.InstruccionesEnBytes)
-	logger.Info("PID <%d> - PC: %d - Cant. Instrucciones: %d", proceso.PID, pc, cantInstrucciones)
-
 	lineaInstruccion := proceso.InstruccionesEnBytes[pc]
-	logger.Info("PC a buscar: %d, Instrucción en bytes: %v", pc, lineaInstruccion)
-	logger.Info("PC a buscar: %d, Instrucción: %s", pc, string(lineaInstruccion))
 
 	respuesta.Instruccion = string(lineaInstruccion)
 	return respuesta, nil

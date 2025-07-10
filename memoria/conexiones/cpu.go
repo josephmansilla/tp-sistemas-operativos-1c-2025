@@ -42,8 +42,6 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 	pid := mensaje.PID
 	pc := mensaje.PC
 
-	logger.Info("Petición de instrucción para PID: %d - PC: %d", mensaje.PID, mensaje.PC)
-
 	g.MutexProcesosPorPID.Lock()
 	proceso, ok := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()

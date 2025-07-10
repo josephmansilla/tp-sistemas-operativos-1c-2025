@@ -21,21 +21,17 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string) error
 	}
 	defer file.Close()
 
-	logger.Info("Se leyó el archivo")
 	scanner := bufio.NewScanner(file)
 
 	pc := 0
 	for scanner.Scan() {
 		lineaEnString := scanner.Text()
-		logger.Info("Línea leída: %s", lineaEnString)
 		lineaEnBytes := []byte(lineaEnString)
 
 		proceso.InstruccionesEnBytes[pc] = lineaEnBytes
-		logger.Info("String en bytes: %d", len(lineaEnBytes))
 		pc++
 
 		if strings.TrimSpace(lineaEnString) == "EXIT" {
-			logger.Info("Se llegó al final del archivo")
 			break
 		}
 	}
@@ -44,7 +40,7 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string) error
 	}
 
 	IncrementarMetrica(proceso, pc, IncrementarInstruccionesSolicitadas)
-	logger.Info("Total de instrucciones cargadas para PID <%d>: %d", proceso.PID, pc)
+	logger.Info("<%d> instrucciones cargadas para PID <%d>", proceso.PID, pc)
 
 	return nil
 }

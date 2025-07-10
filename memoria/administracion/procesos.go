@@ -28,7 +28,7 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 		Metricas:             InicializarMetricas(),
 		InstruccionesEnBytes: make(map[int][]byte),
 	}
-	logger.Info("Proceso creado en memoria para PID <%d>", pid)
+	logger.Info("## Proceso creado en memoria para PID <%d>", pid)
 
 	g.MutexProcesosPorPID.Lock()
 	g.ProcesosPorPID[pid] = nuevoProceso
@@ -36,20 +36,17 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 
 	if nuevoProceso.TablaRaiz == nil {
 		logger.Error("TablaRaiz es nil para proceso PID <%d>", pid)
-		return fmt.Errorf("tabla raíz no inicializada")
+		return logger.ErrNoTabla
 	}
 
 	err = LecturaPseudocodigo(nuevoProceso, nombreArchPseudocodigo)
 	if err != nil {
 		return fmt.Errorf("error al leer pseudocódigo: %v", logger.ErrBadRequest)
 	}
-	logger.Info("Pseudocódigo leído correctamente para PID <%d>, Longitud en bytes: <%d>",
-		pid,
-		len(nuevoProceso.InstruccionesEnBytes))
 
 	err = AsignarPaginasParaPID(nuevoProceso, tamanioProceso)
 
-	logger.Info("Datos asignados correctamente para PID <%d>", pid)
+	logger.Info("## Datos asignados correctamente para PID <%d>", pid)
 
 	return nil
 }
@@ -70,7 +67,7 @@ func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
 			return g.MetricasProceso{}, err
 		}
 	}
-	logger.Info("Se liberó todo para el PID: %d", pid)
+	logger.Info("## Se liberó la memoria para el PID: %d", pid)
 	return
 }
 
@@ -100,7 +97,7 @@ func RealizarDumpMemoria(pid int) (vector []string, err error) {
 
 	if proceso == nil {
 		logger.Error("No existe el proceso solicitado para DUMP")
-		return vector, logger.ErrNoInstance
+		return vector, logger.ErrProcessNil
 	}
 
 	entradas := RecolectarEntradasProcesoDump(*proceso)
@@ -149,7 +146,6 @@ func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]int) {
 	for _, entrada := range tabla.EntradasPaginas {
 		if entrada.EstaPresente {
 			*resultados = append(*resultados, entrada.NumeroFrame)
-			logger.Debug("Agrego frame %d al dump", entrada.NumeroFrame)
 		}
 	}
 }
