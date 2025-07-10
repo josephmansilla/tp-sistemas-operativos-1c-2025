@@ -148,8 +148,8 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	pid := mensaje.PID
 	direccionFisica := mensaje.DireccionFisica
-	tamanioALeer := mensaje.TamanioARecorrer
 	datos := mensaje.DatosAEscribir
+	tamanioALeer := len(datos)
 
 	respuesta, err := adm.EscribirEspacioMemoria(pid, direccionFisica, tamanioALeer, datos)
 	if err != nil {
@@ -180,11 +180,12 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dumpFileName := fmt.Sprintf("%s/<%d>-<%s>.dmp", g.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
+	dumpFileName := fmt.Sprintf("%s%d-%s.dmp", g.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
 	logger.Info("## Se creo el file: %d ", dumpFileName)
+
 	dumpFile, err := os.OpenFile(dumpFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
-		fmt.Printf("Error al crear archivo de log para <%d-%s>: %v\n", dump.PID, dump.TimeStamp, err)
+		logger.Error("Error al crear archivo de log para <%d-%s>: %v\n", dump.PID, dump.TimeStamp, err)
 		os.Exit(1)
 	}
 	log.SetOutput(dumpFile)
@@ -198,6 +199,7 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error encontrando PID", http.StatusInternalServerError)
 		return
 	}
+	// contenido := make([]string, 2) contenido[0] = "bolas" contenido[1] = "sexo"
 	g.ParsearContenido(dumpFile, dump.PID, contenido)
 
 	logger.Info("## Archivo Dump fue creado con EXITO")

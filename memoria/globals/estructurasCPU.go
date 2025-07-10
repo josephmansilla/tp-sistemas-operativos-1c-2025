@@ -31,3 +31,20 @@ type MensajePedidoTablaCPU struct {
 type RespuestaTablaCPU struct {
 	NumeroMarco int `json:"numero_marco"`
 }
+
+type EscrituraProceso struct {
+	PID             int    `json:"pid"`
+	DireccionFisica int    `json:"direccion_fisica"`
+	DatosAEscribir  string `json:"datos_a_escribir"`
+}
+
+type LecturaProceso struct {
+	PID              int `json:"pid"`
+	DireccionFisica  int `json:"direccion_fisica"`
+	TamanioARecorrer int `json:"tamanio_a_recorrer"`
+}
+
+type ExitoLecturaMemoria struct {
+	Exito      error  `json:"exito"`
+	ValorLeido string `json:"valor_leido"`
+}

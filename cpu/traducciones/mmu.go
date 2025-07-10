@@ -20,19 +20,20 @@ type RespuestaTabla struct {
 }
 
 type MensajeEscritura struct {
-	PID       int    `json:"pid"`
-	DirFisica int    `json:"dirFisica"`
-	Datos     string `json:"datos"`
+	PID             int    `json:"pid"`
+	DireccionFisica int    `json:"direccion_fisica"`
+	DatosAEscribir  string `json:"datos_a_escribir"`
 }
 
 type MensajeLectura struct {
-	PID       int `json:"pid"`
-	DirFisica int `json:"dirFisica"`
-	Tamanio   int `json:"tamanio"`
+	PID              int `json:"pid"`
+	DireccionFisica  int `json:"direccion_fisica"`
+	TamanioARecorrer int `json:"tamanio_a_recorrer"`
 }
 
 type RespuestaLectura struct {
-	ValorLeido string `json:"valorLeido"`
+	Exito      error  `json:"exito"`
+	ValorLeido string `json:"valor_leido"`
 }
 
 // Función principal de traducción
@@ -122,9 +123,9 @@ func accederTabla(pid int, indices []int) (int, error) {
 
 func LeerEnMemoria(dirFisica int, tamanio int) (string, error) {
 	msg := MensajeLectura{
-		PID:       globals.PIDActual,
-		DirFisica: dirFisica,
-		Tamanio:   tamanio,
+		PID:              globals.PIDActual,
+		DireccionFisica:  dirFisica,
+		TamanioARecorrer: tamanio,
 	}
 
 	url := fmt.Sprintf("http://%s:%d/memoria/lectura",
@@ -153,9 +154,9 @@ func LeerEnMemoria(dirFisica int, tamanio int) (string, error) {
 
 func EscribirEnMemoria(dirFisica int, datos string) error {
 	msg := MensajeEscritura{
-		PID:       globals.PIDActual,
-		DirFisica: dirFisica,
-		Datos:     datos,
+		PID:             globals.PIDActual,
+		DireccionFisica: dirFisica,
+		DatosAEscribir:  datos,
 	}
 
 	url := fmt.Sprintf("http://%s:%d/memoria/escritura",

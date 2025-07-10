@@ -311,7 +311,7 @@ func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
 
 func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoSwap := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
+	retrasoSwap := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
 
 	var mensaje g.LecturaPagina
 	if err := data.LeerJson(w, r, &mensaje); err != nil {

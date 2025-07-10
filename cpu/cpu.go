@@ -28,6 +28,13 @@ func main() {
 	multiWriter := io.MultiWriter(os.Stdout, logFile)
 	log.SetOutput(multiWriter)
 
+	err = logger.ConfigureLogger(logFileName, "INFO")
+	if err != nil {
+		fmt.Println("No se pudo crear el logger -", err.Error())
+		os.Exit(1)
+	}
+	logger.Debug("Logger creado")
+
 	logger.Info("=========================================================")
 	logger.Info("======== Comenzó la ejecución del CPU con ID: %s ========", globals.ID)
 	logger.Info("=========================================================")

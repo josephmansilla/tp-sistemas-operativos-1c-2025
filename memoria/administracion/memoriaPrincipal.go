@@ -181,7 +181,7 @@ func SeleccionarEntradas(pid int, direccionFisica int, entradasNecesarias int) (
 } //TODO: rever no se usa el tamanioALeer
 
 func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionLectura g.ExitoLecturaMemoria, err error) {
-	confirmacionLectura = g.ExitoLecturaMemoria{Exito: err, DatosAEnviar: ""}
+	confirmacionLectura = g.ExitoLecturaMemoria{Exito: err, ValorLeido: ""}
 
 	entradasNecesarias, err := g.CalcularCantidadEntradasATraer(tamanioALeer)
 	if err != nil {
@@ -214,7 +214,7 @@ func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirm
 			break
 		}
 	}
-	return g.ExitoLecturaMemoria{Exito: nil, DatosAEnviar: string(datos)}, nil
+	return g.ExitoLecturaMemoria{Exito: nil, ValorLeido: string(datos)}, nil
 }
 
 func LogicaRecorrerMemoria(i int, cantEntradas int, entrada g.EntradaPagina, dirF int, bytesRestantes int) (inicio int, limite int, err error) {
