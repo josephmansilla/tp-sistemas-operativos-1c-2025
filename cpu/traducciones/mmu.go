@@ -36,6 +36,17 @@ type RespuestaLectura struct {
 	ValorLeido string `json:"valor_leido"`
 }
 
+var cache *CachePaginas
+var tlb *TLB
+
+func InitCache() {
+	cache = NuevaCachePaginas()
+}
+
+func InitTLB() {
+	tlb = NuevaTLB()
+}
+
 // Función principal de traducción
 func Traducir(dirLogica int) int {
 	tamPagina := globals.TamanioPagina
@@ -45,18 +56,12 @@ func Traducir(dirLogica int) int {
 	nroPagina := dirLogica / tamPagina
 	desplazamiento := dirLogica % tamPagina
 
-	var cache = NuevaCachePaginas()
-
 	//Primero verifico si la cache esta activa
 	if cache.EstaActiva() {
 		logger.Info("Cache Activa")
 	} else {
 		logger.Info("Cache Inactiva")
 	}
-
-	// Inicializo la TLB
-	var tlb = NuevaTLB()
-	tlb.AgregarEntrada(4, 7)
 
 	// Consulto la TLB
 	if marco, ok := tlb.Buscar(nroPagina); ok {
