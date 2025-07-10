@@ -345,7 +345,7 @@ func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 
 func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
+	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
 
 	var mensaje g.EscrituraPagina
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
@@ -365,8 +365,6 @@ func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 	respuesta := EscribirEspacioEntrada(pid, direccionFisica, datosASobreEscribir)
 
 	logger.Info("## PID: <%d> - Actualizar Página Completa - Dir. Física: <%d>", pid, direccionFisica)
-
-	time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Second)
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)

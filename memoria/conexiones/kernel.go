@@ -102,7 +102,7 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
+	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
 
 	var mensaje g.LecturaProceso
 	err := data.LeerJson(w, r, &mensaje)
@@ -122,8 +122,6 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
 
-	time.Sleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Second)
-
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
 
@@ -141,7 +139,7 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Second
+	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
 
 	var mensaje g.EscrituraProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
@@ -160,8 +158,6 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Info("## PID: <%d> - <Escritura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
-
-	time.Sleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Second)
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
