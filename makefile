@@ -3,9 +3,9 @@ RUN = go run
 # === Prueba: Corto Plazo ===
 corto:
 	cd memoria && $(RUN) memoria.go cortoPlazo &
-	sleep 1
+	sleep 4
 	cd kernel && $(RUN) kernel.go PLANI_CORTO_PLAZO 0 cortoplazo &
-	sleep 1
+	sleep 4
 	cd cpu && $(RUN) cpu.go 1 1CP &
 	cd cpu && $(RUN) cpu.go 2 2CP &
 	sleep 1
@@ -14,9 +14,9 @@ corto:
 # === Prueba: Mediano/Largo Plazo ===
 lym:
 	cd memoria && $(RUN) memoria.go medianoLargoPlazo &
-	sleep 1
+	sleep 4
 	cd kernel && $(RUN) kernel.go PLANI_LYM_IO 0 medianoplazo &
-	sleep 1
+	sleep 4
 	cd cpu && $(RUN) cpu.go 1 PLANI &
 	sleep 1
 	cd io && $(RUN) io.go DISCO &
@@ -24,9 +24,9 @@ lym:
 # === Prueba: SWAP ===
 swap:
 	cd memoria && $(RUN) memoria.go memoriaSwap &
-	sleep 1
+	sleep 4
 	cd kernel && $(RUN) kernel.go MEMORIA_IO 90 swap &
-	sleep 1
+	sleep 4
 	cd cpu && $(RUN) cpu.go 1 SWAP &
 	sleep 1
 	cd io && $(RUN) io.go DISCO &
@@ -34,9 +34,9 @@ swap:
 # === Prueba: CACHE ===
 cache:
 	cd memoria && $(RUN) memoria.go memoriaCache &
-	sleep 1
+	sleep 4
 	cd kernel && $(RUN) kernel.go MEMORIA_BASE 256 cache &
-	sleep 1
+	sleep 4
 	cd cpu && $(RUN) cpu.go 1 CACHE &
 	sleep 1
 	cd io && $(RUN) io.go DISCO &
@@ -44,9 +44,9 @@ cache:
 # === Prueba: Estabilidad General (EG) ===
 eg:
 	cd memoria && $(RUN) memoria.go estabilidadGeneral &
-	sleep 1
+	sleep 4
 	cd kernel && $(RUN) kernel.go ESTABILIDAD_GENERAL 0 estabilidad &
-	sleep 1
+	sleep 4
 	cd cpu && $(RUN) cpu.go 1 1EG &
 	cd cpu && $(RUN) cpu.go 2 2EG &
 	cd cpu && $(RUN) cpu.go 3 3EG &
