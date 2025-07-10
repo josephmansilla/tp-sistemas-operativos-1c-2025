@@ -26,6 +26,10 @@ type CachePaginas struct {
 var Cache *CachePaginas
 var Max int
 
+func InitCache() {
+	Cache = NuevaCachePaginas()
+}
+
 func NuevaCachePaginas() *CachePaginas {
 	if Max <= 0 {
 		return nil
