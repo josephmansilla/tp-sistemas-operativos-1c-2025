@@ -4,7 +4,6 @@ import (
 	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
-	"sync"
 )
 
 func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo string) (err error) {
@@ -29,7 +28,7 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 		Metricas:             InicializarMetricas(),
 		InstruccionesEnBytes: make(map[int][]byte),
 	}
-	logger.Info("Proceso creado en memoria para PID <%d>", pid)
+	logger.Info("## Proceso creado en memoria para PID <%d>", pid)
 
 	g.MutexProcesosPorPID.Lock()
 	g.ProcesosPorPID[pid] = nuevoProceso
@@ -37,20 +36,17 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 
 	if nuevoProceso.TablaRaiz == nil {
 		logger.Error("TablaRaiz es nil para proceso PID <%d>", pid)
-		return fmt.Errorf("tabla raíz no inicializada")
+		return logger.ErrNoTabla
 	}
 
 	err = LecturaPseudocodigo(nuevoProceso, nombreArchPseudocodigo)
 	if err != nil {
 		return fmt.Errorf("error al leer pseudocódigo: %v", logger.ErrBadRequest)
 	}
-	logger.Info("Pseudocódigo leído correctamente para PID <%d>, Longitud en bytes: <%d>",
-		pid,
-		len(nuevoProceso.InstruccionesEnBytes))
 
 	err = AsignarPaginasParaPID(nuevoProceso, tamanioProceso)
 
-	logger.Info("Datos asignados correctamente para PID <%d>", pid)
+	logger.Info("## Datos asignados correctamente para PID <%d>", pid)
 
 	return nil
 }
@@ -71,7 +67,7 @@ func LiberarMemoriaProceso(pid int) (metricas g.MetricasProceso, err error) {
 			return g.MetricasProceso{}, err
 		}
 	}
-	logger.Info("Se liberó todo para el PID: %d", pid)
+	logger.Info("## Se liberó la memoria para el PID: %d", pid)
 	return
 }
 
@@ -101,14 +97,14 @@ func RealizarDumpMemoria(pid int) (vector []string, err error) {
 
 	if proceso == nil {
 		logger.Error("No existe el proceso solicitado para DUMP")
-		return vector, logger.ErrNoInstance
+		return vector, logger.ErrProcessNil
 	}
 
-	var entradas []int
-
-	entradas = RecolectarEntradasProcesoDump(*proceso)
-
+	entradas := RecolectarEntradasProcesoDump(*proceso)
 	tamanioPagina := g.MemoryConfig.PagSize
+
+	vector = make([]string, len(g.FramesLibres))
+
 	for i := 0; i < len(entradas); i++ {
 		numeroFrame := entradas[i]
 		inicio := numeroFrame * tamanioPagina
@@ -127,54 +123,19 @@ func RealizarDumpMemoria(pid int) (vector []string, err error) {
 		datosEnString := string(datos)
 		resul := fmt.Sprintf("Direccion Fisica: %d | Frame: %d | Datos: %q\n", inicio, numeroFrame, datosEnString)
 
-		g.MutexDump.Lock()
 		vector[numeroFrame] = resul
-		g.MutexDump.Unlock()
 	}
 
 	return
 }
 func RecolectarEntradasProcesoDump(proceso g.Proceso) (resultados []int) {
-	cantidadEntradas := g.MemoryConfig.EntriesPerPage
-	var wg sync.WaitGroup
-	canal := make(chan int, cantidadEntradas)
-
 	for _, subtabla := range proceso.TablaRaiz {
-		wg.Add(1)
-		go func(st *g.TablaPagina) {
-			defer wg.Done()
-			RecorrerTablaPaginaDeFormaConcurrenteDump(st, canal)
-		}(subtabla)
+		RecorrerTablaPagina(subtabla, &resultados)
 	}
-
-	go func() {
-		wg.Wait()
-		close(canal)
-	}()
-
-	for numeroFrame := range canal {
-		resultados = append(resultados, numeroFrame)
-	}
-
 	return
 }
 
-func RecorrerTablaPaginaDeFormaConcurrenteDump(tabla *g.TablaPagina, canal chan int) {
-
-	if tabla.Subtabla != nil {
-		for _, subTabla := range tabla.Subtabla {
-			RecorrerTablaPaginaDeFormaConcurrenteDump(subTabla, canal)
-		}
-		return
-	}
-	for i, entrada := range tabla.EntradasPaginas {
-		if tabla.EntradasPaginas[i].EstaPresente {
-			canal <- entrada.NumeroFrame
-		}
-	}
-}
-
-/*func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]*g.EntradaDump) {
+func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]int) {
 
 	if tabla.Subtabla != nil {
 		for _, subTabla := range tabla.Subtabla {
@@ -182,29 +143,12 @@ func RecorrerTablaPaginaDeFormaConcurrenteDump(tabla *g.TablaPagina, canal chan 
 		}
 		return
 	}
-	for i, entrada := range tabla.EntradasPaginas {
-		if tabla.EntradasPaginas[i].EstaPresente {
-			*resultados = append(*resultados, &g.EntradaDump{
-				DireccionFisica: g.MemoryConfig.PagSize * entrada.NumeroFrame,
-				NumeroFrame:     entrada.NumeroFrame,
-			})
+	for _, entrada := range tabla.EntradasPaginas {
+		if entrada.EstaPresente {
+			*resultados = append(*resultados, entrada.NumeroFrame)
 		}
 	}
 }
-
-func DumpGlobal() (resultado string) {
-	g.MutexProcesosPorPID.Lock()
-	for pid := range g.ProcesosPorPID {
-		g.MutexProcesosPorPID.Unlock()
-
-		resultado += RealizarDumpMemoria(pid) + "\n"
-
-		g.MutexProcesosPorPID.Lock()
-	}
-	g.MutexProcesosPorPID.Unlock()
-
-	return
-} */
 
 func InicializarMetricas() (metricas g.MetricasProceso) {
 	metricas = g.MetricasProceso{

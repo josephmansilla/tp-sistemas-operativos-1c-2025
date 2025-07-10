@@ -33,9 +33,7 @@ func CalcularCantidadFrames(tamanio int) (cantidad int) {
 func CalcularEjecutarSleep(tiempoTranscurrido time.Duration, retraso time.Duration) {
 	tiempoRestante := retraso - tiempoTranscurrido
 	if tiempoRestante < retraso {
-		logger.Info("Se duerme por %f", tiempoRestante)
 		time.Sleep(tiempoRestante)
-		logger.Info("Resucité...")
 	}
 }
 

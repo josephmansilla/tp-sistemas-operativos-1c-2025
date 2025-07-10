@@ -3,12 +3,15 @@ package logger
 import "errors"
 
 var (
-	ErrBadRequest      = errors.New("Bad Request")
-	ErrInternalFailure = errors.New("Internal Failure")
-	ErrNotFound        = errors.New("Not Found")
-	ErrIsEmpty         = errors.New("Empty")
-	ErrNoInstance      = errors.New("No Instance Found")
-	ErrSegmentFault    = errors.New("Segment Fault")
-	ErrNoMemory        = errors.New("No memory")
-	ErrNoFreePages     = errors.New("No pages available")
+	ErrBadRequest      = errors.New("bad Request")
+	ErrInternalFailure = errors.New("internal Failure")
+	ErrNotFound        = errors.New("not Found")
+	ErrIsEmpty         = errors.New("empty")
+	ErrNoInstance      = errors.New("no Instance Found")
+	ErrSegmentFault    = errors.New("segment Fault")
+	ErrNoMemory        = errors.New("no memory")
+	ErrNoFreePages     = errors.New("no pages available")
+	ErrProcessNil      = errors.New("process requested is nil")
+	ErrNoTabla         = errors.New("no Tabla Found")
+	ErrNoIndices       = errors.New("no Indices Found")
 )

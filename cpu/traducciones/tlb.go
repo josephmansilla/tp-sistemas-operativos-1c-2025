@@ -2,10 +2,11 @@ package traducciones
 
 import (
 	"container/list"
-	"github.com/sisoputnfrba/tp-golang/cpu/globals"
-	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"sync"
 	"time"
+
+	"github.com/sisoputnfrba/tp-golang/cpu/globals"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
 type EntradaTLB struct {
@@ -15,8 +16,8 @@ type EntradaTLB struct {
 }
 
 type TLB struct {
-	entradas    map[int]*list.Element // clave: página
-	orden       *list.List            // para FIFO(Back()--> Elimino el ultimo)/LRU(MoveToFront())
+	entradas    map[int]*list.Element
+	orden       *list.List
 	maxEntradas int
 	algoritmo   string
 	mutex       sync.Mutex
@@ -24,21 +25,26 @@ type TLB struct {
 
 func NuevaTLB() *TLB {
 	algoritmo := globals.ClientConfig.TlbReplacement
+	maxEntradas := globals.ClientConfig.TlbEntries
 
 	if algoritmo != "FIFO" && algoritmo != "LRU" {
-		logger.Info("Algoritmo TLB inválido: %s", algoritmo)
+		logger.Warn("Algoritmo TLB inválido: %s", algoritmo)
 	}
+
 	return &TLB{
 		entradas:    make(map[int]*list.Element),
 		orden:       list.New(),
-		maxEntradas: globals.ClientConfig.TlbEntries,
+		maxEntradas: maxEntradas,
 		algoritmo:   algoritmo,
 	}
 }
 
-// busco la pagina y devuelvo el marco, si esta es un hit
-// (tlb *TLB) para trabajar y modificar directamente la TLB y no una copia
 func (tlb *TLB) Buscar(nroPagina int) (int, bool) {
+	if tlb.maxEntradas == 0 {
+		logger.Info("TLB deshabilitada (0 entradas)")
+		return -1, false
+	}
+
 	tlb.mutex.Lock()
 	defer tlb.mutex.Unlock()
 
@@ -46,18 +52,23 @@ func (tlb *TLB) Buscar(nroPagina int) (int, bool) {
 		if tlb.algoritmo == "LRU" {
 			tlb.orden.MoveToFront(elem)
 		}
-		logger.Info("PID: %d - TLB HIT - Pagina: %d", globals.PIDActual, nroPagina)
+		logger.Info("PID: %d - TLB HIT - Página: %d", globals.PIDActual, nroPagina)
 		return elem.Value.(EntradaTLB).Marco, true
 	}
-	logger.Info("PID: %d - TLB MISS - Pagina: %d", globals.PIDActual, nroPagina)
+
+	logger.Info("PID: %d - TLB MISS - Página: %d", globals.PIDActual, nroPagina)
 	return -1, false
 }
 
 func (tlb *TLB) AgregarEntrada(nroPagina int, marco int) {
+	if tlb.maxEntradas == 0 {
+		logger.Debug("TLB deshabilitada: no se agrega entrada")
+		return
+	}
+
 	tlb.mutex.Lock()
 	defer tlb.mutex.Unlock()
 
-	// Si ya existe, actualizar
 	if elem, ok := tlb.entradas[nroPagina]; ok {
 		elem.Value = EntradaTLB{NroPagina: nroPagina, Marco: marco}
 		if tlb.algoritmo == "LRU" {
@@ -66,11 +77,8 @@ func (tlb *TLB) AgregarEntrada(nroPagina int, marco int) {
 		return
 	}
 
-	// Si está llena, elegir víctima
 	if len(tlb.entradas) >= tlb.maxEntradas {
-		var victima *list.Element
-		victima = tlb.orden.Back() //Para los dos algoritmos voy a borrar siempre el ultimo elemento
-
+		victima := tlb.orden.Back()
 		if victima != nil {
 			entrada := victima.Value.(EntradaTLB)
 			delete(tlb.entradas, entrada.NroPagina)
@@ -78,7 +86,6 @@ func (tlb *TLB) AgregarEntrada(nroPagina int, marco int) {
 		}
 	}
 
-	// Agregar nueva entrada al frente
 	nuevaEntrada := EntradaTLB{NroPagina: nroPagina, Marco: marco}
 	elem := tlb.orden.PushFront(nuevaEntrada)
 	tlb.entradas[nroPagina] = elem

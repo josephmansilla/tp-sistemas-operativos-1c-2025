@@ -16,8 +16,7 @@ func InicializarMemoriaPrincipal() {
 	g.InstanciarEstructurasGlobales()
 	g.InicializarSemaforos()
 
-	logger.Info("Tamanio Memoria Principal de %d", g.MemoryConfig.MemorySize)
-	logger.Info("Memoria Principal Inicializada con %d con %d frames de %d.",
+	logger.Info("Memoria Principal Inicializada con %d bytes de tamaño con %d frames de %d.",
 		tamanioMemoriaPrincipal, cantidadFrames, tamanioPagina)
 }
 
@@ -29,7 +28,6 @@ func ConfigurarFrames(cantidadFrames int) {
 	}
 	g.MutexEstructuraFramesLibres.Unlock()
 	g.CantidadFramesLibres = cantidadFrames
-	logger.Info("Todos los frames se crearon y se liberaron correctamente.")
 }
 
 func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
@@ -66,7 +64,7 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 	copy(pseudocodigoEnBytes, g.MemoriaPrincipal[direccionFisica:direccionFisica+bytesRestantes])
 	g.MutexMemoriaPrincipal.Unlock()
 
-	logger.Info("Se obtuvo el pseudocodigo de memoria: %d", pseudocodigoEnBytes)
+	logger.Debug("Se obtuvo el pseudocodigo de memoria: %d", pseudocodigoEnBytes)
 
 	pseudocodigoEnString := string(pseudocodigoEnBytes)
 
@@ -207,7 +205,7 @@ func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirm
 		datos = append(datos, g.MemoriaPrincipal[inicioLectura:finLectura]...)
 		g.MutexMemoriaPrincipal.Unlock()
 
-		logger.Error("Datos en bytes leidos: %d", datos)
+		logger.Debug("Datos en bytes leidos: %d", datos)
 
 		bytesRestantes -= finLectura - inicioLectura
 		if bytesRestantes <= 0 {
@@ -247,8 +245,8 @@ func LogicaRecorrerMemoria(i int, cantEntradas int, entrada g.EntradaPagina, dir
 		err = logger.ErrSegmentFault
 		return 0, 0, err
 	}
-	logger.Error("Inicio de lectura: %d", inicio)
-	logger.Error("Limite de lectura: %d", limite)
+	logger.Debug("Inicio de lectura: %d", inicio)
+	logger.Debug("Limite de lectura: %d", limite)
 	return inicio, limite, nil
 }
 

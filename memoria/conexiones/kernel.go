@@ -125,8 +125,9 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
 
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
+	if err != nil {
+		logger.Error("Error al leer en memoria: %v", err)
+		http.Error(w, "Error al leer en memoria", http.StatusInternalServerError)
 		return
 	}
 
@@ -162,8 +163,10 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
 
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
+	if err != nil {
+		logger.Error("Error al escribir en memoria: %v", err)
+		http.Error(w, "Error al escribir en memoria", http.StatusInternalServerError)
+		return
 	}
 
 	logger.Info("## Escritura en espacio de memoria Éxitosa")
@@ -181,7 +184,6 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dumpFileName := fmt.Sprintf("%s%d-%s.dmp", g.MemoryConfig.DumpPath, dump.PID, dump.TimeStamp)
-	logger.Info("## Se creo el file: %d ", dumpFileName)
 
 	dumpFile, err := os.OpenFile(dumpFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
@@ -191,7 +193,7 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 	log.SetOutput(dumpFile)
 	defer dumpFile.Close()
 
-	logger.Info("## PID: <%d>  - Memory Dump solicitado", dump.PID)
+	logger.Info("## PID: <%d> - Memory Dump solicitado", dump.PID)
 
 	contenido, err := adm.RealizarDumpMemoria(dump.PID)
 	if err != nil {
