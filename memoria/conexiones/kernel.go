@@ -219,6 +219,9 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		Exito:   true,
 		Mensaje: "Proceso cargado a SWAP",
 	}
+	//aca me parece que tenes que Avisar por un endpoint a kernel que ya hiciste el pase a swap, la response siempre manda que
+	//si lo cargo a swap inmediatamente kernel te manda el pedido y en realidad no es instantanea. y como la comunicacion
+	//http tiene un timeOut la respuesta tuya tiene que ser en un POST a un endpoint de kernel.
 	g.MutexSwapBool.Lock()
 	estaProcesoEnSwap := g.EstaEnSwap[mensaje.PID]
 	g.MutexSwapBool.Unlock()
