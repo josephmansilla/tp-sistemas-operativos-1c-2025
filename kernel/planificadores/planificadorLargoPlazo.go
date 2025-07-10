@@ -123,8 +123,8 @@ func ManejadorCreacionProcesos() {
 		pid := msg.PID
 		logger.Info("Solicitud INIT_PROC recibida: filename=%s, size=%d, pid=%d", fileName, size, pid)
 
-		//AVISAR QUE SE CREO UN PROCESO AL LARGO PLAZO
-		<-Utils.InitProcess
+		// AVISAR QUE SE CREO UN PROCESO AL LARGO PLAZO
+		Utils.InitProcess <- struct{}{}
 	}
 }
 
@@ -181,7 +181,7 @@ func ManejadorFinalizacionProcesos() {
 		if err != nil {
 			logger.Error("Error avisando fin proceso pid=%d: %v", pid, err)
 			continue
-		}*/ //MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
+		}*///MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
 
 		//ACA PONER UN WAIT/TUBERIA que espere a que memoria libere el proceso, ES PARA TENER UN ORDEN
 
