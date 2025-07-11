@@ -68,7 +68,7 @@ var (
 	NotificarIOLibre        chan IODesconexion
 	NotificarDesconexion    chan IODesconexion    //Desconexion DE IO
 	ContextoInterrupcion    chan InterruptProcess //FIN DE EXECUTE
-	NotificarTimeoutBlocked chan struct{}
+	NotificarTimeoutBlocked chan int
 	FinIODesdeSuspBlocked   chan IOEvent
 )
 
@@ -95,7 +95,7 @@ func InicializarCanales() {
 	NotificarDesconexion = make(chan IODesconexion, 10)
 	ContextoInterrupcion = make(chan InterruptProcess, 10)
 	ChannelProcessBlocked = make(chan BlockProcess, 10)
-	NotificarTimeoutBlocked = make(chan struct{}, 1)
+	NotificarTimeoutBlocked = make(chan int)
 	FinIODesdeSuspBlocked = make(chan IOEvent, 0)
 }
 

@@ -3,6 +3,7 @@ package planificadores
 import (
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
+	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
@@ -24,49 +25,6 @@ func ManejadorMedianoPlazo() {
 		go monitorBloqueado(procesoBloqueado)
 	}
 }
-
-//Cuando un proceso al estado BLOCKED se deberá iniciar un timer
-//el cual se encargará de esperar un tiempo determinado por archivo de configuración,
-
-/*func monitorBloqueado(proceso Utils.BlockProcess) {
-	logger.Info("Arrancó el TIMER del proceso: PID <%d>", proceso.PID)
-	suspension := time.Duration(globals.KConfig.SuspensionTime) * time.Millisecond
-
-	timer := time.NewTimer(suspension)
-	defer timer.Stop()
-
-	pid := proceso.PID
-
-	//Al terminar ese tiempo, si el proceso continúa en estado BLOCKED,
-	//deberá transicionar al estado SUSP. BLOCKED.
-
-	select {
-	//Cuando un dispositivo termina la IO pedida para un Proceso
-	case ioFin := <-Utils.NotificarFinIO:
-		if ioFin.PID == pid {
-			// llegó fin de IO antes del timeout: pasa a READY directo
-			if moverDeBlockedAReady(ioFin) {
-				logger.Info("PID <%d> terminó IO antes del timeout → READY", pid)
-			}
-		}
-	case <-timer.C:
-		// el timer expiró y sigue en BLOCKED → pasa a SUSP.BLOCKED
-		//En este momento se debe informar al módulo memoria que debe ser movido de
-		//memoria principal a swap. Cabe aclarar que en este momento vamos a tener
-		//más memoria libre en el sistema por lo que se debe verificar si uno o
-		//más nuevos procesos pueden entrar (tanto de la cola NEW como de SUSP. READY).
-
-		if moverDeBlockedASuspBlocked(pid) {
-			logger.Info("PID <%d> timeout expired → SUSP.BLOCKED", pid)
-			// avisar a Memoria que lo saque a swap
-			// TODO comunicacion.SolicitarSuspenderEnMemoria(pid)
-			// señal al largo plazo para reintentar NEW/SUSP.READY
-			Utils.InitProcess <- struct{}{}
-			//aca meter un signal/tuberia al endpoint que atiende los fin de IO para que pueda pasar el proceso a susp.ready
-			<-Utils.NotificarTimeoutBlocked
-		}
-	}
-}*/
 
 // moverDeBlockedAReady quita de BLOCKED y encola en READY
 func moverDeBlockedAReady(ioLibre Utils.IODesconexion) bool {
@@ -162,12 +120,17 @@ func monitorBloqueado(procesoAsuspender Utils.BlockProcess) {
 		// timeout expired → SUSP.BLOCKED
 		if moverDeBlockedASuspBlocked(pid) {
 			logger.Info("PID <%d> → SUSP.BLOCKED (timeout)", pid)
-			// señal al largo plazo
-			Utils.InitProcess <- struct{}{}
-			//aca falta AVISAR A MEMORIA QUE HAGA T O D O  EL QUILOMBO DE SWAP Y ESPERAR EN EL MISMO HILO LA RESPUESTA
-			// **orden** para la etapa de SuspBlocked→SuspReady
-			//Utils.ChannelTimeoutBlocked <- pid
-			//ACA LE AVISO AL CORTO PLAZO PARA QUE PASE EL PROCESO A SUSP.READY ANQUE EN REALIDAD LO PASO YO
+
+			if err := comunicacion.SolicitarSuspensionEnMemoria(pid); err == nil {
+				// ahora esperamos la confirmación DESDE MEMORIA VIA ENDPOINT...
+				go func() {
+					//aca te manda el PID aunque no es necesario ya que solo funciona como semaforo
+					<-Utils.NotificarTimeoutBlocked
+					// señal al largo plazo para que intente replanificar
+					Utils.InitProcess <- struct{}{}
+				}()
+			}
+			//ACA LE AVISO a la  funcion AtenderSuspBlockedAFinIO() PARA QUE PASE EL PROCESO A SUSP.READY ANQUE EN REALIDAD LO PASO YO
 			Utils.FinIODesdeSuspBlocked <- Utils.IOEvent{
 				PID:    pid,
 				Nombre: procesoAsuspender.Nombre,
@@ -176,37 +139,53 @@ func monitorBloqueado(procesoAsuspender Utils.BlockProcess) {
 	}
 }
 
+// pasa de SUSP BLOQUEADO A SUSP READY
 func AtenderSuspBlockedAFinIO() {
 	for {
-		ioFin := <-Utils.FinIODesdeSuspBlocked // canal exclusivo para SUSP.BLOCKED
+		// 1) ACA ESPERO LA PRIMERA SEÑAL QUE EL PROCESO YA ESTA EN SUSPENDIDO BLOQUEADO
+		ev := <-Utils.FinIODesdeSuspBlocked
 
-		// Buscar en SUSP.BLOCKED
-		Utils.MutexBloqueadoSuspendido.Lock()
-		var proceso *pcb.PCB
-		for _, p := range algoritmos.ColaBloqueadoSuspendido.Values() {
-			if p.PID == ioFin.PID {
-				proceso = p
-				break
+		// EN ESTE HILO ESPERO LA SEÑAL DE FIN DE IO QUE
+		//INDICA QUE EL PROCESO QUE ESTA EN SUSPENDIDO BLOQUEADO PASE A SUSPENDIDO READY
+		go func(ev Utils.IOEvent) {
+			// 2) ahora esperamos la señal real de fin de IO para ese PID
+			for {
+				ioFin := <-Utils.NotificarFinIO
+				if ioFin.PID == ev.PID {
+					break
+				}
+				// si no coincide, se devolveee al canal para que
+				// otros handlers puedan leerla
+				go func(other Utils.IODesconexion) {
+					Utils.NotificarFinIO <- other
+				}(ioFin)
 			}
-		}
 
-		if proceso == nil {
+			// ahora sí, sacamos de SUSP.BLOCKED y pasamos a SUSP.READY
+			Utils.MutexBloqueadoSuspendido.Lock()
+			var p *pcb.PCB
+			for _, x := range algoritmos.ColaBloqueadoSuspendido.Values() {
+				if x.PID == ev.PID {
+					p = x
+					break
+				}
+			}
+			if p != nil {
+				algoritmos.ColaBloqueadoSuspendido.Remove(p)
+				pcb.CambiarEstado(p, pcb.EstadoSuspReady)
+
+				Utils.MutexSuspendidoReady.Lock()
+				algoritmos.ColaSuspendidoReady.Add(p)
+				Utils.MutexSuspendidoReady.Unlock()
+
+				logger.Info("## (<%d>) Pasa de SUSP.BLOCKED a SUSP.READY", p.PID)
+				// notificamos al planificador de largo para que lo intente meter YA QUE SE ACTIVA CADA VEZ QUE UN PROCESO LLEGA A NEW O
+				//SUSPENDIDO READY
+				Utils.InitProcess <- struct{}{}
+			} else {
+				logger.Warn("AtenderSuspBlockedAFinIO: PID %d no estaba en SUSP.BLOCKED", ev.PID)
+			}
 			Utils.MutexBloqueadoSuspendido.Unlock()
-			logger.Warn("No se encontró el proceso <%d> en SUSP.BLOCKED", ioFin.PID)
-			continue
-		}
-
-		algoritmos.ColaBloqueadoSuspendido.Remove(proceso)
-		Utils.MutexBloqueadoSuspendido.Unlock()
-
-		// Cambiar a SUSP.READY
-		Utils.MutexSuspendidoReady.Lock()
-		pcb.CambiarEstado(proceso, pcb.EstadoSuspReady)
-		algoritmos.ColaSuspendidoReady.Add(proceso)
-		logger.Info("## (<%d>) Pasa de SUSP.BLOCKED a SUSP.READY", proceso.PID)
-		Utils.MutexSuspendidoReady.Unlock()
-
-		// Notificar al planificador largo plazo que puede intentar meterlo a memoria
-		Utils.InitProcess <- struct{}{}
+		}(ev)
 	}
 }
