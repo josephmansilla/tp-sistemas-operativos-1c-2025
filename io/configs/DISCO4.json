@@ -1,0 +1,8 @@
+{
+  "ip_kernel": "192.168.1.39",
+  "port_kernel": 8081,
+  "port_io": 8092,
+  "ip_io": "192.168.1.40",
+  "log_level": "INFO",
+  "type": "DISCO"
+}

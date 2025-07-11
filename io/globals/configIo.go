@@ -8,6 +8,7 @@ type Config struct {
 	PortIo     int    `json:"port_io"`
 	IpIo       string `json:"ip_io"`
 	LogLevel   string `json:"log_level"`
+	Type       string `json:"type"`
 }
 
 var Nombre string
@@ -28,6 +29,9 @@ func (cfg Config) Validate() error {
 	}
 	if cfg.LogLevel == "" {
 		return errors.New("falta el campo 'log_level'")
+	}
+	if cfg.Type == "" {
+		return errors.New("falta el campo 'type'")
 	}
 	return nil
 }

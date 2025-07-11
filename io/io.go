@@ -58,27 +58,23 @@ func main() {
 		fmt.Println("Falta el parametro: nombre de la interfaz de io")
 		os.Exit(1)
 	}
-	nombre := os.Args[1]
-	globals.Nombre = nombre
+	config := os.Args[1]
 
 	// ----------------------------------------------------
 	// ------------- CARGO LOGS DE IO EN TXT --------------
 	// ----------------------------------------------------
-	logFileName := fmt.Sprintf("./logs/io_%s.log", nombre)
+	logFileName := fmt.Sprintf("./logs/io_%s.log", config)
 	var err = logger.ConfigureLogger(logFileName, "INFO")
 	if err != nil {
 		fmt.Println("No se pudo crear el logger -", err.Error())
 		os.Exit(1)
 	}
 	logger.Debug("Logger creado")
-
 	logger.Info("Comenzó ejecucion del IO")
-	logger.Info("Nombre de la Interfaz de IO: %s", nombre)
-
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DEL CONFIG ------------------
 	// ----------------------------------------------------
-	configFilename := fmt.Sprintf("%s.json", nombre)
+	configFilename := fmt.Sprintf("%s.json", config)
 	configPath := fmt.Sprintf("./configs/%s", configFilename)
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
@@ -99,6 +95,8 @@ func main() {
 		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
 	}
 
+	var nombre = globals.IoConfig.Type
+	logger.Info("Nombre de la Interfaz de IO: %s", globals.IoConfig.Type)
 	//Instancio el mensaje a mandar a Kernel
 	mensaje := MensajeAKernel{
 		Ip:     globals.IoConfig.IpIo,
