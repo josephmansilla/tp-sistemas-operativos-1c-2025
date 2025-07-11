@@ -119,6 +119,8 @@ func main() {
 	mux.HandleFunc("/kernel/exit", syscalls.Exit)
 	mux.HandleFunc("/kernel/dump_memory", syscalls.DumpMemory)
 	mux.HandleFunc("/kernel/syscallIO", syscalls.Io)
+	//para recibir mensajes de confirmacion de SWAP
+	mux.HandleFunc("/kernel/suspension_completed", syscalls.ConfirmarSuspensionHandler)
 
 	fmt.Printf("Servidor escuchando en http://localhost:%d/kernel\n", globals.KConfig.KernelPort)
 

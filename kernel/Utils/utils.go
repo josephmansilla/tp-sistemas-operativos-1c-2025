@@ -68,7 +68,8 @@ var (
 	NotificarIOLibre        chan IODesconexion
 	NotificarDesconexion    chan IODesconexion    //Desconexion DE IO
 	ContextoInterrupcion    chan InterruptProcess //FIN DE EXECUTE
-	NotificarTimeoutBlocked chan struct{}
+	NotificarTimeoutBlocked chan int
+	FinIODesdeSuspBlocked   chan IOEvent
 )
 
 // InicializarMutexes deja listas las variables de mutex.
@@ -94,7 +95,8 @@ func InicializarCanales() {
 	NotificarDesconexion = make(chan IODesconexion, 10)
 	ContextoInterrupcion = make(chan InterruptProcess, 10)
 	ChannelProcessBlocked = make(chan BlockProcess, 10)
-	NotificarTimeoutBlocked = make(chan struct{}, 1)
+	NotificarTimeoutBlocked = make(chan int)
+	FinIODesdeSuspBlocked = make(chan IOEvent, 0)
 }
 
 type MensajeIOChannel struct {
@@ -132,4 +134,9 @@ type NewProcess struct {
 	Filename string
 	Tamanio  int
 	PID      int
+}
+type IOEvent struct {
+	PID    int
+	Nombre string // tipo de dispositivo I/O, si te hace falta
+	// puerto de la instancia de I/O (opcional)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
+	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
 	"github.com/sisoputnfrba/tp-golang/kernel/planificadores"
 	"log"
@@ -216,6 +217,24 @@ func Io(w http.ResponseWriter, r *http.Request) {
 			CpuID:    mensajeRecibido.ID,
 		}
 	}(pid)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// ESTE ES EL ENDPOINT PARA QUE MEMORIA AVISE QUE PUDO HACER T O D O EL LABURO DE SWAP
+func ConfirmarSuspensionHandler(w http.ResponseWriter, r *http.Request) {
+	var msg comunicacion.PedidoKernel
+	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+		http.Error(w, "JSON inválido", http.StatusBadRequest)
+		return
+	}
+
+	logger.Info("## (<%d>) - Confirmación de suspensión recibida desde Memoria", msg.PID)
+
+	// Signal al Planificador de Mediano Plazo: ya puede reintentar NEW/SUSP.READY
+	go func(pid int) {
+		Utils.NotificarTimeoutBlocked <- pid
+	}(msg.PID)
 
 	w.WriteHeader(http.StatusOK)
 }
