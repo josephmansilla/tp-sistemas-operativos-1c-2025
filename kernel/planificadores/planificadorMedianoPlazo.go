@@ -47,6 +47,7 @@ func moverDeBlockedAReady(ioLibre Utils.IODesconexion) bool {
 
 	globals.IOMu.Lock()
 	instancias, ok := globals.IOs[ioLibre.Nombre]
+
 	if ok {
 		for i := range instancias {
 			if instancias[i].PID == ioLibre.PID && instancias[i].Puerto == ioLibre.Puerto {
@@ -76,7 +77,6 @@ func moverDeBlockedAReady(ioLibre Utils.IODesconexion) bool {
 // moverDeBlockedASuspBlocked quita de BLOCKED y encola en SUSP.BLOCKED
 func moverDeBlockedASuspBlocked(pid int) bool {
 	Utils.MutexBloqueado.Lock()
-	defer Utils.MutexBloqueado.Unlock()
 
 	// busca en ColaBloqueado
 	var proceso *pcb.PCB
@@ -89,6 +89,8 @@ func moverDeBlockedASuspBlocked(pid int) bool {
 
 	if proceso == nil {
 		// No se encontró el proceso en BLOCKED
+		logger.Info("## MedianoPlazo: No se encontró en Blocked")
+		Utils.MutexBloqueado.Unlock()
 		return false
 	}
 
@@ -96,10 +98,11 @@ func moverDeBlockedASuspBlocked(pid int) bool {
 	Utils.MutexBloqueado.Unlock()
 
 	Utils.MutexBloqueadoSuspendido.Lock()
-	defer Utils.MutexBloqueadoSuspendido.Unlock()
 	pcb.CambiarEstado(proceso, pcb.EstadoSuspBlocked)
 	algoritmos.ColaBloqueadoSuspendido.Add(proceso)
+	Utils.MutexBloqueadoSuspendido.Unlock()
 	logger.Info("## (<%d>) Pasa del estado BLOCKED al estado SUSP.BLOCKED", proceso.PID)
+
 	return true
 }
 
@@ -115,6 +118,10 @@ func monitorBloqueado(procesoAsuspender Utils.BlockProcess) {
 		if ioEvt.PID == pid {
 			// fin de IO antes del timeout → READY
 			moverDeBlockedAReady(ioEvt)
+		} else {
+			go func(other Utils.IODesconexion) {
+				Utils.NotificarFinIO <- other
+			}(ioEvt)
 		}
 	case <-timer.C:
 		// timeout expired → SUSP.BLOCKED
@@ -163,6 +170,8 @@ func AtenderSuspBlockedAFinIO() {
 
 			// ahora sí, sacamos de SUSP.BLOCKED y pasamos a SUSP.READY
 			Utils.MutexBloqueadoSuspendido.Lock()
+			defer Utils.MutexBloqueadoSuspendido.Unlock()
+
 			var p *pcb.PCB
 			for _, x := range algoritmos.ColaBloqueadoSuspendido.Values() {
 				if x.PID == ev.PID {
@@ -185,7 +194,6 @@ func AtenderSuspBlockedAFinIO() {
 			} else {
 				logger.Warn("AtenderSuspBlockedAFinIO: PID %d no estaba en SUSP.BLOCKED", ev.PID)
 			}
-			Utils.MutexBloqueadoSuspendido.Unlock()
 		}(ev)
 	}
 }
