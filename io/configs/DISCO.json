@@ -1,7 +1,7 @@
 {
-  "ip_kernel": "127.0.0.1",
+  "ip_kernel": "192.168.1.39",
   "port_kernel": 8081,
-  "port_io": 8087,
-  "ip_io": "127.0.0.2",
-  "log_level": "DEBUG"
+  "port_io": 8088,
+  "ip_io": "192.168.0.214",
+  "log_level": "INFO"
 }
