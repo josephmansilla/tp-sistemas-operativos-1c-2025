@@ -6,7 +6,7 @@
   "entries_per_page": 4,
   "number_of_levels": 3,
   "memory_delay": 500,
-  "swapfile_path": "./swap/",
+  "swapfile_path": "./swap/swapfile.bin",
   "swap_delay": 5000,
   "log_level": "DEBUG",
   "dump_path": "./dump/",

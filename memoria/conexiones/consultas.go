@@ -9,11 +9,10 @@ import (
 )
 
 func ObtenerEspacioLibreHandler(w http.ResponseWriter, r *http.Request) {
-	g.MutexCantidadFramesLibres.Lock()
-	cantFramesLibres := g.CantidadFramesLibres
-	g.MutexCantidadFramesLibres.Unlock()
 
-	espacioLibre := cantFramesLibres * g.MemoryConfig.PagSize
+	g.MutexCantidadFramesLibres.Lock()
+	espacioLibre := g.CantidadFramesLibres * g.MemoryConfig.PagSize
+	g.MutexCantidadFramesLibres.Unlock()
 
 	respuesta := g.RespuestaEspacioLibre{EspacioLibre: espacioLibre}
 

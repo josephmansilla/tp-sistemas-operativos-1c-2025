@@ -60,8 +60,7 @@ func main() {
 	// ========== REQUESTS Y ENDPOINTS ==========
 	mux := http.NewServeMux()
 
-	// MATAR....
-	mux.HandleFunc("/memoria/cpu", conex.RecibirMensajeDeCPUHandler)
+	// mux.HandleFunc("/memoria/cpu", conex.RecibirMensajeDeCPUHandler)
 
 	// CONFIG Y CONSULTAS
 	mux.HandleFunc("/memoria/configuracion", conex.EnviarConfiguracionMemoriaHandler)

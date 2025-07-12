@@ -133,7 +133,11 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	datos := []byte(mensaje.DatosAEscribir)
 	tamanioALeer := len(mensaje.DatosAEscribir)
 
-	respuesta := adm.ModificarEstadoEntradaEscritura(direccionFisica, pid, datos)
+	respuesta := adm.EscribirEspacioEntrada(pid, direccionFisica, datos)
+	if respuesta.Exito != nil {
+		logger.Error("JIJO DE BU: %v", respuesta.Exito)
+		return
+	}
 
 	logger.Info("## PID: <%d> - <Escritura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
 
@@ -204,7 +208,7 @@ func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pid := mensaje.PID
-	datosASobreEscribir := mensaje.DatosASobreEscribir
+	datosASobreEscribir := []byte(mensaje.DatosASobreEscribir)
 	direccionFisica := mensaje.DireccionFisica
 
 	respuesta := adm.EscribirEspacioEntrada(pid, direccionFisica, datosASobreEscribir)

@@ -1,12 +1,5 @@
 package estructuras
 
-var RespuestaKernel DatosRespuestaDeKernel
-
-type DatosConsultaDeKernel struct {
-	PID            int `json:"pid"`
-	TamanioMemoria int `json:"tamanio_memoria"`
-}
-
 type DatosRespuestaDeKernel struct {
 	PID            int    `json:"pid"`
 	TamanioMemoria int    `json:"tamanio_memoria"`

@@ -7,30 +7,26 @@ import (
 
 func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
 	tamanioPagina := g.MemoryConfig.PagSize
-	numeroPagina := direccionFisica / tamanioPagina
-	offset := direccionFisica % tamanioPagina
 
-	inicioFrame := numeroPagina * tamanioPagina
-	finFrame := inicioFrame + tamanioPagina
-	bytesRestantes := tamanioPagina - offset
+	finFrame := direccionFisica + tamanioPagina
+	bytesRestantes := tamanioPagina - direccionFisica%tamanioPagina
 
 	if direccionFisica+bytesRestantes > finFrame {
 		logger.Error("Out of range - Lectura fuera del marco asignado")
 	}
+	if bytesRestantes < 0 {
+		logger.Error("La lectura es más grande que la página")
+	}
 
-	pseudocodigoEnBytes := make([]byte, bytesRestantes)
+	datosEnBytes := make([]byte, bytesRestantes)
 
 	g.MutexMemoriaPrincipal.Lock()
-	copy(pseudocodigoEnBytes, g.MemoriaPrincipal[direccionFisica:direccionFisica+bytesRestantes])
+	copy(datosEnBytes, g.MemoriaPrincipal[direccionFisica:direccionFisica+bytesRestantes])
 	g.MutexMemoriaPrincipal.Unlock()
-
-	logger.Debug("Se obtuvo el pseudocodigo de memoria: %d", pseudocodigoEnBytes)
-
-	pseudocodigoEnString := string(pseudocodigoEnBytes)
 
 	datosLectura = g.ExitoLecturaPagina{
 		Exito: nil,
-		Valor: pseudocodigoEnString,
+		Valor: string(datosEnBytes),
 	}
 
 	return
@@ -38,14 +34,25 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 
 func LeerEspacioEntrada(pid int, direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
 	datosLectura = ObtenerDatosMemoria(direccionFisica)
-	ModificarEstadoEntradaLectura(pid)
+	err := ModificarEstadoEntradaLectura(pid)
+	if err != nil {
+		return g.ExitoLecturaPagina{Exito: err}
+	}
 	return datosLectura
 }
 
-func ModificarEstadoEntradaLectura(pid int) {
+func ModificarEstadoEntradaLectura(pid int) error {
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
+
+	if proceso == nil {
+		logger.Error("Se intentó acceder a un proceso inexistente o nil para PID <%d>", pid)
+		return logger.ErrProcessNil
+	}
+
 	IncrementarMetrica(proceso, 1, IncrementarLecturaDeMemoria)
 	logger.Info("## Modificacion del estado entrada exitosa")
+
+	return nil
 }

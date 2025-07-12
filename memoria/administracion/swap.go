@@ -52,6 +52,7 @@ func RecorrerTablaPaginaDeFormaConcurrenteSwap(tabla *g.TablaPagina, canal chan 
 }
 
 func CargarEntradasDeMemoria(pid int) (resultados map[int]g.EntradaSwap, err error) {
+	resultados = make(map[int]g.EntradaSwap)
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
@@ -182,7 +183,7 @@ func CargarEntradasAMemoria(pid int, entradas map[int]g.EntradaSwap) (err error)
 
 	for _, entrada := range entradas {
 		dirFisica := entrada.NumeroFrame * tamanioPagina
-		rta := EscribirEspacioEntrada(pid, dirFisica, string(entrada.Datos))
+		rta := EscribirEspacioEntrada(pid, dirFisica, entrada.Datos)
 		if rta.Exito != nil {
 			logger.Error("Error: %v", rta.Exito)
 			return rta.Exito

@@ -6,6 +6,8 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
+// OBSOLETUBIIIIIIIIII
+
 func SeleccionarEntradas(pid int, direccionFisica int, entradasNecesarias int) (entradas []g.EntradaPagina, err error) {
 	paginaInicio := direccionFisica / g.MemoryConfig.PagSize
 	err = nil
@@ -142,8 +144,6 @@ func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int, dato
 		g.MutexMemoriaPrincipal.Lock()
 		copy(g.MemoriaPrincipal[inicioEscritura:finEscritura], datosEnBytes[inicioDatos:finDatos])
 		g.MutexMemoriaPrincipal.Unlock()
-
-		entrada.FueModificado = true
 
 		bytesEscritos += cantBytes
 		bytesRestantes -= cantBytes

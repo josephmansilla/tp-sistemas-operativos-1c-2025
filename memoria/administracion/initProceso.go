@@ -7,10 +7,10 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"os"
 	"strings"
+	"sync"
 )
 
 func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo string) (err error) {
-	logger.Info("Inicializando proceso PID <%d>, Tamaño: <%d>, Pseudocódigo <%s>", pid, tamanioProceso, nombreArchPseudocodigo)
 
 	if !TieneTamanioNecesario(tamanioProceso) {
 		logger.Error("No hay memoria suficiente para proceso PID <%d>", pid)
@@ -36,6 +36,7 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 	g.MutexProcesosPorPID.Lock()
 	g.ProcesosPorPID[pid] = nuevoProceso
 	g.MutexProcesosPorPID.Unlock()
+	g.MutexMetrica[nuevoProceso.PID] = &sync.Mutex{}
 
 	if nuevoProceso.TablaRaiz == nil {
 		logger.Error("TablaRaiz es nil para proceso PID <%d>", pid)
@@ -137,10 +138,8 @@ func AsignarPaginasParaPID(proceso *g.Proceso, tamanio int) error {
 			return err
 		}
 		entradaPagina := &g.EntradaPagina{
-			NumeroFrame:   numeroFrame,
-			EstaPresente:  true,
-			EstaEnUso:     true,
-			FueModificado: false,
+			NumeroFrame:  numeroFrame,
+			EstaPresente: true,
 		}
 		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, i, entradaPagina)
 		logger.Info("## La entrada <%d> para el PID <%d> se guardó en el frame <%d>...", i, proceso.PID, numeroFrame)

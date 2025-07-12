@@ -22,6 +22,7 @@ func LiberarProceso(pid int) (metricas g.MetricasProceso, err error) {
 			return g.MetricasProceso{}, err
 		}
 	}
+	g.MutexMetrica[pid] = nil
 	logger.Info("## Se liberó la memoria para el PID: %d", pid)
 	return
 }

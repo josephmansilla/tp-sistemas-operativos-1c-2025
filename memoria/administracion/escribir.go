@@ -1,17 +1,22 @@
 package administracion
 
 import (
-	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
-func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string) g.ExitoEscrituraPagina {
-	stringEnBytes := []byte(datosEscritura)
+func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura []byte) g.ExitoEscrituraPagina {
+
 	if len(datosEscritura) == 0 {
-		logger.Debug("Los datos a escribir son vacios: %v", logger.ErrNoInstance)
+		logger.Debug("Los datos a escribir son vacios: %v", logger.ErrIsEmpty)
 	}
-	err := ModificarEstadoEntradaEscritura(pid, direccionFisica, stringEnBytes)
+
+	errEscritura := ModificarMemoria(direccionFisica, datosEscritura)
+	if errEscritura != nil {
+		return g.ExitoEscrituraPagina{Exito: errEscritura, DireccionFisica: direccionFisica, Mensaje: errEscritura.Error()}
+	}
+
+	err := ModificarEstadoEntradaEscritura(pid)
 	if err != nil {
 		return g.ExitoEscrituraPagina{Exito: err, DireccionFisica: direccionFisica, Mensaje: err.Error()}
 	}
@@ -25,7 +30,7 @@ func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string)
 	return exito
 }
 
-func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes []byte) (err error) {
+func ModificarMemoria(direccionFisica int, datosEnBytes []byte) (err error) {
 	tamanioPagina := g.MemoryConfig.PagSize
 	numeroPagina := direccionFisica / tamanioPagina
 
@@ -41,31 +46,21 @@ func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes 
 	copy(g.MemoriaPrincipal[direccionFisica:], datosEnBytes)
 	g.MutexMemoriaPrincipal.Unlock()
 
-	logger.Error("Se escribió en memoria: %d", datosEnBytes)
+	return nil
+}
 
+func ModificarEstadoEntradaEscritura(pid int) error {
 	g.MutexProcesosPorPID.Lock()
-	proceso := g.ProcesosPorPID[pid]
+	procesoBuscado := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
 
-	if proceso == nil {
-		logger.Error("Se intentó acceder a un proceso inexistente o nil para PID=%d", pid)
-		return fmt.Errorf("proceso nil para PID=%d", pid)
+	if procesoBuscado == nil {
+		logger.Error("Se intentó acceder a un proceso inexistente o nil para PID <%d>", pid)
+		return logger.ErrProcessNil
 	}
 
-	indices := CrearIndicePara(numeroPagina)
-	entrada, err := BuscarEntradaPagina(proceso, indices)
-	if err != nil {
-		logger.Error("No se pudo encontrar la entrada de pagina para modificar informes: %v", err)
-		return err
-	}
-	if entrada != nil {
-		entrada.FueModificado = true
-		entrada.EstaEnUso = true
-	} else {
-		logger.Error("Entrada vacia")
-	}
-
-	IncrementarMetrica(proceso, 1, IncrementarEscrituraDeMemoria)
+	IncrementarMetrica(procesoBuscado, 1, IncrementarEscrituraDeMemoria)
+	logger.Info("## Modificacion del estado entrada exitosa post ESCRITURA")
 
 	return nil
 }
