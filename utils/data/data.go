@@ -66,7 +66,7 @@ func LeerJson(w http.ResponseWriter, r *http.Request, mensaje any) error {
 		http.Error(w, "Error al decodificar mensaje", http.StatusBadRequest)
 		return err
 	}
-	logger.Info("Me llegó un mensaje: %+v", mensaje)
+	// logger.Info("Me llegó un mensaje: %+v", mensaje)
 
 	return nil
 }

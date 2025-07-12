@@ -1,4 +1,4 @@
-package globals
+package estructuras
 
 type EntradaSwapInfo struct {
 	NumeroFrame    int `json:"numero_pagina"`

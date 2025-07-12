@@ -2,143 +2,14 @@ package administracion
 
 import (
 	"fmt"
-	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
+	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
-func InicializarMemoriaPrincipal() {
-	tamanioMemoriaPrincipal := g.MemoryConfig.MemorySize
-	tamanioPagina := g.MemoryConfig.PagSize
-	cantidadFrames := tamanioMemoriaPrincipal / tamanioPagina
-
-	g.MemoriaPrincipal = make([]byte, tamanioMemoriaPrincipal)
-	ConfigurarFrames(cantidadFrames)
-	g.InstanciarEstructurasGlobales()
-	g.InicializarSemaforos()
-
-	logger.Info("Memoria Principal Inicializada con %d bytes de tamaño con %d frames de %d.",
-		tamanioMemoriaPrincipal, cantidadFrames, tamanioPagina)
-}
-
-func ConfigurarFrames(cantidadFrames int) {
-	g.FramesLibres = make([]bool, cantidadFrames)
-	g.MutexEstructuraFramesLibres.Lock()
-	for i := 0; i < cantidadFrames; i++ {
-		g.FramesLibres[i] = true
-	}
-	g.MutexEstructuraFramesLibres.Unlock()
-	g.CantidadFramesLibres = cantidadFrames
-}
-
-func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
-	framesNecesarios := g.CalcularCantidadFrames(tamanioProceso)
-
-	g.MutexCantidadFramesLibres.Lock()
-	resultado = framesNecesarios <= g.CantidadFramesLibres
-	g.MutexCantidadFramesLibres.Unlock()
-
-	if resultado {
-		logger.Info("Se consultó si había %d frames y retornó TRUE...", framesNecesarios)
-	} else {
-		logger.Info("Se consultó si había %d frames y retornó FALSE...", framesNecesarios)
-	}
-	return
-}
-
-func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
-	tamanioPagina := g.MemoryConfig.PagSize
-	numeroPagina := direccionFisica / tamanioPagina
-	offset := direccionFisica % tamanioPagina
-
-	inicioFrame := numeroPagina * tamanioPagina
-	finFrame := inicioFrame + tamanioPagina
-	bytesRestantes := tamanioPagina - offset
-
-	if direccionFisica+bytesRestantes > finFrame {
-		logger.Error("Out of range - Lectura fuera del marco asignado")
-	}
-
-	pseudocodigoEnBytes := make([]byte, bytesRestantes)
-
-	g.MutexMemoriaPrincipal.Lock()
-	copy(pseudocodigoEnBytes, g.MemoriaPrincipal[direccionFisica:direccionFisica+bytesRestantes])
-	g.MutexMemoriaPrincipal.Unlock()
-
-	logger.Debug("Se obtuvo el pseudocodigo de memoria: %d", pseudocodigoEnBytes)
-
-	pseudocodigoEnString := string(pseudocodigoEnBytes)
-
-	datosLectura = g.ExitoLecturaPagina{
-		Exito:           nil,
-		PseudoCodigo:    pseudocodigoEnString,
-		DireccionFisica: direccionFisica,
-	}
-
-	return
-}
-
-func ModificarEstadoEntradaEscritura(direccionFisica int, pid int, datosEnBytes []byte) (err error) {
-	tamanioPagina := g.MemoryConfig.PagSize
-	numeroPagina := direccionFisica / tamanioPagina
-
-	inicioFrame := numeroPagina * tamanioPagina
-	finFrame := inicioFrame + tamanioPagina
-
-	if direccionFisica+len(datosEnBytes) > finFrame {
-		logger.Error("Out of range - Escritura fuera del marco asignado")
-		return logger.ErrSegmentFault
-	}
-
-	g.MutexMemoriaPrincipal.Lock()
-	copy(g.MemoriaPrincipal[direccionFisica:], datosEnBytes)
-	g.MutexMemoriaPrincipal.Unlock()
-
-	logger.Error("Se escribió en memoria: %d", datosEnBytes)
-
-	g.MutexProcesosPorPID.Lock()
-	proceso := g.ProcesosPorPID[pid]
-	g.MutexProcesosPorPID.Unlock()
-
-	if proceso == nil {
-		logger.Error("Se intentó acceder a un proceso inexistente o nil para PID=%d", pid)
-		return fmt.Errorf("proceso nil para PID=%d", pid)
-	}
-
-	indices := CrearIndicePara(numeroPagina)
-	entrada, err := BuscarEntradaPagina(proceso, indices)
-	if err != nil {
-		logger.Error("No se pudo encontrar la entrada de pagina: %v", err)
-		return err
-	}
-	if entrada != nil {
-		entrada.FueModificado = true
-		entrada.EstaEnUso = true
-	} else {
-		logger.Error("Entrada vacia")
-	}
-
-	IncrementarMetrica(proceso, 1, IncrementarEscrituraDeMemoria)
-
-	return nil
-}
-
-func RemoverEspacioMemoria(inicio int, limite int) (err error) {
-	espacioVacio := make([]byte, limite-inicio)
-	if inicio < 0 || limite > len(g.MemoriaPrincipal) {
-		logger.Error("El inicio es menor a cero o el limite excede el tamaño de la memoria principal")
-		return fmt.Errorf("el formato de las direcciones a borrar son incorrectas %v", logger.ErrBadRequest)
-	}
-
-	g.MutexMemoriaPrincipal.Lock()
-	copy(g.MemoriaPrincipal[inicio:limite], espacioVacio)
-	g.MutexMemoriaPrincipal.Unlock()
-
-	return nil
-}
+// OBSOLETUBIIIIIIIIII
 
 func SeleccionarEntradas(pid int, direccionFisica int, entradasNecesarias int) (entradas []g.EntradaPagina, err error) {
-	tamanioPagina := g.MemoryConfig.PagSize
-	paginaInicio := direccionFisica / tamanioPagina
+	paginaInicio := direccionFisica / g.MemoryConfig.PagSize
 	err = nil
 
 	g.MutexProcesosPorPID.Lock()
@@ -146,7 +17,7 @@ func SeleccionarEntradas(pid int, direccionFisica int, entradasNecesarias int) (
 	g.MutexProcesosPorPID.Unlock()
 
 	if proceso == nil {
-		return nil, fmt.Errorf("no existe el proceso con el PID: %d ; %v", pid, logger.ErrNoInstance)
+		return nil, fmt.Errorf("no existe el proceso con el PID: %d ; %v", pid, logger.ErrProcessNil)
 	}
 
 	for i := 0; i < entradasNecesarias; i++ {
@@ -155,33 +26,24 @@ func SeleccionarEntradas(pid int, direccionFisica int, entradasNecesarias int) (
 
 		entrada, err := BuscarEntradaPagina(proceso, indices)
 		if err != nil {
-			return nil, fmt.Errorf("error al buscar la entrada de pagina: %d de PID %d; %v", numeroPagina, pid, err)
+			return nil, fmt.Errorf("error al buscar la entrada de pagina: %d de PID %d; %v", i, pid, err)
 		}
 		if entrada == nil {
-			return nil, fmt.Errorf("error al encontrar la entrada de pagina: %d de PID %d; %v", numeroPagina, pid, err)
+			return nil, fmt.Errorf("error al encontrar la entrada de pagina: %d de PID %d; %v", i, pid, logger.ErrNoInstance)
 		}
 		if !entrada.EstaPresente {
-			// TODO: BUSCAR DE SWAPPPP ====================================================
-			// TODO:
-			// TODO:
-			// TODO:
-			// TODO:
-			// TODO:
-			// TODO:
-			// TODO:
-			// TODO:
-			// TODO:
+			return nil, fmt.Errorf("error al buscar la entrada de pagina: %d de PID %d; %v", i, pid, logger.ErrNotPresent)
 		}
 		entradas = append(entradas, *entrada)
 	}
 
 	return
-} //TODO: rever no se usa el tamanioALeer
+}
 
 func LeerEspacioMemoria(pid int, direccionFisica int, tamanioALeer int) (confirmacionLectura g.ExitoLecturaMemoria, err error) {
 	confirmacionLectura = g.ExitoLecturaMemoria{Exito: err, ValorLeido: ""}
 
-	entradasNecesarias, err := g.CalcularCantidadEntradasATraer(tamanioALeer)
+	entradasNecesarias, err := g.CalcularCantidadEntradas(tamanioALeer)
 	if err != nil {
 		return confirmacionLectura, err
 	}
@@ -253,7 +115,7 @@ func LogicaRecorrerMemoria(i int, cantEntradas int, entrada g.EntradaPagina, dir
 func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int, datosAEscribir string) (confirmacionEscritura g.ExitoEdicionMemoria, err error) {
 	confirmacionEscritura = g.ExitoEdicionMemoria{Exito: err, Booleano: false}
 
-	entradasNecesarias, err := g.CalcularCantidadEntradasATraer(tamanioALeer)
+	entradasNecesarias, err := g.CalcularCantidadEntradas(tamanioALeer)
 	if err != nil {
 		return confirmacionEscritura, err
 	}
@@ -282,8 +144,6 @@ func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int, dato
 		g.MutexMemoriaPrincipal.Lock()
 		copy(g.MemoriaPrincipal[inicioEscritura:finEscritura], datosEnBytes[inicioDatos:finDatos])
 		g.MutexMemoriaPrincipal.Unlock()
-
-		entrada.FueModificado = true
 
 		bytesEscritos += cantBytes
 		bytesRestantes -= cantBytes

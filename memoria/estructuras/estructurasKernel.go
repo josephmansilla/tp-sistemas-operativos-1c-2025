@@ -1,11 +1,4 @@
-package globals
-
-var RespuestaKernel DatosRespuestaDeKernel
-
-type DatosConsultaDeKernel struct {
-	PID            int `json:"pid"`
-	TamanioMemoria int `json:"tamanio_memoria"`
-}
+package estructuras
 
 type DatosRespuestaDeKernel struct {
 	PID            int    `json:"pid"`

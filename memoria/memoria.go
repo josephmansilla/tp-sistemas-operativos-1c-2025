@@ -6,7 +6,7 @@ import (
 	"fmt"
 	adm "github.com/sisoputnfrba/tp-golang/memoria/administracion"
 	conex "github.com/sisoputnfrba/tp-golang/memoria/conexiones"
-	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
+	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 	"os"
@@ -18,22 +18,12 @@ func main() {
 		fmt.Println("Falta el parametro: identificador del config de Memoria")
 		os.Exit(1)
 	}
-
-	// ----------------------------------------------------
-	// ----------- CARGO LOGS DE MEMORIA EN TXT ------------
-	// ----------------------------------------------------
 	var err = logger.ConfigureLogger("memoria.log", "INFO")
 	if err != nil {
 		fmt.Println("No se pudo crear el logger -", err.Error())
 		os.Exit(1)
 	}
-	logger.Debug("Logger creado")
-
-	// ----------------------------------------------------
-	// ---------- PARTE CARGA DEL CONFIG ------------------
-	// ----------------------------------------------------
-	configPath := fmt.Sprintf("configs/%s.json", os.Args[1])
-	configData, err := os.ReadFile(configPath)
+	configData, err := os.ReadFile(fmt.Sprintf("configs/%s.json", os.Args[1]))
 	if err != nil {
 		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
 	}
@@ -49,15 +39,9 @@ func main() {
 		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
 	}
 
-	var portMemory = g.MemoryConfig.PortMemory
-
 	logger.Info("======== Comenzo la ejecucion de Memoria ========")
+	logger.Info("Servidor escuchando en http://localhost:%d/memoria", g.MemoryConfig.PortMemory)
 
-	logger.Info("Servidor escuchando en http://localhost:%d/memoria", portMemory)
-
-	// ----------------------------------------------------------
-	// --------- INICIALIZO LAS ESTRUCTURAS NECESARIAS  ---------
-	// ----------------------------------------------------------
 	logger.Error("Escribí exit para finalizar el módulo de Memoria")
 	go func() {
 		scanner := bufio.NewScanner(os.Stdin)
@@ -70,43 +54,40 @@ func main() {
 		}
 	}()
 
+	// ========== INICIALIZO ESTRUCTURAS NECESARIAS ==========
 	adm.InicializarMemoriaPrincipal()
 
-	// ------------------------------------------------------
-	// ---------- ESCUCHO REQUESTS DE CPU Y KERNEL ----------
-	// ------------------------------------------------------
-
+	// ========== REQUESTS Y ENDPOINTS ==========
 	mux := http.NewServeMux()
 
+	// mux.HandleFunc("/memoria/cpu", conex.RecibirMensajeDeCPUHandler)
+
+	// CONFIG Y CONSULTAS
 	mux.HandleFunc("/memoria/configuracion", conex.EnviarConfiguracionMemoriaHandler)
-
-	mux.HandleFunc("/memoria/cpu", conex.RecibirMensajeDeCPUHandler)
-
-	mux.HandleFunc("/memoria/inicializacionProceso", conex.InicializacionProcesoHandler)
-
-	mux.HandleFunc("/memoria/obtenerInstruccion", conex.ObtenerInstruccionHandler)
-
 	mux.HandleFunc("/memoria/espaciolibre", conex.ObtenerEspacioLibreHandler)
 
-	mux.HandleFunc("/memoria/tabla", conex.EnviarEntradaPaginaHandler)
-
-	mux.HandleFunc("/memoria/leerEntradaPagina", adm.LeerPaginaCompletaHandler)
-
-	mux.HandleFunc("/memoria/actualizarEntradaPagina", adm.ActualizarPaginaCompletaHandler)
-
-	mux.HandleFunc("/memoria/lectura", conex.LeerEspacioUsuarioHandler)
-
-	mux.HandleFunc("/memoria/escritura", conex.EscribirEspacioUsuarioHandler)
-
-	mux.HandleFunc("/memoria/suspension", conex.SuspensionProcesoHandler)
-
-	mux.HandleFunc("/memoria/desuspension", conex.DesuspensionProcesoHandler)
-
+	// INIT
+	mux.HandleFunc("/memoria/inicializacionProceso", conex.InicializacionProcesoHandler)
+	// DUMP
 	mux.HandleFunc("/memoria/dump", conex.MemoriaDumpHandler)
-
+	// MUERTE PROCESO
 	mux.HandleFunc("/memoria/finalizacionProceso", conex.FinalizacionProcesoHandler)
 
-	direccion := fmt.Sprintf(":%d", portMemory)
+	// SWAP
+	mux.HandleFunc("/memoria/suspension", conex.SuspensionProcesoHandler)
+	mux.HandleFunc("/memoria/desuspension", conex.DesuspensionProcesoHandler)
+
+	// CPU
+	mux.HandleFunc("/memoria/obtenerInstruccion", conex.ObtenerInstruccionHandler)
+	mux.HandleFunc("/memoria/tabla", conex.EnviarEntradaPaginaHandler)
+	mux.HandleFunc("/memoria/leerEntradaPagina", conex.LeerPaginaCompletaHandler)
+	mux.HandleFunc("/memoria/actualizarEntradaPagina", conex.ActualizarPaginaCompletaHandler)
+
+	// PRONTAS A MORIR
+	mux.HandleFunc("/memoria/lectura", conex.LeerEspacioUsuarioHandler)
+	mux.HandleFunc("/memoria/escritura", conex.EscribirEspacioUsuarioHandler)
+
+	direccion := fmt.Sprintf(":%d", g.MemoryConfig.PortMemory)
 	errListenAndServe := http.ListenAndServe(direccion, mux)
 	if errListenAndServe != nil {
 		panic(errListenAndServe)

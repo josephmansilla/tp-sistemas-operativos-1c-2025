@@ -1,4 +1,4 @@
-package globals
+package estructuras
 
 type Proceso struct {
 	PID                  int             `json:"pid"`
@@ -22,8 +22,3 @@ type DatosParaDump struct {
 	PID       int    `json:"pid"`
 	TimeStamp string `json:"timeStamp"`
 }
-
-/*type EntradaDump struct {
-	DireccionFisica int `json:"direccion_fisica"`
-	NumeroFrame     int `json:"numero_frame"`
-}*/

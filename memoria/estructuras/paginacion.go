@@ -1,10 +1,10 @@
-package globals
+package estructuras
 
 type EntradaPagina struct {
-	NumeroFrame   int  `json:"numero_frame"`
-	EstaPresente  bool `json:"esta_presente"`
-	EstaEnUso     bool `json:"esta_en_uso"`
-	FueModificado bool `json:"fue_modificado"`
+	NumeroFrame  int  `json:"numero_frame"`
+	EstaPresente bool `json:"esta_presente"`
+	//EstaEnUso     bool `json:"esta_en_uso"`
+	//FueModificado bool `json:"fue_modificado"`
 }
 
 type TablaPagina struct {
@@ -33,7 +33,6 @@ type LecturaPagina struct {
 }
 
 type ExitoLecturaPagina struct {
-	Exito           error  `json:"exito"`
-	PseudoCodigo    string `json:"pseudo_codigo"`
-	DireccionFisica int    `json:"direccion_fisica"`
+	Exito error  `json:"exito"`
+	Valor string `json:"valor"`
 }
