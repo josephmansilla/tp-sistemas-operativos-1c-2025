@@ -2,7 +2,7 @@ package administracion
 
 import (
 	"fmt"
-	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
+	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 

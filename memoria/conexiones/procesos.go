@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	adm "github.com/sisoputnfrba/tp-golang/memoria/administracion"
-	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
+	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"log"
@@ -12,25 +12,6 @@ import (
 	"os"
 	"time"
 )
-
-func ObtenerEspacioLibreHandler(w http.ResponseWriter, r *http.Request) {
-	g.MutexCantidadFramesLibres.Lock()
-	cantFramesLibres := g.CantidadFramesLibres
-	g.MutexCantidadFramesLibres.Unlock()
-
-	espacioLibre := cantFramesLibres * g.MemoryConfig.PagSize
-
-	respuesta := g.RespuestaEspacioLibre{EspacioLibre: espacioLibre}
-
-	logger.Info("## Espacio libre devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
-
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
-	}
-	json.NewEncoder(w).Encode(respuesta)
-	//w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("ESPACIO DEVUELTO"))
-}
 
 func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje g.DatosRespuestaDeKernel

@@ -3,35 +3,12 @@ package conexiones
 import (
 	"encoding/json"
 	adm "github.com/sisoputnfrba/tp-golang/memoria/administracion"
-	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
+	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 	"time"
 )
-
-// VA A MORIR
-func RecibirMensajeDeCPUHandler(w http.ResponseWriter, r *http.Request) {
-	var mensaje g.DatosDeCPU
-	err := data.LeerJson(w, r, &mensaje)
-	if err != nil {
-		return
-	}
-
-	g.CPU = g.DatosDeCPU{
-		PID: mensaje.PID,
-		PC:  mensaje.PC,
-	}
-
-	logger.Info("PID Pedido: %d ; PC Pedido: %d", mensaje.PID, mensaje.PC)
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(mensaje); err != nil {
-		logger.Error("Error al codificar la respuesta JSON: %v", err)
-		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
-	}
-	//w.Write([]byte("Instruccion devuelta"))
-}
 
 func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje g.ContextoDeCPU
@@ -69,31 +46,6 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 	}
 	//w.Write([]byte("Instruccion devuelta"))
-}
-
-func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
-	// Leer el PID desde el cuerpo del request
-	var pidData struct {
-		PID int `json:"pid"`
-	}
-
-	err := data.LeerJson(w, r, &pidData)
-	if err != nil {
-		return
-	}
-	logger.Info("Recibí petición de configuración desde PID: %d", pidData.PID)
-
-	mensaje := g.ConsultaConfigMemoria{
-		TamanioPagina:    g.MemoryConfig.PagSize,
-		EntradasPorNivel: g.MemoryConfig.EntriesPerPage,
-		CantidadNiveles:  g.MemoryConfig.NumberOfLevels,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(mensaje); err != nil {
-		logger.Error("Error al codificar la respuesta JSON: %v", err)
-		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
-	}
 }
 
 func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {

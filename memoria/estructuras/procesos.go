@@ -1,4 +1,4 @@
-package globals
+package estructuras
 
 type Proceso struct {
 	PID                  int             `json:"pid"`

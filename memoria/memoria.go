@@ -6,7 +6,7 @@ import (
 	"fmt"
 	adm "github.com/sisoputnfrba/tp-golang/memoria/administracion"
 	conex "github.com/sisoputnfrba/tp-golang/memoria/conexiones"
-	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
+	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
 	"os"

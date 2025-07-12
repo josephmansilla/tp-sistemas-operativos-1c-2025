@@ -1,4 +1,4 @@
-package globals
+package estructuras
 
 var MemoryConfig *Config
 var MemoriaPrincipal []byte         // MP simulada

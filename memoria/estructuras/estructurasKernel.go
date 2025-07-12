@@ -1,4 +1,4 @@
-package globals
+package estructuras
 
 var RespuestaKernel DatosRespuestaDeKernel
 

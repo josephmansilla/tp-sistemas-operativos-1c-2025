@@ -1,4 +1,4 @@
-package globals
+package estructuras
 
 type EntradaPagina struct {
 	NumeroFrame   int  `json:"numero_frame"`

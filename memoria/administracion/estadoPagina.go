@@ -1,8 +1,7 @@
 package administracion
 
 import (
-	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
-	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
 )
 
 func MarcarOcupadoFrame(numeroFrame int) {
