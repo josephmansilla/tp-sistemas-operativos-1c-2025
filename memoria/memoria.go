@@ -13,28 +13,19 @@ import (
 )
 
 func main() {
-	// Crear logger
 	err := logger.ConfigureLogger("memoria.log", "INFO")
 	if err != nil {
 		fmt.Println("No se pudo crear el logger -", err.Error())
 		os.Exit(1)
 	}
-
-	// Cargar y validar config desde config.json
 	g.MemoryConfig = g.ConfigMemoria()
-
 	err = logger.SetLevel(g.MemoryConfig.LogLevel)
 	if err != nil {
 		logger.Fatal("No se pudo establecer el log-level: %v", err)
 	}
 
-	port := g.MemoryConfig.PortMemory
 	logger.Info("======== Comenzó la ejecución de Memoria ========")
-	logger.Info("Servidor escuchando en http://localhost:%d/memoria", port)
-
-	// ----------------------------------------------------------
-	// --------- INICIALIZO LAS ESTRUCTURAS NECESARIAS  ---------
-	// ----------------------------------------------------------
+	logger.Info("Servidor escuchando en http://localhost:%d/memoria", g.MemoryConfig.PortMemory)
 	logger.Error("Escribí exit para finalizar el módulo de Memoria")
 	go func() {
 		scanner := bufio.NewScanner(os.Stdin)
@@ -49,42 +40,32 @@ func main() {
 
 	adm.InicializarMemoriaPrincipal()
 
-	// ------------------------------------------------------
-	// ---------- ESCUCHO REQUESTS DE CPU Y KERNEL ----------
-	// ------------------------------------------------------
-
 	mux := http.NewServeMux()
+	// mux.HandleFunc("/memoria/cpu", conex.RecibirMensajeDeCPUHandler)
 
+	// ======================== CONFIGS Y CONSULTAS ========================
 	mux.HandleFunc("/memoria/configuracion", conex.EnviarConfiguracionMemoriaHandler)
-
-	mux.HandleFunc("/memoria/cpu", conex.RecibirMensajeDeCPUHandler)
-
-	mux.HandleFunc("/memoria/inicializacionProceso", conex.InicializacionProcesoHandler)
-
-	mux.HandleFunc("/memoria/obtenerInstruccion", conex.ObtenerInstruccionHandler)
-
 	mux.HandleFunc("/memoria/espaciolibre", conex.ObtenerEspacioLibreHandler)
-
+	// ======================== PEDIDOS CPU ========================
+	mux.HandleFunc("/memoria/obtenerInstruccion", conex.ObtenerInstruccionHandler)
 	mux.HandleFunc("/memoria/tabla", conex.EnviarEntradaPaginaHandler)
-
-	mux.HandleFunc("/memoria/leerEntradaPagina", adm.LeerPaginaCompletaHandler)
-
-	mux.HandleFunc("/memoria/actualizarEntradaPagina", adm.ActualizarPaginaCompletaHandler)
-
-	mux.HandleFunc("/memoria/lectura", conex.LeerEspacioUsuarioHandler)
-
-	mux.HandleFunc("/memoria/escritura", conex.EscribirEspacioUsuarioHandler)
-
+	// ======================== INIT ========================
+	mux.HandleFunc("/memoria/inicializacionProceso", conex.InicializacionProcesoHandler)
+	// ======================== KILL ========================
+	mux.HandleFunc("/memoria/finalizacionProceso", conex.FinalizacionProcesoHandler)
+	// ======================== DUMP ========================
+	mux.HandleFunc("/memoria/dump", conex.MemoriaDumpHandler)
+	// ====================== SUSPENSIÓN =====================
 	mux.HandleFunc("/memoria/suspension", conex.SuspensionProcesoHandler)
-
 	mux.HandleFunc("/memoria/desuspension", conex.DesuspensionProcesoHandler)
 
-	mux.HandleFunc("/memoria/dump", conex.MemoriaDumpHandler)
+	// ======================== LECTURA Y ESCRITURA ========================
+	mux.HandleFunc("/memoria/leerEntradaPagina", conex.LeerPaginaCompletaHandler)
+	mux.HandleFunc("/memoria/actualizarEntradaPagina", conex.ActualizarPaginaCompletaHandler)
+	mux.HandleFunc("/memoria/lectura", conex.LeerEspacioUsuarioHandler)
+	mux.HandleFunc("/memoria/escritura", conex.EscribirEspacioUsuarioHandler)
 
-	mux.HandleFunc("/memoria/finalizacionProceso", conex.FinalizacionProcesoHandler)
-
-	direccion := fmt.Sprintf(":%d", port)
-	errListenAndServe := http.ListenAndServe(direccion, mux)
+	errListenAndServe := http.ListenAndServe(fmt.Sprintf(":%d", g.MemoryConfig.PortMemory), mux)
 	if errListenAndServe != nil {
 		panic(errListenAndServe)
 	}
