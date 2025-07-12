@@ -1,9 +1,7 @@
 package globals
 
 import (
-	"encoding/json"
 	"errors"
-	"os"
 )
 
 type Config struct {
@@ -59,21 +57,4 @@ func (cfg Config) Validate() error {
 		return errors.New("falta el campo 'ScriptsPath'")
 	}
 	return nil
-}
-
-func ConfigCheck(filepath string) (*Config, error) {
-	var configCheck *Config
-	configFile, err := os.Open(filepath)
-	if err != nil {
-		return nil, err
-	}
-	defer configFile.Close()
-
-	decoder := json.NewDecoder(configFile)
-	err = decoder.Decode(&configCheck)
-	if err != nil {
-		return nil, err
-	}
-
-	return configCheck, nil
 }

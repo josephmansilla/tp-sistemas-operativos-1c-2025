@@ -33,7 +33,6 @@ type LecturaPagina struct {
 }
 
 type ExitoLecturaPagina struct {
-	Exito           error  `json:"exito"`
-	PseudoCodigo    string `json:"pseudo_codigo"`
-	DireccionFisica int    `json:"direccion_fisica"`
+	Exito error  `json:"exito"`
+	Valor string `json:"valor"`
 }

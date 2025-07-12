@@ -74,7 +74,7 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 	pid := mensaje.PID
 
-	metricas, err := adm.LiberarMemoriaProceso(pid)
+	metricas, err := adm.LiberarProceso(pid)
 	if err != nil {
 		logger.Error("Hubo un error al eliminar el proceso %v", err)
 	}
@@ -94,82 +94,6 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error al serializar mock de espacio: %v", errEncode)
 		return
 	}
-
-	json.NewEncoder(w).Encode(respuesta)
-	w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("Respuesta devuelta"))
-}
-
-func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
-	inicio := time.Now()
-	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
-
-	var mensaje g.LecturaProceso
-	err := data.LeerJson(w, r, &mensaje)
-	if err != nil {
-		return
-	}
-
-	pid := mensaje.PID
-	direccionFisica := mensaje.DireccionFisica
-	tamanioALeer := mensaje.TamanioARecorrer
-
-	respuesta, err := adm.LeerEspacioMemoria(pid, direccionFisica, tamanioALeer)
-	if err != nil {
-		logger.Error("Error: %v", err)
-		http.Error(w, "Error al Leer espacio de Memoria \n", http.StatusInternalServerError)
-	}
-
-	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
-
-	tiempoTranscurrido := time.Now().Sub(inicio)
-	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
-
-	if err != nil {
-		logger.Error("Error al leer en memoria: %v", err)
-		http.Error(w, "Error al leer en memoria", http.StatusInternalServerError)
-		return
-	}
-
-	logger.Info("## Lectura en espacio de memoria Éxitosa")
-
-	json.NewEncoder(w).Encode(respuesta)
-	w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("Respuesta devuelta"))
-}
-
-func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
-	inicio := time.Now()
-	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
-
-	var mensaje g.EscrituraProceso
-	if err := data.LeerJson(w, r, &mensaje); err != nil {
-		return
-	}
-
-	pid := mensaje.PID
-	direccionFisica := mensaje.DireccionFisica
-	datos := mensaje.DatosAEscribir
-	tamanioALeer := len(datos)
-
-	respuesta, err := adm.EscribirEspacioMemoria(pid, direccionFisica, tamanioALeer, datos)
-	if err != nil {
-		logger.Error("Error: %v", err)
-		http.Error(w, "Error al Leer espacio de Memoria \n", http.StatusInternalServerError)
-	}
-
-	logger.Info("## PID: <%d> - <Escritura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
-
-	tiempoTranscurrido := time.Now().Sub(inicio)
-	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
-
-	if err != nil {
-		logger.Error("Error al escribir en memoria: %v", err)
-		http.Error(w, "Error al escribir en memoria", http.StatusInternalServerError)
-		return
-	}
-
-	logger.Info("## Escritura en espacio de memoria Éxitosa")
 
 	json.NewEncoder(w).Encode(respuesta)
 	w.WriteHeader(http.StatusOK)
@@ -202,7 +126,7 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// contenido := make([]string, 2) contenido[0] = "bolas" contenido[1] = "sexo"
-	g.ParsearContenido(dumpFile, dump.PID, contenido)
+	adm.ParsearContenido(dumpFile, dump.PID, contenido)
 
 	logger.Info("## Archivo Dump fue creado con EXITO")
 	w.WriteHeader(http.StatusOK)

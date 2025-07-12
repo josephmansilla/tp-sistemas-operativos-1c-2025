@@ -14,4 +14,5 @@ var (
 	ErrProcessNil      = errors.New("process requested is nil")
 	ErrNoTabla         = errors.New("no Tabla Found")
 	ErrNoIndices       = errors.New("no Indices Found")
+	ErrNotPresent      = errors.New("entrada not present in memory")
 )

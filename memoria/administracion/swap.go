@@ -45,7 +45,7 @@ func RecorrerTablaPaginaDeFormaConcurrenteSwap(tabla *g.TablaPagina, canal chan 
 		if tabla.EntradasPaginas[i].EstaPresente {
 			canal <- entrada.NumeroFrame
 			entrada.EstaPresente = false
-			LiberarEntradaPagina(entrada.NumeroFrame)
+			MarcarLibreFrame(entrada.NumeroFrame)
 
 		}
 	}

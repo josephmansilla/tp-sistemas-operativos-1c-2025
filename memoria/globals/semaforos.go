@@ -10,11 +10,3 @@ var MutexMetrica []sync.Mutex
 var MutexDump sync.Mutex
 var MutexSwapIndex sync.Mutex
 var MutexSwapBool sync.Mutex
-
-// Podría ser un slice de Mutex por PID, es medio al pedo
-// pero sería conceptualmente correcto
-
-func InicializarSemaforos() {
-	MutexMetrica = make([]sync.Mutex, MemoryConfig.MemorySize) // tamaño totalmente arbitrario
-	// MutexDump = make([]sync.Mutex, MemoryConfig.MemorySize)
-}

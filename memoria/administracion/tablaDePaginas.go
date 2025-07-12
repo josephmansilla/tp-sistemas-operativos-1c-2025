@@ -1,23 +1,10 @@
 package administracion
 
 import (
-	"encoding/json"
 	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/globals"
-	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
-	"net/http"
-	"time"
 )
-
-func InicializarTablaRaiz() g.TablaPaginas {
-	cantidadEntradasPorTabla := g.MemoryConfig.EntriesPerPage
-	tabla := make(g.TablaPaginas, cantidadEntradasPorTabla)
-	for i := 0; i < cantidadEntradasPorTabla; i++ {
-		tabla[i] = &g.TablaPagina{}
-	}
-	return tabla
-}
 
 func CrearIndicePara(nroPagina int) (indices []int) {
 	cantidadNiveles := g.MemoryConfig.NumberOfLevels
@@ -36,7 +23,7 @@ func CrearIndicePara(nroPagina int) (indices []int) {
 func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDeseada *g.EntradaPagina, err error) {
 	if procesoBuscado == nil {
 		logger.Error("Proceso es nil en BuscarEntradaPagina")
-		return nil, fmt.Errorf("proceso nil")
+		return nil, logger.ErrProcessNil
 	}
 
 	if procesoBuscado.TablaRaiz == nil {
@@ -82,7 +69,6 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 
 	if entradaDeseada.EstaPresente == false {
 		logger.Error("## No se encuentra presente en memoria el frame")
-		// TODO: Debería sacarse de SWAP y cargarse en memoria
 		return entradaDeseada, nil
 	}
 
@@ -136,66 +122,6 @@ func ObtenerEntradaPagina(pid int, indices []int) (int, error) {
 	return entradaPagina.NumeroFrame, nil
 }
 
-func AsignarFrameLibre() (int, error) {
-	cantidadFramesTotales := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
-
-	for numeroFrame := 0; numeroFrame < cantidadFramesTotales; numeroFrame++ {
-		g.MutexEstructuraFramesLibres.Lock()
-		booleano := g.FramesLibres[numeroFrame]
-		g.MutexEstructuraFramesLibres.Unlock()
-
-		if booleano == true {
-			MarcarOcupadoFrame(numeroFrame)
-			// 			logger.Info("Marco Libre encontrado: %d", numeroFrame)
-			return numeroFrame, nil
-		}
-	}
-	return -10, logger.ErrNoMemory
-
-}
-
-func MarcarOcupadoFrame(numeroFrame int) {
-	g.MutexEstructuraFramesLibres.Lock()
-	g.FramesLibres[numeroFrame] = false
-	g.MutexEstructuraFramesLibres.Unlock()
-
-	g.MutexCantidadFramesLibres.Lock()
-	g.CantidadFramesLibres--
-	g.MutexCantidadFramesLibres.Unlock()
-}
-
-func LiberarEntradaPagina(numeroFrameALiberar int) {
-	g.MutexEstructuraFramesLibres.Lock()
-	g.FramesLibres[numeroFrameALiberar] = true
-	g.MutexEstructuraFramesLibres.Unlock()
-
-	g.MutexCantidadFramesLibres.Lock()
-	g.CantidadFramesLibres++
-	g.MutexCantidadFramesLibres.Unlock()
-}
-
-func AsignarPaginasParaPID(proceso *g.Proceso, tamanio int) error {
-	//	logger.Info("Asignando espacio de páginas para PID <%d>...", proceso.PID)
-	cantidadFrames := g.CalcularCantidadFrames(tamanio)
-	for i := 1; i <= cantidadFrames; i++ {
-		numeroFrame, err := AsignarFrameLibre()
-		if err != nil {
-			logger.Error("no hay frames libres en el sistema %v", err)
-			return err
-		}
-		entradaPagina := &g.EntradaPagina{
-			NumeroFrame:   numeroFrame,
-			EstaPresente:  true,
-			EstaEnUso:     false,
-			FueModificado: false,
-		}
-		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, numeroFrame, entradaPagina)
-		logger.Info("## La entrada <%d> para el PID <%d> se guardó en el frame <%d>...", i, proceso.PID, numeroFrame)
-	}
-	logger.Info("Quedan <%d> frames libes", g.CantidadFramesLibres)
-	return nil
-}
-
 func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, entrada *g.EntradaPagina) {
 	indices := CrearIndicePara(numeroPagina)
 	actual := tablaRaiz[indices[0]]
@@ -224,7 +150,7 @@ func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, en
 }
 
 func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string) g.ExitoEscrituraPagina {
-	stringEnBytes := g.ConversionEnBytes(datosEscritura)
+	stringEnBytes := []byte(datosEscritura)
 	if len(stringEnBytes) == 0 {
 		logger.Error("Los datos a escribir son vacios: %v", logger.ErrNoInstance)
 	}
@@ -268,109 +194,4 @@ func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU,
 
 	respuesta.Instruccion = string(lineaInstruccion)
 	return respuesta, nil
-}
-
-func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
-	err = nil
-
-	if tabla.Subtabla != nil {
-		for indice, subtabla := range tabla.Subtabla {
-			err := LiberarTablaPaginas(subtabla, pid)
-			if err != nil {
-				return err
-			}
-			tabla.Subtabla[indice] = nil
-		}
-		tabla.Subtabla = nil
-	}
-	if tabla.EntradasPaginas != nil {
-		for _, entrada := range tabla.EntradasPaginas {
-			if entrada.EstaPresente {
-				tamanioPagina := g.MemoryConfig.PagSize
-				direccionFisica := entrada.NumeroFrame * tamanioPagina
-				err = RemoverEspacioMemoria(direccionFisica, direccionFisica+tamanioPagina)
-				LiberarEntradaPagina(entrada.NumeroFrame)
-				if err != nil {
-					logger.Error("Error al remover espacio de memoria del frame: \"%d\" ; %v", entrada.NumeroFrame, err)
-				}
-			}
-			// TODO : si está en swap tambien hay que remover
-		}
-		tabla.EntradasPaginas = nil
-	}
-	return
-}
-
-func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
-	inicio := time.Now()
-	retrasoSwap := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
-
-	var mensaje g.LecturaPagina
-	if err := data.LeerJson(w, r, &mensaje); err != nil {
-		return
-	}
-
-	pid := mensaje.PID
-	direccionFisica := mensaje.DireccionFisica
-	respuesta := LeerEspacioEntrada(pid, direccionFisica)
-
-	logger.Info("## Leer Página Completa - Dir. Física: <%d>", direccionFisica)
-
-	time.Sleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Second)
-
-	tiempoTranscurrido := time.Now().Sub(inicio)
-	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
-
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
-	}
-
-	logger.Info("## Lectura Éxitosa")
-
-	err := json.NewEncoder(w).Encode(respuesta)
-	if err != nil {
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("Respuesta devuelta"))
-}
-
-func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
-	inicio := time.Now()
-	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
-
-	var mensaje g.EscrituraPagina
-	if err := data.LeerJson(w, r, &mensaje); err != nil {
-		return
-	}
-
-	if mensaje.TamanioNecesario > g.MemoryConfig.PagSize {
-		logger.Error("No se puede cargar en una pagina este tamaño")
-		http.Error(w, "No se puede cargar en una pagina este tamaño", http.StatusBadRequest)
-		return
-	}
-
-	pid := mensaje.PID
-	datosASobreEscribir := mensaje.DatosASobreEscribir
-	direccionFisica := mensaje.DireccionFisica
-
-	respuesta := EscribirEspacioEntrada(pid, direccionFisica, datosASobreEscribir)
-
-	logger.Info("## PID: <%d> - Actualizar Página Completa - Dir. Física: <%d>", pid, direccionFisica)
-
-	tiempoTranscurrido := time.Now().Sub(inicio)
-	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
-
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
-	}
-
-	logger.Info("## Escritura Éxitosa")
-
-	errr := json.NewEncoder(w).Encode(respuesta)
-	if errr != nil {
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("Respuesta devuelta"))
 }
