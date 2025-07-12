@@ -131,9 +131,10 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	//aca me parece que tenes que Avisar por un endpoint a kernel que ya hiciste el pase a swap, la response siempre manda que
 	//si lo cargo a swap inmediatamente kernel te manda el pedido y en realidad no es instantanea. y como la comunicacion
 	//http tiene un timeOut la respuesta tuya tiene que ser en un POST a un endpoint de kernel.
-	g.MutexSwapBool.Lock()
-	estaProcesoEnSwap := g.EstaEnSwap[mensaje.PID]
-	g.MutexSwapBool.Unlock()
+	g.MutexProcesosPorPID.Lock()
+	estaProcesoEnSwap := g.ProcesosPorPID[mensaje.PID].EstaEnSwap
+	g.MutexProcesosPorPID.Unlock()
+
 	if estaProcesoEnSwap {
 		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: "Ya esta en SWAP"}
 		ignore = 1
@@ -158,9 +159,9 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		g.MutexProcesosPorPID.Lock()
 		proceso := g.ProcesosPorPID[mensaje.PID]
 		g.MutexProcesosPorPID.Unlock()
-		adm.IncrementarMetrica(proceso, 1, adm.IncrementarBajadasSwap)
 
-		g.EstaEnSwap[mensaje.PID] = true
+		adm.IncrementarMetrica(proceso, 1, adm.IncrementarBajadasSwap)
+		proceso.EstaEnSwap = true
 
 		tiempoTranscurrido := time.Now().Sub(inicio)
 		g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
@@ -187,11 +188,11 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		Mensaje: "Proceso cargado a Memoria",
 	}
 
-	g.MutexSwapBool.Lock()
-	estaProcesoEnMemoria := !g.EstaEnSwap[mensaje.PID]
-	g.MutexSwapBool.Unlock()
+	g.MutexProcesosPorPID.Lock()
+	estaProcesoEnMemoria := g.ProcesosPorPID[mensaje.PID].EstaEnSwap
+	g.MutexProcesosPorPID.Unlock()
 
-	if estaProcesoEnMemoria {
+	if !estaProcesoEnMemoria {
 		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: "Ya esta en Memoria"}
 		ignore = 1
 	}
@@ -216,9 +217,9 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		g.MutexProcesosPorPID.Lock()
 		proceso := g.ProcesosPorPID[mensaje.PID]
 		g.MutexProcesosPorPID.Unlock()
-		adm.IncrementarMetrica(proceso, 1, adm.IncrementarSubidasMP)
 
-		g.EstaEnSwap[mensaje.PID] = false
+		adm.IncrementarMetrica(proceso, 1, adm.IncrementarSubidasMP)
+		proceso.EstaEnSwap = false
 
 		time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Second)
 

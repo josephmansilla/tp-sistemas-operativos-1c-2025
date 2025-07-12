@@ -10,7 +10,6 @@ var FramesLibres []bool             //los frames van a estar en True si están l
 var CantidadFramesLibres int        // simplemente recuenta la cantidad de frames
 var ProcesosPorPID map[int]*Proceso // guardo procesos con los PID
 var SwapIndex map[int]*SwapProcesoInfo
-var EstaEnSwap map[int]bool
 
 // ================== SEMAFOROS GLOBALES ==================
 
@@ -44,6 +43,7 @@ type Proceso struct {
 	TablaRaiz            TablaPaginas    `json:"tabla_paginas"`
 	Metricas             MetricasProceso `json:"metricas_proceso"`
 	InstruccionesEnBytes map[int][]byte  `json:"instrucciones_en_bytes"`
+	EstaEnSwap           bool            `json:"esta_en_swap"`
 }
 type MetricasProceso struct {
 	AccesosTablasPaginas     int `json:"acceso_tablas_paginas"`
