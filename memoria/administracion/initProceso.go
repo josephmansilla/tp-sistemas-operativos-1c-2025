@@ -56,6 +56,7 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 }
 
 // ========== VERIFICO TAMAÑO PARA EL PROCESO ==========
+
 func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
 	framesNecesarios, err := g.CalcularCantidadEntradas(tamanioProceso)
 	if err != nil {
@@ -76,6 +77,7 @@ func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
 }
 
 // ========== LECTURA DE INSTRUCCIONES ==========
+
 func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string) error {
 	if direccionPseudocodigo == "" {
 		return fmt.Errorf("el string es vacio")
@@ -117,6 +119,7 @@ func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string) error
 }
 
 // ========== PAGINAS ==========
+
 func InicializarTablaRaiz() g.TablaPaginas {
 	cantidadEntradasPorTabla := g.MemoryConfig.EntriesPerPage
 	tabla := make(g.TablaPaginas, cantidadEntradasPorTabla)
@@ -193,6 +196,7 @@ func AsignarFrameLibre() (int, error) {
 }
 
 // ========== METRICAS ==========
+
 func InicializarMetricas() (metricas g.MetricasProceso) {
 	metricas = g.MetricasProceso{
 		AccesosTablasPaginas:     0,

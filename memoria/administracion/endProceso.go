@@ -28,6 +28,7 @@ func LiberarProceso(pid int) (metricas g.MetricasProceso, err error) {
 }
 
 // ========== LIBERAR VECTORES GLOBALES ==========
+
 func DesocuparProcesoDeEstructurasGlobales(pid int) (proceso *g.Proceso, err error) {
 	err = nil
 	g.MutexProcesosPorPID.Lock()
@@ -48,6 +49,7 @@ func DesocuparProcesoDeEstructurasGlobales(pid int) (proceso *g.Proceso, err err
 }
 
 // ========== DEJAR NULO LOS PUNTEROS DE LA TABLA DE PAGINAS ==========
+
 func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
 	err = nil
 
@@ -80,6 +82,7 @@ func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
 }
 
 // ========== LIBERO EL ESPACIO EN MEMORIA ==========
+
 func RemoverEspacioMemoria(inicio int, limite int) (err error) {
 	espacioVacio := make([]byte, limite-inicio)
 	if inicio < 0 || limite > len(g.MemoriaPrincipal) {

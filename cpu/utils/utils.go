@@ -39,7 +39,12 @@ func Config() *globals.Config {
 	if err != nil {
 		logger.Fatal("No se pudo abrir el archivo de configuración: %v", err)
 	}
-	defer configFile.Close()
+	defer func(configFile *os.File) {
+		err := configFile.Close()
+		if err != nil {
+			logger.Error("Error al cerrar: %v", err)
+		}
+	}(configFile)
 
 	jsonParser := json.NewDecoder(configFile)
 	err = jsonParser.Decode(&config)

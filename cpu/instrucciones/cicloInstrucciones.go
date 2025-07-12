@@ -7,6 +7,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/cpu/traducciones"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -48,7 +49,12 @@ func FaseFetch(ipDestino string, puertoDestino int) {
 			logger.Info("Error haciendo POST a Memoria: %s", err)
 			break
 		}
-		defer resp.Body.Close() // <-- mover esto después de confirmar que no hubo error
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				logger.Error("Error al cerrar: %v", err)
+			}
+		}(resp.Body) // <-- mover esto después de confirmar que no hubo error
 
 		var respuesta RespuestaInstruccion
 		if err := json.NewDecoder(resp.Body).Decode(&respuesta); err != nil {
@@ -156,7 +162,12 @@ func FaseCheckInterrupt() bool {
 		logger.Error("Error enviando contexto interrumpido al Kernel: %v", err)
 		return false
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logger.Error("Error al cerrar: %v", err)
+		}
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		logger.Error("Kernel respondió con error al recibir interrupción: %s", resp.Status)

@@ -1,13 +1,6 @@
 package administracion
 
-import (
-	"fmt"
-	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
-	"github.com/sisoputnfrba/tp-golang/utils/logger"
-)
-
-// OBSOLETUBIIIIIIIIII
-
+/*
 func SeleccionarEntradas(pid int, direccionFisica int, entradasNecesarias int) (entradas []g.EntradaPagina, err error) {
 	paginaInicio := direccionFisica / g.MemoryConfig.PagSize
 	err = nil
@@ -155,3 +148,4 @@ func EscribirEspacioMemoria(pid int, direccionFisica int, tamanioALeer int, dato
 	return g.ExitoEdicionMemoria{Exito: err, Booleano: true}, nil
 
 }
+*/

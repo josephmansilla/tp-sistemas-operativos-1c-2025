@@ -62,23 +62,6 @@ func (cfg Config) Validate() error {
 	return nil
 }
 
-func ConfigCheck(filepath string) (*Config, error) {
-	var configCheck *Config
-	configFile, err := os.Open(filepath)
-	if err != nil {
-		return nil, err
-	}
-	defer configFile.Close()
-
-	decoder := json.NewDecoder(configFile)
-	err = decoder.Decode(&configCheck)
-	if err != nil {
-		return nil, err
-	}
-
-	return configCheck, nil
-}
-
 func ConfigMemoria() *Config {
 	const path = "../config.json"
 
@@ -88,7 +71,12 @@ func ConfigMemoria() *Config {
 	if err != nil {
 		logger.Fatal("No se pudo abrir el archivo de configuración: %v", err)
 	}
-	defer configFile.Close()
+	defer func(configFile *os.File) {
+		err := configFile.Close()
+		if err != nil {
+			logger.Error("%% Error al cerrar el config file: %v", err)
+		}
+	}(configFile)
 
 	jsonParser := json.NewDecoder(configFile)
 	err = jsonParser.Decode(&config)

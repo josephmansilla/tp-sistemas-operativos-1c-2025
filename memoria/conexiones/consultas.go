@@ -21,24 +21,28 @@ func ObtenerEspacioLibreHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar mock de espacio: %v", err)
 	}
-	json.NewEncoder(w).Encode(respuesta)
-	//w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("ESPACIO DEVUELTO"))
+	err := json.NewEncoder(w).Encode(respuesta)
+	if err != nil {
+		logger.Error("Error al enviar la respuesta de esapcioLibre: %v", err)
+		return
+	}
+
 }
 
 func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
-	// Leer el PID desde el cuerpo del request
 	var pidData struct {
 		PID int `json:"pid"`
 	}
 
 	err := data.LeerJson(w, r, &pidData)
 	if err != nil {
+		logger.Error("Error leyendo JSON del CPU\n", err)
+		http.Error(w, "Error al decodear mensaje del JSON", http.StatusInternalServerError)
 		return
 	}
 	logger.Info("Recibí petición de configuración desde PID: %d", pidData.PID)
 
-	mensaje := g.ConsultaConfigMemoria{
+	mensaje := g.RespuestaConfigMemoria{
 		TamanioPagina:    g.MemoryConfig.PagSize,
 		EntradasPorNivel: g.MemoryConfig.EntriesPerPage,
 		CantidadNiveles:  g.MemoryConfig.NumberOfLevels,

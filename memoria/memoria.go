@@ -60,8 +60,6 @@ func main() {
 	mux.HandleFunc("/memoria/desuspension", conex.DesuspensionProcesoHandler)
 
 	// ======================== LECTURA Y ESCRITURA ========================
-	mux.HandleFunc("/memoria/leerEntradaPagina", conex.LeerPaginaCompletaHandler)
-	mux.HandleFunc("/memoria/actualizarEntradaPagina", conex.ActualizarPaginaCompletaHandler)
 	mux.HandleFunc("/memoria/lectura", conex.LeerEspacioUsuarioHandler)
 	mux.HandleFunc("/memoria/escritura", conex.EscribirEspacioUsuarioHandler)
 

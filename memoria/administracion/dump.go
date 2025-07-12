@@ -46,7 +46,8 @@ func RealizarDumpMemoria(pid int) (vector []string, err error) {
 	return
 }
 
-// ========== JUNTAR ENTRADAS DEL PID PARA EL DUMP ==========
+//  ========== JUNTAR ENTRADAS DEL PID PARA EL DUMP ==========
+
 func RecolectarEntradasProcesoDump(proceso g.Proceso) (resultados []int) {
 	for _, subtabla := range proceso.TablaRaiz {
 		RecorrerTablaPagina(subtabla, &resultados)
@@ -55,6 +56,7 @@ func RecolectarEntradasProcesoDump(proceso g.Proceso) (resultados []int) {
 }
 
 // ========== RECORRER LA TABLA PARA JUNTAR ENTRADAS ==========
+
 func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]int) {
 
 	if tabla.Subtabla != nil {
@@ -73,6 +75,7 @@ func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]int) {
 }
 
 // ========== COLOCO EL CONTENIDO EN EL .DMP ==========
+
 func ParsearContenido(dumpFile *os.File, pid int, contenido []string) {
 	comienzo := fmt.Sprintf("## Dump De Memoria Para PID: %d\n\n", pid)
 	_, err := dumpFile.WriteString(comienzo)

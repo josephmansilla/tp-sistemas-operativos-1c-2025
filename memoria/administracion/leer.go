@@ -5,7 +5,16 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
-func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
+func LeerEspacioEntrada(pid int, direccionFisica int) (datosLectura g.RespuestaLectura) {
+	datosLectura = ObtenerDatosMemoria(direccionFisica)
+	err := ModificarEstadoEntradaLectura(pid)
+	if err != nil {
+		return g.RespuestaLectura{Exito: err}
+	}
+	return datosLectura
+}
+
+func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.RespuestaLectura) {
 	tamanioPagina := g.MemoryConfig.PagSize
 
 	finFrame := direccionFisica + tamanioPagina
@@ -14,9 +23,10 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 	if direccionFisica+bytesRestantes > finFrame {
 		logger.Error("Out of range - Lectura fuera del marco asignado")
 	}
+	/* ALWAYS FALSE
 	if bytesRestantes < 0 {
 		logger.Error("La lectura es más grande que la página")
-	}
+	}*/
 
 	datosEnBytes := make([]byte, bytesRestantes)
 
@@ -24,21 +34,12 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.ExitoLecturaPagina
 	copy(datosEnBytes, g.MemoriaPrincipal[direccionFisica:direccionFisica+bytesRestantes])
 	g.MutexMemoriaPrincipal.Unlock()
 
-	datosLectura = g.ExitoLecturaPagina{
+	datosLectura = g.RespuestaLectura{
 		Exito: nil,
 		Valor: string(datosEnBytes),
 	}
 
 	return
-}
-
-func LeerEspacioEntrada(pid int, direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
-	datosLectura = ObtenerDatosMemoria(direccionFisica)
-	err := ModificarEstadoEntradaLectura(pid)
-	if err != nil {
-		return g.ExitoLecturaPagina{Exito: err}
-	}
-	return datosLectura
 }
 
 func ModificarEstadoEntradaLectura(pid int) error {

@@ -11,10 +11,11 @@ import (
 )
 
 func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
-	var mensaje g.ContextoDeCPU
+	var mensaje g.ConsultaContextCPU
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
-		http.Error(w, "Error leyendo JSON del CPU\n", http.StatusBadRequest)
+		logger.Error("Error leyendo JSON del CPU\n", err)
+		http.Error(w, "Error al decodear mensaje del JSON", http.StatusInternalServerError)
 		return
 	}
 
@@ -40,18 +41,19 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## PID: <%d>  - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, respuesta.Instruccion)
 
-	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al codificar la respuesta JSON: %v", err)
+		logger.Error("Error al serializar la obtencion de instruccion: %v", err)
 		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
+		return
 	}
-	//w.Write([]byte("Instruccion devuelta"))
 }
 
 func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
-	var mensaje g.MensajePedidoTablaCPU
+	var mensaje g.ConsultaMarco
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
+		logger.Error("Error leyendo JSON del CPU\n", err)
+		http.Error(w, "Error al decodear mensaje del JSON", http.StatusInternalServerError)
 		return
 	}
 
@@ -64,21 +66,19 @@ func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error al Leer espacio de Memoria \n", http.StatusInternalServerError)
 	}
 
-	respuesta := g.RespuestaTablaCPU{
+	respuesta := g.RespuestaMarco{
 		NumeroMarco: marco,
 	}
 
 	logger.Info("## Número Frame enviado: %d ", marco)
 
-	w.Header().Set("Content-Type", "application/json")
-	errEncode := json.NewEncoder(w).Encode(respuesta)
-	if errEncode != nil {
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar enviar entrada pagina handler: %v", err)
+		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 		return
 	}
-	//w.Write([]byte("marco devuelto"))
 }
 
-// A COMBINAR
 func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
@@ -86,6 +86,8 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje g.LecturaProceso
 	err := data.LeerJson(w, r, &mensaje)
 	if err != nil {
+		logger.Error("Error leyendo JSON del CPU\n", err)
+		http.Error(w, "Error al decodear mensaje del JSON", http.StatusInternalServerError)
 		return
 	}
 
@@ -93,30 +95,23 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	direccionFisica := mensaje.DireccionFisica
 	tamanioALeer := mensaje.TamanioARecorrer
 	respuesta := adm.LeerEspacioEntrada(pid, direccionFisica)
-	respuesta = g.ExitoLecturaPagina{
+	respuesta = g.RespuestaLectura{
 		Exito: respuesta.Exito,
 		Valor: respuesta.Valor[:tamanioALeer],
 	}
-	//respuesta, err := adm.LeerEspacioMemoria(pid, direccionFisica, tamanioALeer)
 
 	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
 
-	if err != nil {
-		logger.Error("Error al leer en memoria: %v", err)
-		http.Error(w, "Error al leer en memoria", http.StatusInternalServerError)
-		return
-	}
-
 	logger.Info("## Lectura en espacio de memoria Éxitosa")
 
-	errr := json.NewEncoder(w).Encode(respuesta)
-	if errr != nil {
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar la lectura de pagina: %v", err)
+		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 		return
 	}
-	//w.Write([]byte("Respuesta devuelta"))
 }
 
 func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
@@ -125,6 +120,8 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	var mensaje g.EscrituraProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
+		logger.Error("Error leyendo JSON del CPU\n", err)
+		http.Error(w, "Error al decodear mensaje del JSON", http.StatusInternalServerError)
 		return
 	}
 
@@ -144,21 +141,16 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
 
-	/*if err != nil {
-		logger.Error("Error al escribir en memoria: %v", err)
-		http.Error(w, "Error al escribir en memoria", http.StatusInternalServerError)
-		return
-	}*/
-
 	logger.Info("## Escritura en espacio de memoria Éxitosa")
 
-	errr := json.NewEncoder(w).Encode(respuesta)
-	if errr != nil {
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar la escritura de la pagina: %v", err)
+		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 		return
 	}
-	//w.Write([]byte("Respuesta devuelta"))
 }
 
+/*
 func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
@@ -179,17 +171,15 @@ func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
 
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
-	}
 
 	logger.Info("## Lectura Éxitosa")
 
-	err := json.NewEncoder(w).Encode(respuesta)
-	if err != nil {
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar la lectura de pagina completa: %v", err)
+		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 		return
 	}
-	//w.Write([]byte("Respuesta devuelta"))
+
 }
 
 func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
@@ -218,15 +208,13 @@ func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
 
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
-	}
 
 	logger.Info("## Escritura Éxitosa")
 
-	errr := json.NewEncoder(w).Encode(respuesta)
-	if errr != nil {
+	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
+		logger.Error("Error al serializar la escritura de pagina completa: %v", err)
+		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 		return
 	}
-	//w.Write([]byte("Respuesta devuelta"))
 }
+*/

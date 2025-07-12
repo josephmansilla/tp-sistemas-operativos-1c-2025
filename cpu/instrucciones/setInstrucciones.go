@@ -43,12 +43,12 @@ type MensajeExit struct {
 // ejecutando (Pc, variables, registros, etc) y una lista de strings que son los argumentos
 
 var InstruccionSet = map[string]Instruccion{
-	// Instrucciones de CPU
+	// INSTRUCCIONES DE CPU
 	"NOOP":  noopInstruccion,
 	"GOTO":  gotoInstruccion,
 	"WRITE": writeMemInstruccion,
 	"READ":  readMemInstruccion,
-	// Syscalls
+	// SYSCALLS
 	"DUMP_MEMORY": dumpMemoryInstruccion,
 	"IO":          ioInstruccion,
 	"EXIT":        exitInstruccion,

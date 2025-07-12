@@ -22,7 +22,7 @@ func InicializarMemoriaPrincipal() {
 func InstanciarEstructurasGlobales() {
 	g.ProcesosPorPID = make(map[int]*g.Proceso)
 	g.SwapIndex = make(map[int]*g.SwapProcesoInfo)
-	g.EstaEnSwap = make(map[int]bool)
+	g.EstaEnSwap = make(map[int]bool) // TODO: ver si conviene agregarlo al mismo proceso y listo
 	g.MutexMetrica = make(map[int]*sync.Mutex, g.MemoryConfig.MemorySize)
 }
 

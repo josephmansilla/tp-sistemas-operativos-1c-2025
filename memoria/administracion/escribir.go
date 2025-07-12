@@ -5,7 +5,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
-func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura []byte) g.ExitoEscrituraPagina {
+func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura []byte) g.RespuestaEscritura {
 
 	if len(datosEscritura) == 0 {
 		logger.Debug("Los datos a escribir son vacios: %v", logger.ErrIsEmpty)
@@ -13,15 +13,15 @@ func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura []byte)
 
 	errEscritura := ModificarMemoria(direccionFisica, datosEscritura)
 	if errEscritura != nil {
-		return g.ExitoEscrituraPagina{Exito: errEscritura, DireccionFisica: direccionFisica, Mensaje: errEscritura.Error()}
+		return g.RespuestaEscritura{Exito: errEscritura, DireccionFisica: direccionFisica, Mensaje: errEscritura.Error()}
 	}
 
 	err := ModificarEstadoEntradaEscritura(pid)
 	if err != nil {
-		return g.ExitoEscrituraPagina{Exito: err, DireccionFisica: direccionFisica, Mensaje: err.Error()}
+		return g.RespuestaEscritura{Exito: err, DireccionFisica: direccionFisica, Mensaje: err.Error()}
 	}
 
-	exito := g.ExitoEscrituraPagina{
+	exito := g.RespuestaEscritura{
 		Exito:           nil,
 		DireccionFisica: direccionFisica,
 		Mensaje:         "Proceso fue modificado correctamente en memoria",
@@ -29,6 +29,8 @@ func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura []byte)
 
 	return exito
 }
+
+// =================== MODIFICO LOS VALORES EN LA MEMORIA PRINCIPAL ===================
 
 func ModificarMemoria(direccionFisica int, datosEnBytes []byte) (err error) {
 	tamanioPagina := g.MemoryConfig.PagSize
@@ -48,6 +50,8 @@ func ModificarMemoria(direccionFisica int, datosEnBytes []byte) (err error) {
 
 	return nil
 }
+
+// =================== MODIFICO LOS VALORES GLOBALES PARA LA PAGINA ===================
 
 func ModificarEstadoEntradaEscritura(pid int) error {
 	g.MutexProcesosPorPID.Lock()

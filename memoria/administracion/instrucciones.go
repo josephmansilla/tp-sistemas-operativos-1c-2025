@@ -5,16 +5,13 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
-func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU, err error) {
-	respuesta = g.InstruccionCPU{Exito: nil, Instruccion: ""}
+func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.RespuestaInstruccion, err error) {
+	respuesta = g.RespuestaInstruccion{Exito: nil, Instruccion: ""}
 
 	if proceso == nil {
 		logger.Error("Proceso recibido es nil")
 		return respuesta, logger.ErrProcessNil
 	}
-
-	lineaInstruccion := proceso.InstruccionesEnBytes[pc]
-
-	respuesta.Instruccion = string(lineaInstruccion)
+	respuesta.Instruccion = string(proceso.InstruccionesEnBytes[pc])
 	return respuesta, nil
 }

@@ -94,12 +94,14 @@ func (c *CachePaginas) MarcarUso(nroPagina int) {
 	}
 }
 
+// TODO: ======================
+// TODO: ELIMINAR SI NO FUNCIONA
 func LeerEnCache(nroPagina int, tamanio int) (string, error) {
 	time.Sleep(time.Millisecond * time.Duration(globals.ClientConfig.CacheDelay))
 
 	contenido, ok := Cache.Buscar(nroPagina)
 	if !ok {
-		err := fmt.Errorf("Página %d no encontrada en la caché", nroPagina)
+		err := fmt.Errorf("página %d no encontrada en la caché", nroPagina)
 		logger.Error("Error: %v", err)
 		return "", err
 	}
@@ -120,7 +122,7 @@ func EscribirEnCache(nroPagina int, datos string) error {
 			return nil
 		}
 	}
-	err := fmt.Errorf("No se encontró la página %d en la caché", nroPagina)
+	err := fmt.Errorf("no se encontró la página %d en la caché", nroPagina)
 	logger.Error("Error: %v", err)
 	return err
 }
@@ -156,7 +158,8 @@ func (c *CachePaginas) reemplazoClock(nueva EntradaCache) {
 		c.Entradas[c.Puntero] = nueva
 		c.Puntero = (c.Puntero + 1) % c.MaxEntradas // Para volver a 0 si se pasa de las entradas -> (3+1) % 4 = 0
 		return
-
+		// TODO: ================================================================================
+		// TODO: EL RETURN TENDRÍA QUE ESTAR DESPUES DE ESTE CODIGO O LO QUE ESTÁ DESPUES NO VA
 		entrada.Usado = false
 		c.Puntero = (c.Puntero + 1) % c.MaxEntradas
 	}

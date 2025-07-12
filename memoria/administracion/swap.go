@@ -80,8 +80,7 @@ func CargarEntradasDeMemoria(pid int) (resultados map[int]g.EntradaSwap, err err
 		vacio := make([]byte, tamanioPagina)
 		g.MutexMemoriaPrincipal.Lock()
 		datos := g.MemoriaPrincipal[inicio:fin]
-		copy(g.MemoriaPrincipal[inicio:fin], vacio) // TODO: preguntar o cambiar impl de leer entrada entera
-		g.MutexMemoriaPrincipal.Unlock()
+		copy(g.MemoriaPrincipal[inicio:fin], vacio)
 
 		entradita := g.EntradaSwap{
 			NumeroFrame: numeroFrame,
@@ -105,7 +104,12 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			logger.Error("Error al cerrar: %v", err)
+		}
+	}(file)
 
 	pos, err := file.Seek(0, io.SeekEnd)
 	if err != nil {
@@ -156,7 +160,12 @@ func CargarEntradasDeSwap(pid int) (entradas map[int]g.EntradaSwap, err error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			logger.Error("Error al cerrar: %v", err)
+		}
+	}(file)
 
 	entradas = make(map[int]g.EntradaSwap, len(info.NumerosFrame))
 

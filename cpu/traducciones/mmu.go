@@ -6,6 +6,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"io"
 )
 
 // Estructura del mensaje hacia Memoria
@@ -74,7 +75,7 @@ func Traducir(dirLogica int) int {
 	return marco*tamPagina + desplazamiento
 }
 
-// Descompone el número de página en los índices para cada nivel
+// Descompone el número de página en los índices para cada nivel (cortesía de PP)
 func DescomponerPagina(nroPagina int, niveles int, entradasPorNivel int) []int {
 	entradas := make([]int, niveles)
 	divisor := 1
@@ -103,7 +104,12 @@ func accederTabla(pid int, indices []int) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logger.Error("Error al cerrar: %v", err)
+		}
+	}(resp.Body)
 
 	var respuesta RespuestaTabla
 	if err := json.NewDecoder(resp.Body).Decode(&respuesta); err != nil {
@@ -120,7 +126,7 @@ func LeerEnMemoria(dirFisica int, tamanio int) (string, error) {
 		DireccionFisica:  dirFisica,
 		TamanioARecorrer: tamanio,
 	}
-
+	// TODO: VERIFICAR QUE LA LECTURA NO EXCEDA EL LIMITE DE LA PAGINA Y ESCRIBIR VARIAS VECES SI ES NECESARIO
 	url := fmt.Sprintf("http://%s:%d/memoria/lectura",
 		globals.ClientConfig.IpMemory,
 		globals.ClientConfig.PortMemory,
@@ -131,7 +137,12 @@ func LeerEnMemoria(dirFisica int, tamanio int) (string, error) {
 		logger.Error("Error enviando Direccion Fisica y Tamanio: %s", err.Error())
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logger.Error("Error al cerrar: %v", err)
+		}
+	}(resp.Body)
 
 	var respuesta RespuestaLectura
 	if err := json.NewDecoder(resp.Body).Decode(&respuesta); err != nil {
@@ -151,7 +162,7 @@ func EscribirEnMemoria(dirFisica int, datos string) error {
 		DireccionFisica: dirFisica,
 		DatosAEscribir:  datos,
 	}
-
+	// TODO: VERIFICAR QUE LA ESCRITURA NO EXCEDA EL LIMITE DE LA PAGINA Y ESCRIBIR VARIAS VECES SI ES NECESARIO
 	url := fmt.Sprintf("http://%s:%d/memoria/escritura",
 		globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
 

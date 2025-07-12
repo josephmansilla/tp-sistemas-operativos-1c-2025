@@ -44,27 +44,27 @@ type DatosDeCPU struct {
 	PC  int `json:"pc"`
 }
 
-type ContextoDeCPU struct {
+type ContextoCPU struct {
 	PID int `json:"pid"`
 	PC  int `json:"pc"`
 }
 
-type InstruccionCPU struct {
+type RespuestaInstruccion struct {
 	Instruccion string `json:"instruccion"`
 }
 
-type ConsultaConfigMemoria struct {
+type RespuestaConfigMemoria struct {
 	TamanioPagina    int `json:"tamanioPagina"`
 	EntradasPorNivel int `json:"entradasPorNivel"`
 	CantidadNiveles  int `json:"cantidadNiveles"`
 }
 
-type MensajePedidoTablaCPU struct {
+type ConsultaMarco struct {
 	PID            int   `json:"pid"`
 	IndicesEntrada []int `json:"indices_entrada"`
 }
 
-type RespuestaTablaCPU struct {
+type RespuestaMarco struct {
 	NumeroMarco int `json:"numero_marco"`
 }
 ```
@@ -72,7 +72,7 @@ type RespuestaTablaCPU struct {
 
 # Estructuras con Kernel
 ```go
-var RespuestaKernel DatosRespuestaDeKernel
+var RespuestaKernel InitProceso
 
 // var Kernel DatosConsultaDeKernel
 
@@ -81,7 +81,7 @@ type DatosConsultaDeKernel struct {
 	TamanioMemoria int `json:"tamanio_memoria"`
 }
 
-type DatosRespuestaDeKernel struct {
+type InitProceso struct {
 	PID            int    `json:"pid"`
 	TamanioMemoria int    `json:"tamanio_memoria"`
 	Pseudocodigo   string `json:"filename"`
@@ -148,7 +148,7 @@ type EscrituraPagina struct {
 	TamanioNecesario    int    `json:"tamanio_necesario"`
 }
 
-type ExitoEscrituraPagina struct {
+type RespuestaEscritura struct {
 	Exito           error  `json:"exito"`
 	DireccionFisica int    `json:"direccion_fisica"`
 	Mensaje         string `json:"mensaje"`
@@ -159,7 +159,7 @@ type LecturaPagina struct {
 	DireccionFisica int `json:"direccion_fisica"`
 }
 
-type ExitoLecturaPagina struct {
+type RespuestaLectura struct {
 	Exito           error  `json:"exito"`
 	PseudoCodigo    string `json:"pseudo_codigo"`
 	DireccionFisica int    `json:"direccion_fisica"`
@@ -191,7 +191,7 @@ type MetricasProceso struct {
 
 type OperacionMetrica func(*MetricasProceso)
 
-type DatosParaDump struct {
+type ConsultaDump struct {
 	PID       int    `json:"pid"`
 	TimeStamp string `json:"timeStamp"`
 }

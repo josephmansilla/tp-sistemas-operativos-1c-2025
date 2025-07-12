@@ -7,6 +7,7 @@ import (
 )
 
 // ============= SE DEBE USAR EXCLUSIVAMENTE PARA CREAR INDICES CON NUMEROS DE PAGINAS LOGICAS =============
+
 func CrearIndicePara(numeroPaginaLogica int) (indicesParaTabla []int) {
 	cantidadNiveles := g.MemoryConfig.NumberOfLevels
 	cantidadEntradasPorTabla := g.MemoryConfig.EntriesPerPage

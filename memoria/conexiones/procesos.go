@@ -14,7 +14,7 @@ import (
 )
 
 func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
-	var mensaje g.DatosRespuestaDeKernel
+	var mensaje g.InitProceso
 	respuesta := g.RespuestaMemoria{
 		Exito:   true,
 		Mensaje: "Proceso creado correctamente en memoria",
@@ -39,15 +39,16 @@ func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	if errEncode := json.NewEncoder(w).Encode(respuesta); errEncode != nil {
-		logger.Error("Error al codificar respuesta JSON: %v", errEncode)
+		logger.Error("Error al serializar finalizacion de espacio: %v", errEncode)
+		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
+		return
 	}
 }
 
 func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
-	var mensaje g.FinalizacionProceso
+	var mensaje g.ConsultaProceso
 
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
@@ -72,17 +73,15 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		Mensaje: "Proceso eliminado correctamente en memoria",
 	}
 	if errEncode := json.NewEncoder(w).Encode(respuesta); errEncode != nil {
-		logger.Error("Error al serializar mock de espacio: %v", errEncode)
+		logger.Error("Error al serializar finalizacion de espacio: %v", errEncode)
+		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
 		return
 	}
 
-	json.NewEncoder(w).Encode(respuesta)
-	w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("Respuesta devuelta"))
 }
 
 func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
-	var dump g.DatosParaDump
+	var dump g.ConsultaDump
 
 	if err := data.LeerJson(w, r, &dump); err != nil {
 		return
@@ -110,14 +109,18 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## Archivo Dump fue creado con EXITO")
 	w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("Dump Realizado"))
+	_, err = w.Write([]byte("Dump Realizado"))
+	if err != nil {
+		logger.Error("%% Error al serializar respuesta de realizar dump: %v", err)
+		return
+	}
 }
 
 func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
 	ignore := 0
-	var mensaje g.PedidoKernel
+	var mensaje g.ConsultaProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
@@ -148,7 +151,7 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		if errSwap != nil {
 			logger.Error("Error: %v", errSwap)
 			http.Error(w, "error: %v", http.StatusConflict)
-			respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradas.Error())}
+			respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errSwap.Error())}
 			return
 		}
 
@@ -164,18 +167,18 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
+	if errEncode := json.NewEncoder(w).Encode(respuesta); errEncode != nil {
+		logger.Error("Error al serializar la suspensión del proceso: %v", errEncode)
+		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
+		return
 	}
-	w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("Respuesta devuelta"))
 }
 
 func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
 	ignore := 0
-	var mensaje g.DesuspensionProceso
+	var mensaje g.ConsultaProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
@@ -224,8 +227,8 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 	}
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
+		logger.Error("Error al serializar la desuspension del proceso: %v", err)
+		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
+		return
 	}
-	w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("Respuesta devuelta"))
 }
