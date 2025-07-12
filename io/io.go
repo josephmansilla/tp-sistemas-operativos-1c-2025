@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -52,77 +51,67 @@ type MensajeFin struct {
 
 func main() {
 	// ----------------------------------------------------
-	// ---------- PARTE CARGA DE PARAMETROS ---------------
+	// ---------- PARTE CARGA DE PARÁMETROS ----------------
 	// ----------------------------------------------------
 	if len(os.Args) < 2 {
-		fmt.Println("Falta el parametro: nombre de la interfaz de io")
+		fmt.Println("Falta el parámetro: nombre de la interfaz de IO (ej. DISCO1)")
 		os.Exit(1)
 	}
-	config := os.Args[1]
+	nombre := os.Args[1]
+	globals.Nombre = nombre
 
 	// ----------------------------------------------------
-	// ------------- CARGO LOGS DE IO EN TXT --------------
+	// -------------------- CONFIG ------------------------
 	// ----------------------------------------------------
-	logFileName := fmt.Sprintf("./logs/io_%s.log", config)
-	var err = logger.ConfigureLogger(logFileName, "INFO")
+	globals.IoConfig = globals.CargarConfig()
+
+	globals.IoConfig.PuertoPorNombre(nombre)
+	puerto := globals.Puerto
+
+	// ----------------------------------------------------
+	// --------------------- LOGGER -----------------------
+	// ----------------------------------------------------
+	logFileName := fmt.Sprintf("./logs/io_%s.log", nombre)
+	err := logger.ConfigureLogger(logFileName, "INFO")
 	if err != nil {
 		fmt.Println("No se pudo crear el logger -", err.Error())
 		os.Exit(1)
 	}
 	logger.Debug("Logger creado")
-	logger.Info("Comenzó ejecucion del IO")
+	logger.Info("Comenzó ejecución del IO")
+	logger.Info("Nombre de la interfaz IO: %s", nombre)
+	logger.Info("Puerto asignado: %d", puerto)
+
 	// ----------------------------------------------------
-	// ---------- PARTE CARGA DEL CONFIG ------------------
+	// -------- ENVÍO IP/PUERTO/NOMBRE A KERNEL -----------
 	// ----------------------------------------------------
-	configFilename := fmt.Sprintf("%s.json", config)
-	configPath := fmt.Sprintf("./configs/%s", configFilename)
-	configData, err := os.ReadFile(configPath)
-	if err != nil {
-		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
-	}
-
-	err = json.Unmarshal(configData, &globals.IoConfig)
-	if err != nil {
-		logger.Fatal("No se pudo parsear el archivo de configuración - %v", err.Error())
-	}
-
-	if err = globals.IoConfig.Validate(); err != nil {
-		logger.Fatal("La configuración no es válida - %v", err.Error())
-	}
-
-	err = logger.SetLevel(globals.IoConfig.LogLevel)
-	if err != nil {
-		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
-	}
-
-	var nombre = globals.IoConfig.Type
-	logger.Info("Nombre de la Interfaz de IO: %s", globals.IoConfig.Type)
-	//Instancio el mensaje a mandar a Kernel
+	nombreKernel := "DISCO"
 	mensaje := MensajeAKernel{
 		Ip:     globals.IoConfig.IpIo,
-		Puerto: globals.IoConfig.PortIo,
-		Nombre: nombre,
+		Puerto: puerto,
+		Nombre: nombreKernel,
 	}
-
-	//Lo mando
 	EnviarIpPuertoNombreAKernel(globals.IoConfig.IpKernel, globals.IoConfig.PortKernel, mensaje)
 
-	// Activo la escucha de señales de terminación
+	// ----------------------------------------------------
+	// ------------- MANEJO DE SEÑALES --------------------
+	// ----------------------------------------------------
 	desconexion()
 
-	// ------------------------------------------------------
-	// ---------- ESCUCHO REQUESTS DE KERNEL ----------------
-	// ------------------------------------------------------
+	// ----------------------------------------------------
+	// ------------------ HANDLERS HTTP -------------------
+	// ----------------------------------------------------
 	mux := http.NewServeMux()
 	mux.HandleFunc("/io/kernel", RecibirMensajeDeKernel)
 
-	// Inicia el servidor HTTP para escuchar las peticiones del Kernel
-	direccion := fmt.Sprintf("%s:%d", globals.IoConfig.IpIo, globals.IoConfig.PortIo)
-	fmt.Printf("Escuchando en %s...", direccion)
-
+	// ----------------------------------------------------
+	// ------------------ SERVIDOR HTTP -------------------
+	// ----------------------------------------------------
+	direccion := fmt.Sprintf("%s:%d", globals.IoConfig.IpIo, puerto)
+	logger.Info("Escuchando en %s", direccion)
 	err = http.ListenAndServe(direccion, mux)
 	if err != nil {
-		panic(err)
+		logger.Fatal("Error al iniciar el servidor HTTP: %v", err)
 	}
 }
 
@@ -176,8 +165,8 @@ func FinDeIO(pid int) {
 	mensaje := MensajeFin{
 		PID:         getPID(),
 		Desconexion: false,
-		Nombre:      globals.IoConfig.Type,
-		Puerto:      globals.IoConfig.PortIo,
+		Nombre:      "DISCO",
+		Puerto:      globals.Puerto,
 	}
 	logger.Info("Enviando PID <%d> a Kernel", mensaje.PID)
 
@@ -206,8 +195,8 @@ func desconexion() {
 		mensaje := MensajeFin{
 			PID:         pid,
 			Desconexion: true,
-			Nombre:      globals.IoConfig.Type,
-			Puerto:      globals.IoConfig.PortIo,
+			Nombre:      globals.Nombre,
+			Puerto:      globals.Puerto,
 		}
 
 		url := fmt.Sprintf("http://%s:%d/kernel/fin_io", globals.IoConfig.IpKernel, globals.IoConfig.PortKernel)

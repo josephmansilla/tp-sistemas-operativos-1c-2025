@@ -13,12 +13,13 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 3 {
-		logger.Info("Uso: go run cpu.go <ID_CPU> <archivo_config_sin_extension_json>")
+	if len(os.Args) < 2 {
+		logger.Info("Uso: go run cpu.go <ID_CPU>")
 		os.Exit(1)
 	}
 	globals.ID = os.Args[1]
 
+	// Logger
 	logFileName := fmt.Sprintf("logs/cpu_%s.log", globals.ID)
 	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
@@ -27,24 +28,33 @@ func main() {
 	}
 	multiWriter := io.MultiWriter(os.Stdout, logFile)
 	log.SetOutput(multiWriter)
+	logger.ConfigureLogger(logFileName, "INFO")
 
-	err = logger.ConfigureLogger(logFileName, "INFO")
-	if err != nil {
-		fmt.Println("No se pudo crear el logger -", err.Error())
-		os.Exit(1)
-	}
-	logger.Debug("Logger creado")
-
-	logger.Info("=========================================================")
 	logger.Info("======== Comenzó la ejecución del CPU con ID: %s ========", globals.ID)
-	logger.Info("=========================================================")
 
-	// CONFIGURACIÓN
-	configPath := fmt.Sprintf("configs/%s.json", os.Args[2])
-	globals.ClientConfig = utils.Config(configPath)
-	if globals.ClientConfig == nil {
-		logger.Fatal("No se pudo cargar el archivo de configuración: %s", configPath)
+	// Cargar config desde "config.json" raíz
+	config := utils.Config()
+
+	// Asignar IP y puerto según ID
+	switch globals.ID {
+	case "1":
+		config.IpSelf = config.IpCPU
+		config.PortSelf = config.PortCPU1
+	case "2":
+		config.IpSelf = config.IpCPU
+		config.PortSelf = config.PortCPU2
+	case "3":
+		config.IpSelf = config.IpCPU
+		config.PortSelf = config.PortCPU3
+	case "4":
+		config.IpSelf = config.IpCPU
+		config.PortSelf = config.PortCPU4
+	default:
+		logger.Fatal("ID de CPU inválido: %s", globals.ID)
 	}
+
+	globals.ClientConfig = config
+
 	traducciones.Max = globals.ClientConfig.CacheEntries
 	traducciones.InitTLB()
 	traducciones.InitCache()

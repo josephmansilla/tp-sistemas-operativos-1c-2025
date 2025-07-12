@@ -30,28 +30,24 @@ type ConsultaConfigMemoria struct {
 	CantidadNiveles  int `json:"cantidadNiveles"`
 }
 
-func Config(filepath string) *globals.Config {
-	//Recibe un string filepath (ruta al archivo de configuración).
-	var config *globals.Config
+func Config() *globals.Config {
+	const path = "../config.json" // ← archivo fijo en el directorio raíz
 
-	//Abrir archivo en la ruta filepath
-	configFile, err := os.Open(filepath)
+	var config globals.Config
 
+	configFile, err := os.Open(path)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Fatal("No se pudo abrir el archivo de configuración: %v", err)
 	}
-	//defer se usa para asegurarse de cerrar recursos (archivos, conexiones, etc.)
-	//incluso si hay errores más adelante.
 	defer configFile.Close()
 
-	//Crear decoder JSON que lee desde el archivo abierto (configFile).
 	jsonParser := json.NewDecoder(configFile)
+	err = jsonParser.Decode(&config)
+	if err != nil {
+		logger.Fatal("Error al parsear el archivo de configuración: %v", err)
+	}
 
-	//Deserializa el contenido del archivo JSON en una estructura Go.
-	//llena el struct config con los valores que están en el archivo.
-	jsonParser.Decode(&config)
-
-	return config
+	return &config
 }
 
 // Enviar IP y Puerto al Kernel

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"net/http"
@@ -22,20 +21,13 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DE PARAMETROS ---------------
 	// ----------------------------------------------------
-	if len(os.Args) < 2 {
-		fmt.Println("Falta el parametro: nombre del archivo de pseudocodigo")
-		os.Exit(1)
-	} else if len(os.Args) < 3 {
-		fmt.Println("Falta el parametro: tamaño del proceso")
-		os.Exit(1)
-	} else if len(os.Args) < 4 {
-		fmt.Println("Falta el parametro: ruta config")
+	if len(os.Args) < 3 {
+		fmt.Println("Faltan parámetros: archivo_pseudocodigo tamaño_proceso")
 		os.Exit(1)
 	}
 
 	archivoPseudocodigo := os.Args[1]
-	tamanioStr := os.Args[2] //Convertir a Double
-	config := os.Args[3]
+	tamanioStr := os.Args[2]
 
 	tamanioProceso, err := strconv.Atoi(tamanioStr)
 	if err != nil {
@@ -43,39 +35,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	// ----------------------------------------------------
-	// ----------- CARGO LOGS DE KERNEL EN TXT ------------
-	// ----------------------------------------------------
 	err = logger.ConfigureLogger("kernel.log", "INFO")
 	if err != nil {
-		fmt.Println("No se pudo crear el logger -", err.Error())
+		fmt.Println("No se pudo crear el logger -", err)
 		os.Exit(1)
 	}
 	logger.Debug("Logger creado")
 
-	logger.Info("Comenzo la ejecucion del Kernel")
+	logger.Info("Comenzó la ejecución del Kernel")
 
-	// ----------------------------------------------------
-	// ---------- PARTE CARGA DEL CONFIG ------------------
-	// ----------------------------------------------------
-	configPath := fmt.Sprintf("configs/%s.json", config)
-	configData, err := os.ReadFile(configPath)
-	if err != nil {
-		logger.Fatal("No se pudo leer el archivo de configuración - %v", err.Error())
-	}
-
-	err = json.Unmarshal(configData, &globals.KConfig)
-	if err != nil {
-		logger.Fatal("No se pudo parsear el archivo de configuración - %v", err.Error())
-	}
-
-	if err = globals.KConfig.Validate(); err != nil {
-		logger.Fatal("La configuración no es válida - %v", err.Error())
-	}
+	// Cargo config directamente sin pasarla por parámetro
+	globals.KConfig = globals.CargarConfig()
 
 	err = logger.SetLevel(globals.KConfig.LogLevel)
 	if err != nil {
-		logger.Fatal("No se pudo leer el log-level - %v", err.Error())
+		logger.Fatal("No se pudo establecer el nivel de log: %v", err)
 	}
 
 	//Inicilizar todas las colas vacias, tipo de dato punteros a PCB y TCB(hilos)
