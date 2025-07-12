@@ -49,7 +49,7 @@ func BuscarEntradaPagina(procesoBuscado *g.Proceso, indices []int) (entradaDesea
 		}
 		tablaApuntada = tablaApuntada.Subtabla[indices[i]]
 		if tablaApuntada == nil {
-			logger.Error("La subtabla no existe en índice %d", indices[i])
+			logger.Error("La subtabla no existe en el índice <%d>", indices[i])
 			return nil, fmt.Errorf("la subtabla no existe en índice %d", indices[i])
 		}
 	}
@@ -120,78 +120,4 @@ func ObtenerEntradaPagina(pid int, indices []int) (int, error) {
 		return -1, fmt.Errorf("la entrada no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
 	}
 	return entradaPagina.NumeroFrame, nil
-}
-
-func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, entrada *g.EntradaPagina) {
-	indices := CrearIndicePara(numeroPagina)
-	actual := tablaRaiz[indices[0]]
-
-	if actual == nil {
-		actual = &g.TablaPagina{}
-		tablaRaiz[indices[0]] = actual
-	}
-
-	for i := 1; i < len(indices)-1; i++ {
-		if actual.Subtabla == nil {
-			actual.Subtabla = make(map[int]*g.TablaPagina)
-		}
-		if actual.Subtabla[indices[i]] == nil {
-			actual.Subtabla[indices[i]] = &g.TablaPagina{}
-		}
-		actual = actual.Subtabla[indices[i]]
-	}
-
-	if actual.EntradasPaginas == nil {
-		actual.EntradasPaginas = make(map[int]*g.EntradaPagina)
-	}
-	actual.EntradasPaginas[indices[len(indices)-1]] = entrada
-
-	logger.Info("Insertada entrada para página <%d> (indices=%v)", numeroPagina, indices)
-}
-
-func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura string) g.ExitoEscrituraPagina {
-	stringEnBytes := []byte(datosEscritura)
-	if len(stringEnBytes) == 0 {
-		logger.Error("Los datos a escribir son vacios: %v", logger.ErrNoInstance)
-	}
-	err := ModificarEstadoEntradaEscritura(pid, direccionFisica, stringEnBytes)
-	if err != nil {
-		return g.ExitoEscrituraPagina{Exito: err, DireccionFisica: direccionFisica, Mensaje: err.Error()}
-	}
-
-	exito := g.ExitoEscrituraPagina{
-		Exito:           nil,
-		DireccionFisica: direccionFisica,
-		Mensaje:         "Proceso fue modificado correctamente en memoria",
-	}
-
-	return exito
-}
-
-func LeerEspacioEntrada(pid int, direccionFisica int) (datosLectura g.ExitoLecturaPagina) {
-	datosLectura = ObtenerDatosMemoria(direccionFisica)
-	ModificarEstadoEntradaLectura(pid)
-	return datosLectura
-}
-
-func ModificarEstadoEntradaLectura(pid int) {
-	g.MutexProcesosPorPID.Lock()
-	proceso := g.ProcesosPorPID[pid]
-	g.MutexProcesosPorPID.Unlock()
-	IncrementarMetrica(proceso, 1, IncrementarLecturaDeMemoria)
-	logger.Info("## Modificacion del estado entrada exitosa")
-}
-
-func ObtenerInstruccion(proceso *g.Proceso, pc int) (respuesta g.InstruccionCPU, err error) {
-	respuesta = g.InstruccionCPU{Exito: nil, Instruccion: ""}
-
-	if proceso == nil {
-		logger.Error("Proceso recibido es nil")
-		return respuesta, logger.ErrProcessNil
-	}
-
-	lineaInstruccion := proceso.InstruccionesEnBytes[pc]
-
-	respuesta.Instruccion = string(lineaInstruccion)
-	return respuesta, nil
 }

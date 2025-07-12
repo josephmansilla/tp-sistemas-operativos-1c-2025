@@ -149,6 +149,33 @@ func AsignarPaginasParaPID(proceso *g.Proceso, tamanio int) error {
 	return nil
 }
 
+func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, entrada *g.EntradaPagina) {
+	indices := CrearIndicePara(numeroPagina)
+	actual := tablaRaiz[indices[0]]
+
+	if actual == nil {
+		actual = &g.TablaPagina{}
+		tablaRaiz[indices[0]] = actual
+	}
+
+	for i := 1; i < len(indices)-1; i++ {
+		if actual.Subtabla == nil {
+			actual.Subtabla = make(map[int]*g.TablaPagina)
+		}
+		if actual.Subtabla[indices[i]] == nil {
+			actual.Subtabla[indices[i]] = &g.TablaPagina{}
+		}
+		actual = actual.Subtabla[indices[i]]
+	}
+
+	if actual.EntradasPaginas == nil {
+		actual.EntradasPaginas = make(map[int]*g.EntradaPagina)
+	}
+	actual.EntradasPaginas[indices[len(indices)-1]] = entrada
+
+	logger.Info("Insertada entrada para página <%d> (indices=%v)", numeroPagina, indices)
+}
+
 func AsignarFrameLibre() (int, error) {
 	cantidadFramesTotales := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
 

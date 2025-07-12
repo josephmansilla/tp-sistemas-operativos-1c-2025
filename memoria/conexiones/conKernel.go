@@ -125,7 +125,6 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error encontrando PID", http.StatusInternalServerError)
 		return
 	}
-	// contenido := make([]string, 2) contenido[0] = "bolas" contenido[1] = "sexo"
 	adm.ParsearContenido(dumpFile, dump.PID, contenido)
 
 	logger.Info("## Archivo Dump fue creado con EXITO")

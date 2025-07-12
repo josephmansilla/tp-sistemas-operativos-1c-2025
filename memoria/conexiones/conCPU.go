@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// VA A MORIR
 func RecibirMensajeDeCPUHandler(w http.ResponseWriter, r *http.Request) {
 	var mensaje g.DatosDeCPU
 	err := data.LeerJson(w, r, &mensaje)
