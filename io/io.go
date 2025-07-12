@@ -176,7 +176,7 @@ func FinDeIO(pid int) {
 	mensaje := MensajeFin{
 		PID:         getPID(),
 		Desconexion: false,
-		Nombre:      globals.Nombre,
+		Nombre:      globals.IoConfig.Type,
 		Puerto:      globals.IoConfig.PortIo,
 	}
 	logger.Info("Enviando PID <%d> a Kernel", mensaje.PID)
@@ -206,7 +206,7 @@ func desconexion() {
 		mensaje := MensajeFin{
 			PID:         pid,
 			Desconexion: true,
-			Nombre:      globals.Nombre,
+			Nombre:      globals.IoConfig.Type,
 			Puerto:      globals.IoConfig.PortIo,
 		}
 

@@ -11,7 +11,6 @@ type Config struct {
 	Type       string `json:"type"`
 }
 
-var Nombre string
 var IoConfig *Config
 
 func (cfg Config) Validate() error {
