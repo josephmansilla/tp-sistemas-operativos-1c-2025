@@ -53,9 +53,9 @@ eg:
 	cd cpu && $(RUN) cpu.go 4 4EG &
 	sleep 1
 	cd io && $(RUN) io.go DISCO &
-	cd io && $(RUN) io.go DISCO &
-	cd io && $(RUN) io.go DISCO &
-	cd io && $(RUN) io.go DISCO &
+	cd io && $(RUN) io.go DISCO2 &
+	cd io && $(RUN) io.go DISCO3 &
+	cd io && $(RUN) io.go DISCO4 &
 
 # === Detener todos los procesos (por si quedan en background) ===
 clean:

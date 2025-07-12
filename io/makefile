@@ -19,9 +19,9 @@ cache:
 # === Prueba: Estabilidad General (EG) ===
 eg:
 	$(RUN) io.go DISCO &
-	$(RUN) io.go DISCO &
-	$(RUN) io.go DISCO &
-	$(RUN) io.go DISCO
+	$(RUN) io.go DISCO2 &
+	$(RUN) io.go DISCO3 &
+	$(RUN) io.go DISCO4
 
 # === Detener todos los procesos (por si quedan en background) ===
 clean:
