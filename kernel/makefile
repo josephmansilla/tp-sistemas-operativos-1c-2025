@@ -2,7 +2,7 @@ RUN = go run
 
 # === Prueba: Corto Plazo ===
 corto:
-	$(RUN) kernel.go PLANI_CORTO_PLAZO 0
+	$(RUN) kernel.go PLANI_CORTO_PLAZO 0 cortoplazo
 
 # === Prueba: Mediano/Largo Plazo ===
 lym:
