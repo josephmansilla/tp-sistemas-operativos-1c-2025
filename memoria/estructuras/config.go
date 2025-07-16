@@ -8,8 +8,8 @@ import (
 )
 
 type Config struct {
-	PortMemory     int    `json:"puerto_memoria"`
-	IpMemory       string `json:"ip_memoria"`
+	PortMemory     int    `json:"port_memory"`
+	IpMemory       string `json:"ip_memory"`
 	MemorySize     int    `json:"memory_size"`
 	PagSize        int    `json:"pag_size"`
 	EntriesPerPage int    `json:"entries_per_page"`
@@ -24,10 +24,10 @@ type Config struct {
 
 func (cfg Config) Validate() error {
 	if cfg.IpMemory == "" {
-		return errors.New("falta el campo 'ip_memoria'")
+		return errors.New("falta el campo 'ip_memory'")
 	}
 	if cfg.PortMemory <= 0 {
-		return errors.New("falta el campo 'puerto_memoria' o es inválido")
+		return errors.New("falta el campo 'port_memory' o es inválido")
 	}
 	if cfg.MemorySize <= 0 {
 		return errors.New("falta el campo 'memory_size'")
@@ -63,7 +63,7 @@ func (cfg Config) Validate() error {
 }
 
 func ConfigMemoria() *Config {
-	const path = "../config.json"
+	const path = "../memoria/configs/config.json"
 
 	var config Config
 

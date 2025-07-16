@@ -1,9 +1,24 @@
 RUN = go run
 
+uno:
+	$(RUN) cpu.go 1
+
+dos:
+	nano ../cpu/configs/config.json
+	$(RUN) cpu.go 2
+
+tres:
+	nano ../cpu/configs/config.json
+	$(RUN) cpu.go 3
+
+cuatro:
+	nano ../cpu/configs/config.json
+	$(RUN) cpu.go 4
+
 # === Prueba: Corto Plazo ===
 corto:
-	$(RUN) cpu.go 1 1CP &
-	$(RUN) cpu.go 2 2CP
+	$(RUN) cpu.go 1 &
+	$(RUN) cpu.go 2
 
 # === Prueba: Mediano/Largo Plazo ===
 lym:

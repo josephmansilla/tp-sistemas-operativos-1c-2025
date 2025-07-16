@@ -5,24 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 )
 
 type Config struct {
 	IpKernel   string `json:"ip_kernel"`
-	PortKernel int    `json:"puerto_kernel"`
+	PortKernel int    `json:"port_kernel"`
 	IpIo       string `json:"ip_io"`
-	PuertoIo1  int    `json:"puerto_io1"`
-	PuertoIo2  int    `json:"puerto_io2"`
-	PuertoIo3  int    `json:"puerto_io3"`
-	PuertoIo4  int    `json:"puerto_io4"`
+	PortIo     int    `json:"port_io"`
 	LogLevel   string `json:"log_level"`
 	Type       string `json:"type"`
 }
 
 var IoConfig *Config
-var Nombre string
-var Puerto int
 
 func (cfg Config) Validate() error {
 	if cfg.IpKernel == "" {
@@ -31,16 +25,7 @@ func (cfg Config) Validate() error {
 	if cfg.PortKernel <= 0 {
 		return errors.New("falta el campo 'port_kernel' o es inválido")
 	}
-	if cfg.PuertoIo1 <= 0 {
-		return errors.New("falta el campo 'port_io' o es inválido")
-	}
-	if cfg.PuertoIo2 <= 0 {
-		return errors.New("falta el campo 'port_io' o es inválido")
-	}
-	if cfg.PuertoIo3 <= 0 {
-		return errors.New("falta el campo 'port_io' o es inválido")
-	}
-	if cfg.PuertoIo4 <= 0 {
+	if cfg.PortIo <= 0 {
 		return errors.New("falta el campo 'port_io' o es inválido")
 	}
 	if cfg.IpIo == "" {
@@ -56,7 +41,7 @@ func (cfg Config) Validate() error {
 }
 
 func CargarConfig() *Config {
-	configFile, err := os.Open("../config.json")
+	configFile, err := os.Open("../io/configs/config.json")
 	if err != nil {
 		fmt.Printf("No se pudo abrir config: %v\n", err)
 		os.Exit(1)
@@ -74,20 +59,4 @@ func CargarConfig() *Config {
 		os.Exit(1)
 	}
 	return &cfg
-}
-
-func (cfg *Config) PuertoPorNombre(nombre string) {
-	n := strings.ToUpper(nombre)
-	switch n {
-	case "DISCO1":
-		Puerto = cfg.PuertoIo1
-	case "DISCO2":
-		Puerto = cfg.PuertoIo2
-	case "DISCO3":
-		Puerto = cfg.PuertoIo3
-	case "DISCO4":
-		Puerto = cfg.PuertoIo4
-	default:
-		Puerto = -1
-	}
 }

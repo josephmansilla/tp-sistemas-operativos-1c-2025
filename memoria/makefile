@@ -1,8 +1,10 @@
 RUN = go run
 
+memoria:
+	$(RUN) memoria.go
 # === Prueba: Corto Plazo ===
 corto:
-	$(RUN) memoria.go cortoPlazo
+	$(RUN) memoria.go
 
 # === Prueba: Mediano/Largo Plazo ===
 lym:

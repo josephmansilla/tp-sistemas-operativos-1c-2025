@@ -36,23 +36,6 @@ func main() {
 	config := utils.Config()
 
 	// Asignar IP y puerto según ID
-	switch globals.ID {
-	case "1":
-		config.IpSelf = config.IpCPU
-		config.PortSelf = config.PortCPU1
-	case "2":
-		config.IpSelf = config.IpCPU
-		config.PortSelf = config.PortCPU2
-	case "3":
-		config.IpSelf = config.IpCPU
-		config.PortSelf = config.PortCPU3
-	case "4":
-		config.IpSelf = config.IpCPU
-		config.PortSelf = config.PortCPU4
-	default:
-		logger.Fatal("ID de CPU inválido: %s", globals.ID)
-	}
-
 	globals.ClientConfig = config
 
 	traducciones.Max = globals.ClientConfig.CacheEntries

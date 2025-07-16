@@ -31,7 +31,7 @@ type ConsultaConfigMemoria struct {
 }
 
 func Config() *globals.Config {
-	const path = "../config.json" // ← archivo fijo en el directorio raíz
+	const path = "../cpu/configs/config.json" // ← archivo fijo en el directorio cpu
 
 	var config globals.Config
 
