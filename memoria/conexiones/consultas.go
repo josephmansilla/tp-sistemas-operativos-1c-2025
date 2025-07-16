@@ -18,12 +18,10 @@ func ObtenerEspacioLibreHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## Espacio libre devuelto - Tamaño: <%d>", respuesta.EspacioLibre)
 
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar mock de espacio: %v", err)
-	}
 	err := json.NewEncoder(w).Encode(respuesta)
 	if err != nil {
 		logger.Error("Error al enviar la respuesta de esapcioLibre: %v", err)
+		http.Error(w, "Error al enviar la respuesta de esapcioLibre", http.StatusInternalServerError)
 		return
 	}
 
