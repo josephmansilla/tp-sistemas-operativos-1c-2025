@@ -7,16 +7,15 @@ import (
 )
 
 func InicializarMemoriaPrincipal() {
-	tamanioMemoriaPrincipal := g.MemoryConfig.MemorySize
-	tamanioPagina := g.MemoryConfig.PagSize
-	cantidadFrames := tamanioMemoriaPrincipal / tamanioPagina
 
-	g.MemoriaPrincipal = make([]byte, tamanioMemoriaPrincipal)
+	cantidadFrames := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
+
+	g.MemoriaPrincipal = make([]byte, g.MemoryConfig.MemorySize)
 	ConfigurarFrames(cantidadFrames)
 	InstanciarEstructurasGlobales()
 
-	logger.Info("Memoria Principal Inicializada con %d bytes de tamaño con %d frames de %d.",
-		tamanioMemoriaPrincipal, cantidadFrames, tamanioPagina)
+	logger.Info("Memoria Principal Inicializada con %d bytes de tamaño con %d frames de %d bytes.",
+		g.MemoryConfig.MemorySize, cantidadFrames, g.MemoryConfig.PagSize)
 }
 
 func InstanciarEstructurasGlobales() {
