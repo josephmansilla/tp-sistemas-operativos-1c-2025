@@ -114,8 +114,8 @@ func RecorrerTablasBuscandoEntrada(tabla *g.TablaPagina, numeroEntrada int, cont
 		return -1, false
 	}
 	for _, entrada := range tabla.EntradasPaginas {
-		if *contador == entrada.NumeroFrame {
-			return entrada.NumeroFrame, true
+		if *contador == entrada.NumeroPagina {
+			return entrada.NumeroPagina, true
 		}
 		*contador++
 	}

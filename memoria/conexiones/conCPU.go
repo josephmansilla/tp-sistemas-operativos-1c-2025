@@ -132,7 +132,7 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	respuesta := adm.EscribirEspacioEntrada(pid, direccionFisica, datos)
 	if respuesta.Exito != nil {
-		logger.Error("JIJO DE BU: %v", respuesta.Exito)
+		logger.Error("Escritura con error: %v", respuesta.Exito)
 		return
 	}
 
@@ -140,8 +140,6 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
-
-	logger.Info("## Escritura en espacio de memoria Éxitosa")
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar la escritura de la pagina: %v", err)

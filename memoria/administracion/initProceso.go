@@ -137,7 +137,7 @@ func AsignarPaginasParaPID(proceso *g.Proceso, tamanio int) error {
 	for i := 0; i < cantidadFrames; i++ {
 		numeroFrame, err := AsignarFrameLibre()
 		if err != nil {
-			logger.Error("no hay frames libres en el sistema %v", err)
+			logger.Error("No hay frames libres en el sistema %v", err)
 			return err
 		}
 		entradaPagina := &g.EntradaPagina{
@@ -145,9 +145,9 @@ func AsignarPaginasParaPID(proceso *g.Proceso, tamanio int) error {
 			EstaPresente: true,
 		}
 		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, i, entradaPagina)
-		logger.Info("## La entrada <%d> para el PID <%d> se guardó en el frame <%d>...", i, proceso.PID, numeroFrame)
+		logger.Info("## Entrada <%d> ; PID <%d> ; Frame <%d>...", i, proceso.PID, numeroFrame)
 	}
-	logger.Info("Quedan <%d> frames libes", g.CantidadFramesLibres)
+	logger.Info("%% Quedan <%d> frames libes", g.CantidadFramesLibres)
 	return nil
 }
 

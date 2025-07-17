@@ -17,7 +17,7 @@ func CalcularCantidadEntradas(tamanio int) (resultado int, err error) {
 	err = nil
 	resultado = 0
 	if tamanio < 0 {
-		return resultado, fmt.Errorf("el tamanio pedido de espacio es 0 %v", logger.ErrBadRequest)
+		return resultado, fmt.Errorf("el tamanio pedido de espacio es negativo %v", logger.ErrBadRequest)
 	}
 
 	resultado = tamanio / MemoryConfig.PagSize

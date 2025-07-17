@@ -13,26 +13,12 @@ import (
 )
 
 func main() {
-	// ----------------------------------------------------
-	// ---------- PARTE CARGA DE PARAMETROS ---------------
-	// ----------------------------------------------------
 	if len(os.Args) < 2 {
-		fmt.Println("Faltan parámetros: archivo_pseudocodigo tamaño_proceso")
+		logger.Fatal("Falta parámetro: CONFIG")
 		os.Exit(1)
 	}
-
 	config := os.Args[1]
-
-	err := logger.ConfigureLogger("memoria.log", "INFO")
-	if err != nil {
-		fmt.Println("No se pudo crear el logger -", err.Error())
-		os.Exit(1)
-	}
 	g.MemoryConfig = g.ConfigMemoria(config)
-	err = logger.SetLevel(g.MemoryConfig.LogLevel)
-	if err != nil {
-		logger.Fatal("No se pudo establecer el log-level: %v", err)
-	}
 
 	logger.Info("======== Comenzó la ejecución de Memoria ========")
 	logger.Info("Servidor escuchando en http://localhost:%d/memoria", g.MemoryConfig.PortMemory)
@@ -51,8 +37,6 @@ func main() {
 	adm.InicializarMemoriaPrincipal()
 
 	mux := http.NewServeMux()
-	// mux.HandleFunc("/memoria/cpu", conex.RecibirMensajeDeCPUHandler)
-
 	// ======================== CONFIGS Y CONSULTAS ========================
 	mux.HandleFunc("/memoria/configuracion", conex.EnviarConfiguracionMemoriaHandler)
 	mux.HandleFunc("/memoria/espaciolibre", conex.ObtenerEspacioLibreHandler)
@@ -68,7 +52,6 @@ func main() {
 	// ====================== SUSPENSIÓN =====================
 	mux.HandleFunc("/memoria/suspension", conex.SuspensionProcesoHandler)
 	mux.HandleFunc("/memoria/desuspension", conex.DesuspensionProcesoHandler)
-
 	// ======================== LECTURA Y ESCRITURA ========================
 	mux.HandleFunc("/memoria/lectura", conex.LeerEspacioUsuarioHandler)
 	mux.HandleFunc("/memoria/escritura", conex.EscribirEspacioUsuarioHandler)

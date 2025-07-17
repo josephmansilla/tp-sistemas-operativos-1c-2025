@@ -50,26 +50,26 @@ func RealizarDumpMemoria(pid int) (vector []string, err error) {
 
 func RecolectarEntradasProcesoDump(proceso g.Proceso) (resultados []int) {
 	for _, subtabla := range proceso.TablaRaiz {
-		RecorrerTablaPagina(subtabla, &resultados)
+		RecorrerTablaPaginaDump(subtabla, &resultados)
 	}
 	return
 }
 
 // ========== RECORRER LA TABLA PARA JUNTAR ENTRADAS ==========
 
-func RecorrerTablaPagina(tabla *g.TablaPagina, resultados *[]int) {
+func RecorrerTablaPaginaDump(tabla *g.TablaPagina, resultados *[]int) {
 
 	if tabla.Subtabla != nil {
 		for _, subTabla := range tabla.Subtabla {
-			RecorrerTablaPagina(subTabla, resultados)
+			RecorrerTablaPaginaDump(subTabla, resultados)
 		}
 		return
 	}
-	for _, entrada := range tabla.EntradasPaginas {
+	for i, entrada := range tabla.EntradasPaginas {
 		if entrada.EstaPresente {
 			*resultados = append(*resultados, entrada.NumeroFrame)
 		} else {
-			logger.Debug("Entrada <%d> en swap !!!!!!!", entrada.NumeroFrame)
+			logger.Debug("%% Entrada <%d> en swap !", i)
 		}
 	}
 }

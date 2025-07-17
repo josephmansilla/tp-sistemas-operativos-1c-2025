@@ -128,7 +128,7 @@ type ExitoEdicionMemoria struct {
 # Estructuras de Paginación
 ```go
 type EntradaPagina struct {
-	NumeroFrame   int  `json:"numero_frame"`
+	NumeroPagina   int  `json:"numero_frame"`
 	EstaPresente  bool `json:"esta_presente"`
 	EstaEnUso     bool `json:"esta_en_uso"`
 	FueModificado bool `json:"fue_modificado"`
@@ -197,7 +197,7 @@ type ConsultaDump struct {
 }
 type EntradaDump struct {
 	DireccionFisica int `json:"direccion_fisica"`
-	NumeroFrame     int `json:"numero_frame"`
+	NumeroPagina     int `json:"numero_frame"`
 }
 ```
 
