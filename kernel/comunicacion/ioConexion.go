@@ -90,29 +90,45 @@ func EnviarContextoIO(instanciaIO globals.DatosIO, pid int, duracion int) {
 func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 	var mensajeRecibido MensajeFin
 	if err := data.LeerJson(w, r, &mensajeRecibido); err != nil {
-		logger.Error("Error al recibir mensaje de fin de IO %s", err.Error())
+		logger.Error("Error al recibir mensaje de fin de IO: %s", err)
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
 	}
 
-	pid := mensajeRecibido.PID
-	if mensajeRecibido.Desconexion {
-		logger.Info("Desconexion de IO: Puerto %d, PID %d", mensajeRecibido.Puerto, pid)
-		Utils.NotificarDesconexion <- Utils.IODesconexion{
-			PID:    mensajeRecibido.PID,
-			Nombre: mensajeRecibido.Nombre,
-			Puerto: mensajeRecibido.Puerto,
-		}
-	} else {
-		logger.Info("FIN de IO: PID %d", pid)
-		Utils.NotificarFinIO <- Utils.IOEvent{
-			PID:    mensajeRecibido.PID,
-			Nombre: mensajeRecibido.Nombre,
-			Puerto: mensajeRecibido.Puerto,
-		}
-	}
-
-	Utils.NotificarIOLibre <- Utils.IOEvent{
+	evt := Utils.IOEvent{
 		PID:    mensajeRecibido.PID,
 		Nombre: mensajeRecibido.Nombre,
 		Puerto: mensajeRecibido.Puerto,
 	}
+
+	//  Si es desconexión
+	if mensajeRecibido.Desconexion {
+		logger.Info("Desconexión de IO: Puerto %d, PID %d", evt.Puerto, evt.PID)
+		Utils.NotificarDesconexion <- Utils.IODesconexion{
+			PID:    evt.PID,
+			Nombre: evt.Nombre,
+			Puerto: evt.Puerto,
+		}
+	} else {
+		// Fin de IO normal
+		//a confirmar este
+		logger.Info("FIN de IO: PID %d", evt.PID)
+		Utils.NotificarFinIO <- evt
+	}
+
+	// Aviso a DespacharIO
+	Utils.NotificarIOLibre <- evt
+
+	// Reenvío al canal individual de este PID (si existe)
+	Utils.MutexIOWaiters.Lock()
+	if ch, ok := Utils.IOWaiters[evt.PID]; ok {
+		select {
+		case ch <- evt:
+		default:
+			// si ya había un evento pendiente, lo descartamos
+		}
+	}
+	Utils.MutexIOWaiters.Unlock()
+
+	w.WriteHeader(http.StatusOK)
 }

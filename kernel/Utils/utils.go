@@ -35,6 +35,8 @@ var (
 	ContextoInterrupcion    chan InterruptProcess //FIN DE EXECUTE
 	NotificarTimeoutBlocked chan int
 	FinIODesdeSuspBlocked   chan IOEvent
+	IOWaiters               map[int]chan IOEvent
+	MutexIOWaiters          sync.Mutex
 )
 
 // InicializarMutexes deja listas las variables de mutex.
@@ -62,6 +64,7 @@ func InicializarCanales() {
 	ChannelProcessBlocked = make(chan BlockProcess, 10)
 	NotificarTimeoutBlocked = make(chan int)
 	FinIODesdeSuspBlocked = make(chan IOEvent, 0)
+	IOWaiters = make(map[int]chan IOEvent)
 }
 
 type MensajeIOChannel struct {
