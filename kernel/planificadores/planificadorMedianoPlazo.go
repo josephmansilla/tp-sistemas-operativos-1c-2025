@@ -38,6 +38,7 @@ func moverDeBlockedAReady(ioLibre Utils.IOEvent) bool {
 	// busca en ColaBloqueado
 	Utils.MutexBloqueado.Lock()
 
+	// Remover de BLOCKED
 	var proceso *pcb.PCB
 	for _, p := range algoritmos.ColaBloqueado.Values() {
 		if p.PID == ioLibre.PID {
@@ -65,8 +66,6 @@ func moverDeBlockedAReady(ioLibre Utils.IOEvent) bool {
 		}
 	}
 	globals.IOMu.Unlock()
-
-	// Remover de BLOCKEd
 
 	// Agregar a READY
 	Utils.MutexReady.Lock()
@@ -128,6 +127,9 @@ func monitorBloqueado(bp Utils.BlockProcess) {
 	suspensión := time.Duration(globals.KConfig.SuspensionTime) * time.Millisecond
 	timer := time.NewTimer(suspensión)
 	defer timer.Stop()
+
+	//DESPACHAR A IO
+	go ManejadorIO(bp)
 
 	select {
 	case ioEvt := <-finIOChan:
@@ -196,60 +198,81 @@ func AtenderSuspBlockedAFinIO() {
 
 func DespacharIO() {
 	for {
-		ioLibre := <-Utils.NotificarIOLibre // Notificación de que una IO se liberó
+		<-Utils.NotificarIOLibre // Esperar señal de IO libre
 
-		Utils.MutexBloqueado.Lock()
+		Utils.MutexPedidosIO.Lock()
+		pedidos := algoritmos.PedidosIO.Values()
 
-		// Buscar un pedido que coincida con el tipo de IO liberado
-		var pedidoEncontrado *algoritmos.PedidoIO
-		for _, pedido := range algoritmos.PedidosIO.Values() {
-			if pedido.Nombre == ioLibre.Nombre {
-				pedidoEncontrado = pedido
-				break
-			}
-		}
-
-		// Si no se encontró un pedido compatible, no se hace nada
-		if pedidoEncontrado == nil {
-			Utils.MutexBloqueado.Unlock()
+		//Si no hay pedidos continua...
+		if len(pedidos) == 0 {
+			Utils.MutexPedidosIO.Unlock()
 			continue
 		}
 
-		// Buscar una instancia libre de ese tipo de IO
-		ioList := globals.IOs[ioLibre.Nombre]
+		//BUSCAR PEDIDOS DE IO pendientes
+		pedido := algoritmos.PedidosIO.First() // FIFO
+		algoritmos.PedidosIO.Remove(pedido)
+		Utils.MutexPedidosIO.Unlock()
+
+		// Buscar IO libre del tipo pedido.Nombre
+		globals.IOMu.Lock()
 		var ioAsignada *globals.DatosIO
-		var indice int = -1
-
-		globals.IOMu.Lock()
-		for i := range ioList {
-			if !ioList[i].Ocupada {
-				indice = i
-				ioAsignada = &ioList[i]
+		for i := range globals.IOs[pedido.Nombre] {
+			if !globals.IOs[pedido.Nombre][i].Ocupada {
+				globals.IOs[pedido.Nombre][i].Ocupada = true
+				globals.IOs[pedido.Nombre][i].PID = pedido.PID
+				ioAsignada = &globals.IOs[pedido.Nombre][i]
 				break
 			}
 		}
 		globals.IOMu.Unlock()
 
-		// Si no se encontró instancia libre (raro pero posible en concurrencia), salir
 		if ioAsignada == nil {
-			logger.Info("No hay instancias libres de IO tipo %s", ioLibre.Nombre)
-			Utils.MutexBloqueado.Unlock()
+			// No se encontró una IO libre, reencolar el pedido
+			logger.Warn("No se encontró IO libre al despachar. Reintentando luego...")
+			Utils.MutexPedidosIO.Lock()
+			algoritmos.PedidosIO.Add(pedido)
+			Utils.MutexPedidosIO.Unlock()
+			time.Sleep(10 * time.Millisecond) // evitar busy loop
 			continue
 		}
 
-		// Marcar la IO como ocupada con el PID asignado
-		globals.IOMu.Lock()
-		ioList[indice].Ocupada = true
-		ioList[indice].PID = pedidoEncontrado.PID
-		globals.IOMu.Unlock()
-
-		logger.Info("Asignada IO <%s> a proceso <%d>", ioLibre.Nombre, pedidoEncontrado.PID)
-
-		// Remover el pedido de la cola de bloqueado
-		algoritmos.PedidosIO.Remove(pedidoEncontrado)
-		Utils.MutexBloqueado.Unlock()
-
-		// Enviar al módulo IO correspondiente
-		go comunicacion.EnviarContextoIO(*ioAsignada, pedidoEncontrado.PID, pedidoEncontrado.Duracion)
+		logger.Info("Asignada IO <%s> (puerto %d) a proceso <%d>", ioAsignada.Tipo, ioAsignada.Puerto, pedido.PID)
+		go comunicacion.EnviarContextoIO(*ioAsignada, pedido.PID, pedido.Duracion)
 	}
+}
+
+func ManejadorIO(bp Utils.BlockProcess) {
+	// Buscar una instancia de IO LIBRE
+	globals.IOMu.Lock()
+	ioList := globals.IOs[bp.Nombre]
+	var ioAsignada *globals.DatosIO
+	for i := range ioList {
+		if !ioList[i].Ocupada {
+			ioList[i].Ocupada = true
+			ioList[i].PID = bp.PID
+			ioAsignada = &ioList[i]
+			break
+		}
+	}
+	globals.IOMu.Unlock()
+
+	if ioAsignada == nil {
+		//No se encontró una IO libre, el proceso debe esperar
+		//(se agrega a pedidos pendientes)
+		//LOOP ESPERANDO SEMAFOROS DE IOS LIBRES
+		logger.Info("No hay IOs libres del tipo: %s. <%d> debe esperar", bp.Nombre, bp.PID)
+		Utils.MutexPedidosIO.Lock()
+		algoritmos.PedidosIO.Add(&algoritmos.PedidoIO{
+			Nombre:   bp.Nombre,
+			PID:      bp.PID,
+			Duracion: bp.Duracion,
+		})
+		Utils.MutexPedidosIO.Unlock()
+		return
+	}
+
+	//Lo envia a IO hallada para bloquearse
+	logger.Info("Asignada IO <%s> (puerto %d) a proceso <%d>", bp.Nombre, ioAsignada.Puerto, bp.PID)
+	go comunicacion.EnviarContextoIO(*ioAsignada, bp.PID, bp.Duracion)
 }

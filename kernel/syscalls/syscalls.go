@@ -7,7 +7,6 @@ import (
 	"github.com/sisoputnfrba/tp-golang/kernel/algoritmos"
 	"github.com/sisoputnfrba/tp-golang/kernel/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
-	"github.com/sisoputnfrba/tp-golang/kernel/planificadores"
 	"log"
 	"net/http"
 	"time"
@@ -126,10 +125,10 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		planificadores.MostrarColaNew()
-		// Notificar al Planificador de Largo Plazo
-		logger.Debug("Notificado planificador de largo plazo para PID <%d>", pid)
+		//planificadores.MostrarColaNew()
+		//logger.Debug("Notificado planificador de largo plazo para PID <%d>", pid)
 
+		// Notificar al Planificador de Largo Plazo
 		Utils.ChannelProcessArguments <- Utils.NewProcess{
 			PID:      pid,
 			Filename: fileName,

@@ -170,55 +170,129 @@ func agregarProcesoAReady(proceso *pcb.PCB, estadoAnterior string) {
 // RECIBIR SYSCALLS DE EXIT
 func ManejadorFinalizacionProcesos() {
 	for {
+		//logger.Info("ManejadorFinalizacionProcesos: recibida finalización pid=%d", pid)
 		msg := <-Utils.ChannelFinishprocess
 		pid := msg.PID
 		pc := msg.PC
 		cpuID := msg.CpuID
-		logger.Info("ManejadorFinalizacionProcesos: recibida finalización pid=%d", pid)
+
+		finalizarProceso(pid, pc, cpuID)
 
 		// Avisar a Memoria para liberar recursos
 		/*err := comunicacion.SolicitarFinProcesoEnMemoria(pid)
 		if err != nil {
 			logger.Error("Error avisando fin proceso pid=%d: %v", pid, err)
 			continue
-		}*///MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
+		}*/ //MEMORIA TIENE QUE RECIBIR ESTE MENSAJE
 
 		//ACA PONER UN WAIT/TUBERIA que espere a que memoria libere el proceso, ES PARA TENER UN ORDEN
+		/*
+			// Remover de EXECUTING
+			var pcbFinalizado *pcb.PCB = nil
+			Utils.MutexEjecutando.Lock()
+			for _, p := range algoritmos.ColaEjecutando.Values() {
+				if p.PID == pid {
+					algoritmos.ColaEjecutando.Remove(p)
+					p.PC = pc //SOBREESCRIBIR NUEVO PC PROVENINIENTE DE CPU
+					pcbFinalizado = p
+					break
+				}
+			}
+			Utils.MutexEjecutando.Unlock()
 
-		// Remover de EXECUTING
-		var pcbFinalizado *pcb.PCB = nil
-		Utils.MutexEjecutando.Lock()
-		for _, p := range algoritmos.ColaEjecutando.Values() {
+			if pcbFinalizado == nil {
+				logger.Warn("No se encontró PCB para PID=%d al mover a EXIT", pid)
+				continue
+			}
+
+			// Agregar a EXIT
+			Utils.MutexSalida.Lock()
+			pcb.CambiarEstado(pcbFinalizado, pcb.EstadoExit)
+			algoritmos.ColaSalida.Add(pcbFinalizado)
+			logger.Info("## (<%d>) Pasa de estado EXECUTE a estado EXIT", pcbFinalizado.PID)
+			Utils.MutexSalida.Unlock()
+
+			logger.Info("## (<%d>) - Finaliza el proceso", pcbFinalizado.PID)
+			logger.Info(pcbFinalizado.ImprimirMetricas())
+
+			//LIBERAR CPU
+			liberarCPU(cpuID)
+
+			// Señal para reintentos de creación pendientes
+			Utils.LiberarMemoria <- struct{}{}
+		*/
+	}
+
+}
+
+func finalizarProceso(pid int, pc int, cpuID string) {
+	var proceso *pcb.PCB = nil
+
+	// 1. Buscar en EXECUTE y remover
+	Utils.MutexEjecutando.Lock()
+	for _, p := range algoritmos.ColaEjecutando.Values() {
+		if p.PID == pid {
+			algoritmos.ColaEjecutando.Remove(p)
+			logger.Info("## (<%d>) Pasa de estado EXECUTE a estado EXIT", p.PID)
+			p.PC = pc
+			proceso = p
+			break
+		}
+	}
+	Utils.MutexEjecutando.Unlock()
+
+	// 2. Si no está en EXECUTE, buscar en BLOCKED
+	if proceso == nil {
+		Utils.MutexBloqueado.Lock()
+		for _, p := range algoritmos.ColaBloqueado.Values() {
 			if p.PID == pid {
-				algoritmos.ColaEjecutando.Remove(p)
-				p.PC = pc //SOBREESCRIBIR NUEVO PC PROVENINIENTE DE CPU
-				pcbFinalizado = p
+				algoritmos.ColaBloqueado.Remove(p)
+				logger.Info("## (<%d>) Pasa de estado BLOCKED a estado EXIT", p.PID)
+				proceso = p
 				break
 			}
 		}
-		Utils.MutexEjecutando.Unlock()
-
-		if pcbFinalizado == nil {
-			logger.Warn("No se encontró PCB para PID=%d al mover a EXIT", pid)
-			continue
-		}
-
-		// Agregar a EXIT
-		Utils.MutexSalida.Lock()
-		pcb.CambiarEstado(pcbFinalizado, pcb.EstadoExit)
-		algoritmos.ColaSalida.Add(pcbFinalizado)
-		logger.Info("## (<%d>) Pasa de estado EXECUTE a estado EXIT", pcbFinalizado.PID)
-		Utils.MutexSalida.Unlock()
-
-		logger.Info("## (<%d>) - Finaliza el proceso", pcbFinalizado.PID)
-		logger.Info(pcbFinalizado.ImprimirMetricas())
-
-		//LIBERAR CPU
-		liberarCPU(cpuID)
-
-		// Señal para reintentos de creación pendientes
-		Utils.LiberarMemoria <- struct{}{}
+		Utils.MutexBloqueado.Unlock()
 	}
+
+	// 3. Si no está, buscar en SUSP.BLOCKED
+	if proceso == nil {
+		Utils.MutexBloqueadoSuspendido.Lock()
+		for _, p := range algoritmos.ColaBloqueadoSuspendido.Values() {
+			if p.PID == pid {
+				algoritmos.ColaBloqueadoSuspendido.Remove(p)
+				logger.Info("## (<%d>) Pasa de estado SUSP.BLOCKED a estado EXIT", p.PID)
+				proceso = p
+				break
+			}
+		}
+		Utils.MutexBloqueadoSuspendido.Unlock()
+	}
+
+	// 4. Si no está en ninguna, loguear error
+	if proceso == nil {
+		logger.Error("No se pudo finalizar PID=%d, no encontrado en ninguna cola", pid)
+		return
+	}
+
+	// 5. Mover a EXIT
+	pcb.CambiarEstado(proceso, pcb.EstadoExit)
+	Utils.MutexSalida.Lock()
+	algoritmos.ColaSalida.Add(proceso)
+	Utils.MutexSalida.Unlock()
+
+	// 6. Liberar CPU si corresponde
+	if cpuID != "" {
+		liberarCPU(cpuID)
+	}
+
+	// 7. Log y métricas
+	logger.Info("## (<%d>) Finaliza proceso (%s)", proceso.PID)
+	logger.Info(proceso.ImprimirMetricas())
+
+	// 8. Señal para liberar memoria
+	//reintentos de creación pendientes
+	Utils.LiberarMemoria <- struct{}{}
 }
 
 func MostrarColaReady() {

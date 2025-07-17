@@ -95,7 +95,7 @@ func ConfigMemoria(archivoConfig string) *Config {
 		os.Exit(1)
 	}
 
-	errLoggerLevel := logger.SetLevel(MemoryConfig.LogLevel)
+	errLoggerLevel := logger.SetLevel(config.LogLevel)
 	if errLoggerLevel != nil {
 		logger.Fatal("No se pudo establecer el log-level: %v", errLoggerLevel)
 	}

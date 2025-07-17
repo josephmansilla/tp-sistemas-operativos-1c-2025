@@ -22,7 +22,7 @@ func DespacharProceso() {
 		// WAIT hasta que llegue un proceso a READY
 		//o se libere una CPU por SYSCALL DE EXIT O I/O
 		<-Utils.NotificarDespachador
-		logger.Info("Arranca Despachador")
+		logger.Debug("Arranca Despachador")
 
 		var proceso *pcb.PCB
 
@@ -125,6 +125,9 @@ func DesalojarProceso() {
 		algoritmos.ColaReady.Add(proceso)
 		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado READY", proceso.PID)
 		Utils.MutexBloqueado.Unlock()
+
+		//AVISAR QUE UN PROCESO LLEGA A READY
+		Utils.NotificarDespachador <- proceso.PID
 	}
 }
 
@@ -151,37 +154,24 @@ func BloquearProceso() {
 		}
 		Utils.MutexEjecutando.Unlock()
 
-		liberarCPU(cpuID)
-
 		// Buscar IO disponible
 		globals.IOMu.Lock()
-
-		//Exista el tipo de IO en el map?
-		ioList, existe := globals.IOs[tipoIO]
+		ioList, existe := globals.IOs[tipoIO] //Existe el tipo de IO en el map?
 		if !existe || len(ioList) == 0 {
-			// No existe el tipo de IO o no hay ninguna instancia
+			// No existe el tipo de IO / No hay ninguna instancia
 			globals.IOMu.Unlock()
 
-			Utils.MutexSalida.Lock()
-			pcb.CambiarEstado(proceso, pcb.EstadoExit)
-			algoritmos.ColaSalida.Add(proceso)
-			logger.Info("## %s NO SE ENCUENTRA", tipoIO)
-			logger.Info("## (<%d>) Pasa del estado EXECUTE al estado EXIT", proceso.PID)
-			Utils.MutexSalida.Unlock()
+			//Avisar EXIT A LARGO
+			Utils.ChannelFinishprocess <- Utils.FinishProcess{
+				PID:   proceso.PID,
+				PC:    proceso.PC,
+				CpuID: cpuID,
+			}
 			continue
 		}
-
-		// Buscar una instancia libre
-		var ioAsignada *globals.DatosIO
-		for i := range ioList {
-			if !ioList[i].Ocupada {
-				ioList[i].Ocupada = true
-				ioList[i].PID = pid
-				ioAsignada = &ioList[i]
-				break
-			}
-		}
 		globals.IOMu.Unlock()
+
+		liberarCPU(cpuID)
 
 		//ENVIAR A BLOCKED
 		Utils.MutexBloqueado.Lock()
@@ -189,23 +179,6 @@ func BloquearProceso() {
 		algoritmos.ColaBloqueado.Add(proceso)
 		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado BLOCKED", proceso.PID)
 		Utils.MutexBloqueado.Unlock()
-
-		if ioAsignada == nil {
-			// No se encontró una IO libre, el proceso debe esperar (pero igual se bloquea y se agrega a pedidos pendientes)
-			logger.Info("No hay IOs libres del tipo: %s. <%d> debe esperar", tipoIO, pid)
-			io := algoritmos.PedidoIO{
-				Nombre:   msg.Nombre,
-				PID:      pid,
-				Duracion: msg.Duracion,
-			}
-			Utils.MutexPedidosIO.Lock()
-			algoritmos.PedidosIO.Add(&io)
-			Utils.MutexPedidosIO.Unlock()
-		} else {
-			//Lo envia a IO hallada para bloquearse
-			logger.Info("Asignada IO <%s> (puerto %d) a proceso <%d>", tipoIO, ioAsignada.Puerto, pid)
-			go comunicacion.EnviarContextoIO(*ioAsignada, pid, msg.Duracion)
-		}
 
 		//Cuando el corto plazo termina de bloquear al proceso en particular
 		//le avisa al Mediano plazo para que empiece el Timer para ESE proceso
@@ -277,13 +250,12 @@ func DesconexionIO() {
 			continue
 		}
 
-		//3) MOVER A PROCESO A EXIT
-		Utils.MutexSalida.Lock()
-		pcb.CambiarEstado(proceso, pcb.EstadoExit)
-		algoritmos.ColaSalida.Add(proceso)
-		logger.Info("## (%d) finalizó IO y pasa a EXIT por desconexión", io.PID)
-		Utils.MutexSalida.Unlock()
-
 		logger.Info("## IO desconectado correctamente para PID <%d>", io.PID)
+
+		//3) MOVER A PROCESO A EXIT / NOTIFICAR A LARGO
+		Utils.ChannelFinishprocess <- Utils.FinishProcess{
+			PID: proceso.PID,
+			PC:  proceso.PC,
+		}
 	}
 }
