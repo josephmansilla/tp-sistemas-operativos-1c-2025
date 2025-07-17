@@ -149,13 +149,6 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		g.MutexProcesosPorPID.Lock()
-		proceso := g.ProcesosPorPID[mensaje.PID]
-		g.MutexProcesosPorPID.Unlock()
-
-		adm.IncrementarMetrica(proceso, 1, adm.IncrementarBajadasSwap)
-		proceso.EstaEnSwap = true
-
 		tiempoTranscurrido := time.Now().Sub(inicio)
 		g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
 
@@ -206,15 +199,6 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 			respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradasMem.Error())}
 			return
 		}
-
-		g.MutexProcesosPorPID.Lock()
-		proceso := g.ProcesosPorPID[mensaje.PID]
-		g.MutexProcesosPorPID.Unlock()
-
-		adm.IncrementarMetrica(proceso, 1, adm.IncrementarSubidasMP)
-		proceso.EstaEnSwap = false
-
-		time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond)
 
 		tiempoTranscurrido := time.Now().Sub(inicio)
 		g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)

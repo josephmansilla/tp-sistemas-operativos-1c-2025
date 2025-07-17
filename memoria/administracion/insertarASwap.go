@@ -18,6 +18,10 @@ func RecolectarEntradasParaSwap(pid int) (entradas map[int]g.EntradaSwap) {
 	for _, subtabla := range proceso.TablaRaiz {
 		RecorrerTablaPaginasParaSwap(subtabla, entradas, &contador)
 	}
+
+	IncrementarMetrica(proceso, 1, IncrementarBajadasSwap)
+	proceso.EstaEnSwap = true
+
 	return
 }
 

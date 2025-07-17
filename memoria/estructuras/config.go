@@ -89,5 +89,16 @@ func ConfigMemoria(archivoConfig string) *Config {
 		logger.Fatal("Configuración inválida: %v", err)
 	}
 
+	errLogger := logger.ConfigureLogger("memoria.log", "INFO")
+	if errLogger != nil {
+		logger.Fatal("No se pudo crear el logger -%v", errLogger.Error())
+		os.Exit(1)
+	}
+
+	errLoggerLevel := logger.SetLevel(MemoryConfig.LogLevel)
+	if errLoggerLevel != nil {
+		logger.Fatal("No se pudo establecer el log-level: %v", errLoggerLevel)
+	}
+
 	return &config
 }

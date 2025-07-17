@@ -44,7 +44,6 @@ func CargarEntradasDesdeSwap(pid int) (entradas map[int]g.EntradaSwap, err error
 		}
 		entradas[i] = enviarEntrada // i era : info.NumerosDePaginas[i]
 	}
-
 	return entradas, nil
 }
 
@@ -69,6 +68,14 @@ func CargarEntradasAMemoria(pid int, entradas map[int]g.EntradaSwap) error {
 			len(entrada.Datos),
 		)
 	}
+
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[pid]
+	g.MutexProcesosPorPID.Unlock()
+
+	IncrementarMetrica(proceso, 1, IncrementarSubidasMP)
+	proceso.EstaEnSwap = false
+
 	return nil
 }
 

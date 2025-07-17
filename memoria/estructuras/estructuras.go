@@ -18,7 +18,6 @@ var MutexMemoriaPrincipal sync.Mutex
 var MutexCantidadFramesLibres sync.Mutex
 var MutexEstructuraFramesLibres sync.Mutex
 var MutexMetrica map[int]*sync.Mutex
-var MutexDump sync.Mutex
 var MutexSwapIndex sync.Mutex
 
 // ================== TABLA Y ENTRADA DE PÁGINAS ==================
@@ -58,7 +57,7 @@ type OperacionMetrica func(*MetricasProceso, int)
 
 type SwapProcesoInfo struct {
 	Entradas         map[int]*EntradaSwapInfo `json:"entradas"`
-	NumerosDePaginas []int                    `json:"cantidad_entradas"`
+	NumerosDePaginas []int                    `json:"numeros_de_paginas"`
 }
 type EntradaSwapInfo struct {
 	NumeroPagina   int `json:"numero_pagina"`
