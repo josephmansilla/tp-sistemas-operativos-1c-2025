@@ -86,3 +86,20 @@ func ResignarPaginasParaPID(pid int, numeroPagina int) (int, error) {
 	logger.Info("## PID <%d> ; Entrada: <%d> ; Frame: <%d>", pid, numeroPagina, frameLibre)
 	return frameLibre * g.MemoryConfig.PagSize, nil
 }
+
+func ActualizarEntradaPaginaEnTabla(pid int, numeroPagina int, frameLibre int) error {
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[pid]
+	g.MutexProcesosPorPID.Unlock()
+
+	indice := CrearIndicePara(numeroPagina)
+
+	entrada, err := BuscarEntradaPagina(proceso, indice)
+	if err != nil {
+		return err
+	}
+	entrada.NumeroFrame = frameLibre
+	entrada.EstaPresente = true
+
+	return nil
+}
