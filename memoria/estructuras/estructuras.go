@@ -68,5 +68,4 @@ type EntradaSwapInfo struct {
 type EntradaSwap struct {
 	NumeroPagina int    `json:"numero_pagina"`
 	Datos        []byte `json:"datos"`
-	Tamanio      int    `json:"tamanio"`
 }

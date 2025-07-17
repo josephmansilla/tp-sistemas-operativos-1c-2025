@@ -139,13 +139,8 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ignore != 1 {
-		entradas, errEntradas := adm.CargarEntradasDeMemoria(mensaje.PID)
-		if errEntradas != nil {
-			logger.Error("Error: %v", errEntradas)
-			http.Error(w, "error: %v", http.StatusNoContent)
-			respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradas.Error())}
-			return
-		}
+		entradas := adm.RecolectarEntradasParaSwap(mensaje.PID)
+
 		errSwap := adm.CargarEntradasASwap(mensaje.PID, entradas) // REQUIERE ACTUALIZAR ESTRUCTURAS
 		if errSwap != nil {
 			logger.Error("Error: %v", errSwap)

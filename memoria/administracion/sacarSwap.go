@@ -13,6 +13,7 @@ func CargarEntradasDesdeSwap(pid int) (entradas map[int]g.EntradaSwap, err error
 	info, existe := g.SwapIndex[pid]
 	if !existe {
 		logger.Error("No existe el PID en el SwapIndex: %v", logger.ErrNoInstance)
+		g.MutexSwapIndex.Unlock()
 		return nil, logger.ErrNoInstance
 	}
 	g.MutexSwapIndex.Unlock()
@@ -32,17 +33,16 @@ func CargarEntradasDesdeSwap(pid int) (entradas map[int]g.EntradaSwap, err error
 	entradas = make(map[int]g.EntradaSwap, len(info.NumerosDePaginas))
 
 	for i, entrada := range info.Entradas {
-		_, errArch := file.Seek(int64(entrada.PosicionInicio), io.SeekStart)
-		if errArch != nil {
-			return nil, err
+		_, errSeek := file.Seek(int64(entrada.PosicionInicio), io.SeekStart)
+		if errSeek != nil {
+			return nil, errSeek
 		}
 		datos := make([]byte, 0)
 		enviarEntrada := g.EntradaSwap{
 			NumeroPagina: info.NumerosDePaginas[i],
 			Datos:        datos,
-			Tamanio:      entrada.Tamanio,
 		}
-		entradas[info.NumerosDePaginas[i]] = enviarEntrada
+		entradas[i] = enviarEntrada // i era : info.NumerosDePaginas[i]
 	}
 
 	return entradas, nil
@@ -52,11 +52,12 @@ func CargarEntradasAMemoria(pid int, entradas map[int]g.EntradaSwap) error {
 
 	for _, entrada := range entradas {
 
-		dirFisica, err := ResignarPaginasParaPID(pid, entrada.NumeroPagina)
+		frameLibre, err := ResignarPaginasParaPID(pid, entrada.NumeroPagina)
+
 		if err != nil {
 			return err
 		}
-		rta := EscribirEspacioEntrada(pid, dirFisica, entrada.Datos)
+		rta := EscribirEspacioEntrada(pid, (frameLibre * g.MemoryConfig.PagSize), entrada.Datos)
 		if rta.Exito != nil {
 			logger.Error("Error: %v", rta.Exito)
 			return rta.Exito
@@ -64,8 +65,8 @@ func CargarEntradasAMemoria(pid int, entradas map[int]g.EntradaSwap) error {
 
 		logger.Info("## PID: <%d> - <SWAP A MEMORIA> - Dir. Física: <%d> - Tamaño: <%d>",
 			pid,
-			dirFisica,
-			entrada.Tamanio,
+			frameLibre*g.MemoryConfig.PagSize,
+			len(entrada.Datos),
 		)
 	}
 	return nil
@@ -83,7 +84,7 @@ func ResignarPaginasParaPID(pid int, numeroPagina int) (int, error) {
 		return -100, errr
 	}
 	logger.Info("## PID <%d> ; Pagina: <%d> ; Frame: <%d>", pid, numeroPagina, frameLibre)
-	return frameLibre * g.MemoryConfig.PagSize, nil
+	return frameLibre, nil
 }
 
 func ActualizarEntradaPaginaEnTabla(pid int, numeroPagina int, frameLibre int) error {
