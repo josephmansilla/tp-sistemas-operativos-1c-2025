@@ -46,7 +46,6 @@ func RecorrerTablaPaginaDeFormaConcurrenteSwap(tabla *g.TablaPagina, canal chan 
 			canal <- entrada.NumeroFrame
 			entrada.EstaPresente = false
 			MarcarLibreFrame(entrada.NumeroFrame)
-
 		}
 	}
 }
@@ -110,9 +109,10 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 			logger.Error("Error al cerrar: %v", err)
 		}
 	}(file)
-
+	// HABRIA QUE SABER DESDE DONDE SE PUEDE APUNTAR
 	pos, err := file.Seek(0, io.SeekEnd)
 	if err != nil {
+		logger.Error("Error al setear el puntero para SWAP: %v", err)
 		return err
 	}
 	var info = &g.SwapProcesoInfo{
@@ -122,6 +122,7 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 	for _, entrada := range entradas {
 		_, err = file.Write(entrada.Datos)
 		if err != nil {
+			logger.Error("Error al escribir el archivo: %v", err)
 			return err
 		}
 		info.Entradas[entrada.NumeroFrame] = &g.EntradaSwapInfo{
@@ -135,7 +136,7 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 		g.SwapIndex[pid] = info
 		g.MutexSwapIndex.Unlock()
 
-		logger.Info("## PID: <%d> - <Escritura> - Dir. Física: <%d> - Tamaño: <%d>",
+		logger.Info("## PID: <%d> - <MEMORIA A SWAP> - Posición en SWAP: <%d> - Tamaño: <%d>",
 			pid,
 			entrada.NumeroFrame*tamanioPagina,
 			entrada.Tamanio,
@@ -143,66 +144,4 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 	}
 
 	return nil
-}
-
-// ==========================================================================
-
-func CargarEntradasDeSwap(pid int) (entradas map[int]g.EntradaSwap, err error) {
-
-	g.MutexSwapIndex.Lock()
-	info, existe := g.SwapIndex[pid]
-	if !existe {
-		return nil, logger.ErrNoInstance
-	}
-	g.MutexSwapIndex.Unlock()
-
-	file, err := os.Open(g.MemoryConfig.SwapfilePath)
-	if err != nil {
-		return nil, err
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			logger.Error("Error al cerrar: %v", err)
-		}
-	}(file)
-
-	entradas = make(map[int]g.EntradaSwap, len(info.NumerosFrame))
-
-	for i, entrada := range info.Entradas {
-		_, errArch := file.Seek(int64(entrada.PosicionInicio), io.SeekStart)
-		if errArch != nil {
-			return nil, err
-		}
-		datos := make([]byte, 0)
-		enviarEntrada := g.EntradaSwap{
-			NumeroFrame: info.NumerosFrame[i],
-			Datos:       datos,
-			Tamanio:     entrada.Tamanio,
-		}
-		entradas[info.NumerosFrame[i]] = enviarEntrada
-	}
-
-	return entradas, nil
-}
-
-func CargarEntradasAMemoria(pid int, entradas map[int]g.EntradaSwap) (err error) {
-	tamanioPagina := g.MemoryConfig.PagSize
-	err = nil
-
-	for _, entrada := range entradas {
-		dirFisica := entrada.NumeroFrame * tamanioPagina
-		rta := EscribirEspacioEntrada(pid, dirFisica, entrada.Datos)
-		if rta.Exito != nil {
-			logger.Error("Error: %v", rta.Exito)
-			return rta.Exito
-		}
-
-		logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>",
-			pid,
-			dirFisica,
-			entrada.Tamanio,
-		)
-	}
-	return
 }

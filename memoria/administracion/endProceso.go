@@ -54,12 +54,13 @@ func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
 	err = nil
 
 	if tabla.Subtabla != nil {
-		for indice, subtabla := range tabla.Subtabla {
+		for index, subtabla := range tabla.Subtabla {
 			err := LiberarTablaPaginas(subtabla, pid)
 			if err != nil {
-				return err
+				logger.Error("Error al liberar la tabla de páginas: %v", err)
+				return logger.ErrNoTabla
 			}
-			tabla.Subtabla[indice] = nil
+			tabla.Subtabla[index] = nil
 		}
 		tabla.Subtabla = nil
 	}
@@ -73,10 +74,14 @@ func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
 				if err != nil {
 					logger.Error("Error al remover espacio de memoria del frame: \"%d\" ; %v", entrada.NumeroFrame, err)
 				}
+			} else {
+				logger.Error("Proceso está en SWAP")
 			}
-			// TODO : si está en swap tambien hay que remover
+
 		}
 		tabla.EntradasPaginas = nil
+	} else {
+		return logger.ErrNoInstance
 	}
 	return
 }

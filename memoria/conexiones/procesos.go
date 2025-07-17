@@ -118,7 +118,7 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 
 func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
+	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond
 	ignore := 0
 	var mensaje g.ConsultaProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
@@ -128,9 +128,7 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		Exito:   true,
 		Mensaje: "Proceso cargado a SWAP",
 	}
-	//aca me parece que tenes que Avisar por un endpoint a kernel que ya hiciste el pase a swap, la response siempre manda que
-	//si lo cargo a swap inmediatamente kernel te manda el pedido y en realidad no es instantanea. y como la comunicacion
-	//http tiene un timeOut la respuesta tuya tiene que ser en un POST a un endpoint de kernel.
+
 	g.MutexProcesosPorPID.Lock()
 	estaProcesoEnSwap := g.ProcesosPorPID[mensaje.PID].EstaEnSwap
 	g.MutexProcesosPorPID.Unlock()
@@ -177,7 +175,7 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	inicio := time.Now()
-	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Second
+	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond
 	ignore := 0
 	var mensaje g.ConsultaProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
@@ -198,7 +196,7 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ignore != 1 {
-		entradas, errEntradasSwap := adm.CargarEntradasDeSwap(mensaje.PID)
+		entradas, errEntradasSwap := adm.CargarEntradasDesdeSwap(mensaje.PID)
 		if errEntradasSwap != nil {
 			logger.Error("Error al cargar entradas: %v", errEntradasSwap)
 			http.Error(w, "error: %v", http.StatusConflict)
@@ -221,7 +219,7 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		adm.IncrementarMetrica(proceso, 1, adm.IncrementarSubidasMP)
 		proceso.EstaEnSwap = false
 
-		time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Second)
+		time.Sleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond)
 
 		tiempoTranscurrido := time.Now().Sub(inicio)
 		g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
