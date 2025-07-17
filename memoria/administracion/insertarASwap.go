@@ -82,9 +82,9 @@ func CargarEntradasDeMemoria(pid int) (resultados map[int]g.EntradaSwap, err err
 		copy(g.MemoriaPrincipal[inicio:fin], vacio)
 
 		entradita := g.EntradaSwap{
-			NumeroFrame: numeroFrame,
-			Datos:       datos,
-			Tamanio:     len(datos),
+			NumeroPagina: numeroFrame,
+			Datos:        datos,
+			Tamanio:      len(datos),
 		}
 
 		g.MutexDump.Lock()
@@ -109,15 +109,15 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 			logger.Error("Error al cerrar: %v", err)
 		}
 	}(file)
-	// HABRIA QUE SABER DESDE DONDE SE PUEDE APUNTAR
-	pos, err := file.Seek(0, io.SeekEnd)
+
+	pos, err := file.Seek(0, io.SeekEnd) // siempre se apunta al final del archivo! (pense que no, alto bobo)
 	if err != nil {
 		logger.Error("Error al setear el puntero para SWAP: %v", err)
 		return err
 	}
 	var info = &g.SwapProcesoInfo{
-		Entradas:     make(map[int]*g.EntradaSwapInfo),
-		NumerosFrame: make([]int, 0),
+		Entradas:         make(map[int]*g.EntradaSwapInfo),
+		NumerosDePaginas: make([]int, 0),
 	}
 	for _, entrada := range entradas {
 		_, err = file.Write(entrada.Datos)
@@ -125,12 +125,12 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 			logger.Error("Error al escribir el archivo: %v", err)
 			return err
 		}
-		info.Entradas[entrada.NumeroFrame] = &g.EntradaSwapInfo{
-			NumeroFrame:    entrada.NumeroFrame,
+		info.Entradas[entrada.NumeroPagina] = &g.EntradaSwapInfo{
+			NumeroPagina:   entrada.NumeroPagina,
 			Tamanio:        entrada.Tamanio,
 			PosicionInicio: int(pos),
 		}
-		info.NumerosFrame = append(info.NumerosFrame, entrada.NumeroFrame)
+		info.NumerosDePaginas = append(info.NumerosDePaginas, entrada.NumeroPagina)
 
 		g.MutexSwapIndex.Lock()
 		g.SwapIndex[pid] = info
@@ -138,7 +138,7 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) (err error) {
 
 		logger.Info("## PID: <%d> - <MEMORIA A SWAP> - Posición en SWAP: <%d> - Tamaño: <%d>",
 			pid,
-			entrada.NumeroFrame*tamanioPagina,
+			entrada.NumeroPagina*tamanioPagina,
 			entrada.Tamanio,
 		)
 	}

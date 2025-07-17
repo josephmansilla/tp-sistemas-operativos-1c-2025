@@ -29,7 +29,7 @@ func CargarEntradasDesdeSwap(pid int) (entradas map[int]g.EntradaSwap, err error
 		}
 	}(file)
 
-	entradas = make(map[int]g.EntradaSwap, len(info.NumerosFrame))
+	entradas = make(map[int]g.EntradaSwap, len(info.NumerosDePaginas))
 
 	for i, entrada := range info.Entradas {
 		_, errArch := file.Seek(int64(entrada.PosicionInicio), io.SeekStart)
@@ -38,11 +38,11 @@ func CargarEntradasDesdeSwap(pid int) (entradas map[int]g.EntradaSwap, err error
 		}
 		datos := make([]byte, 0)
 		enviarEntrada := g.EntradaSwap{
-			NumeroFrame: info.NumerosFrame[i],
-			Datos:       datos,
-			Tamanio:     entrada.Tamanio,
+			NumeroPagina: info.NumerosDePaginas[i],
+			Datos:        datos,
+			Tamanio:      entrada.Tamanio,
 		}
-		entradas[info.NumerosFrame[i]] = enviarEntrada
+		entradas[info.NumerosDePaginas[i]] = enviarEntrada
 	}
 
 	return entradas, nil
@@ -52,11 +52,10 @@ func CargarEntradasAMemoria(pid int, entradas map[int]g.EntradaSwap) error {
 
 	for _, entrada := range entradas {
 
-		dirFisica, err := ResignarPaginasParaPID(pid, entrada.NumeroFrame)
+		dirFisica, err := ResignarPaginasParaPID(pid, entrada.NumeroPagina)
 		if err != nil {
 			return err
 		}
-
 		rta := EscribirEspacioEntrada(pid, dirFisica, entrada.Datos)
 		if rta.Exito != nil {
 			logger.Error("Error: %v", rta.Exito)
@@ -83,7 +82,7 @@ func ResignarPaginasParaPID(pid int, numeroPagina int) (int, error) {
 	if errr != nil {
 		return -100, errr
 	}
-	logger.Info("## PID <%d> ; Entrada: <%d> ; Frame: <%d>", pid, numeroPagina, frameLibre)
+	logger.Info("## PID <%d> ; Pagina: <%d> ; Frame: <%d>", pid, numeroPagina, frameLibre)
 	return frameLibre * g.MemoryConfig.PagSize, nil
 }
 

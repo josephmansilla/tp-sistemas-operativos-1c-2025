@@ -75,7 +75,7 @@ func LogicaRecorrerMemoria(i int, cantEntradas int, entrada g.EntradaPagina, dir
 	tamPag := g.MemoryConfig.PagSize
 	offsetLogico := dirF % tamPag
 
-	base := entrada.NumeroFrame * tamPag
+	base := entrada.NumeroPagina * tamPag
 
 	if i == 0 { // PARA EL PRIMER FRAME
 		var delta int
