@@ -1,20 +1,27 @@
 RUN = go run
 
+#CONFIG de IPs del laboratorio
+#config:
+	#configura todas las ip en todos los json
+	#Pedir ip kernel
+	#Pedir ip memoria
+   	#./configurarIP.py ../kernel/configs/cortoplazo.json medianoplazo.json
+
 # === Prueba: Corto Plazo ===
 corto:
 	$(RUN) kernel.go PLANI_CORTO_PLAZO 0 cortoplazo
 
 # === Prueba: Mediano/Largo Plazo ===
 lym:
-	$(RUN) kernel.go PLANI_LYM_IO 0
+	$(RUN) kernel.go PLANI_LYM_IO 0 medianoplazo
 
 # === Prueba: SWAP ===
 swap:
-	$(RUN) kernel.go MEMORIA_IO 90
+	$(RUN) kernel.go MEMORIA_IO 90 swap
 
 # === Prueba: CACHE ===
 cache:
-	$(RUN) kernel.go MEMORIA_BASE 256
+	$(RUN) kernel.go MEMORIA_BASE 256 cache
 
 # === Prueba: Estabilidad General (EG) ===
 eg:

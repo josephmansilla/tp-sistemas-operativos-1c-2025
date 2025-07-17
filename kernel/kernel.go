@@ -21,13 +21,14 @@ func main() {
 	// ----------------------------------------------------
 	// ---------- PARTE CARGA DE PARAMETROS ---------------
 	// ----------------------------------------------------
-	if len(os.Args) < 3 {
+	if len(os.Args) < 4 {
 		fmt.Println("Faltan parámetros: archivo_pseudocodigo tamaño_proceso")
 		os.Exit(1)
 	}
 
 	archivoPseudocodigo := os.Args[1]
 	tamanioStr := os.Args[2]
+	config := os.Args[3]
 
 	tamanioProceso, err := strconv.Atoi(tamanioStr)
 	if err != nil {
@@ -45,7 +46,7 @@ func main() {
 	logger.Info("Comenzó la ejecución del Kernel")
 
 	// Cargo config directamente sin pasarla por parámetro
-	globals.KConfig = globals.CargarConfig()
+	globals.KConfig = globals.CargarConfig(config)
 
 	err = logger.SetLevel(globals.KConfig.LogLevel)
 	if err != nil {

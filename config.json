@@ -6,7 +6,7 @@
   "puerto_kernel": 8081,
 
   "ip_cpu": "127.0.0.1",
-  "puerto_cpu1": 8084,
+  "puerto_cpu1": 8085,
   "puerto_cpu2":8085,
   "puerto_cpu3": 8086,
   "puerto_cpu4": 8087,

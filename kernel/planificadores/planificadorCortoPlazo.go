@@ -196,7 +196,7 @@ func BloquearProceso() {
 		} else {
 			//Lo envia a IO hallada para bloquearse
 			logger.Info("Asignada IO <%s> a proceso <%d>", tipoIO, pid)
-			comunicacion.EnviarContextoIO(*ioAsignada, pid, msg.Duracion)
+			go comunicacion.EnviarContextoIO(*ioAsignada, pid, msg.Duracion)
 		}
 
 		//Cuando el corto plazo termina de bloquear al proceso en particular
