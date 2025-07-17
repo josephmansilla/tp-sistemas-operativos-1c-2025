@@ -3,6 +3,7 @@ package estructuras
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"os"
 )
@@ -62,8 +63,8 @@ func (cfg Config) Validate() error {
 	return nil
 }
 
-func ConfigMemoria() *Config {
-	const path = "../memoria/configs/config.json"
+func ConfigMemoria(archivoConfig string) *Config {
+	path := fmt.Sprintf("../memoria/configs/%s.json", archivoConfig)
 
 	var config Config
 

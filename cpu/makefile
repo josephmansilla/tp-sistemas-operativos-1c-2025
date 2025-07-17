@@ -1,6 +1,7 @@
 RUN = go run
 
 uno:
+	nano ../cpu/configs/config.json
 	$(RUN) cpu.go 1
 
 dos:

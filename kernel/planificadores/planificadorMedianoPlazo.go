@@ -66,7 +66,7 @@ func moverDeBlockedAReady(ioLibre Utils.IODesconexion) bool {
 	defer Utils.MutexReady.Unlock()
 	pcb.CambiarEstado(proceso, pcb.EstadoReady)
 	algoritmos.ColaReady.Add(proceso)
-	logger.Info("## (%d) finalizó IO y pasa a READY", ioLibre.PID)
+	logger.Info("## <%d> finalizó IO y pasa a READY", ioLibre.PID)
 
 	//Señal al corto plazo para despachar
 	Utils.NotificarDespachador <- ioLibre.PID

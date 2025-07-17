@@ -3,6 +3,7 @@ package globals
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"os"
 )
@@ -54,8 +55,8 @@ func (cfg KernelConfig) Validate() error {
 	return nil
 }
 
-func CargarConfig() *KernelConfig {
-	const path = "../kernel/configs/config.json"
+func CargarConfig(archivoConfig string) *KernelConfig {
+	path := fmt.Sprintf("../kernel/configs/%s.json", archivoConfig)
 
 	file, err := os.Open(path)
 	if err != nil {

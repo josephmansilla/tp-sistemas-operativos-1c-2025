@@ -13,12 +13,22 @@ import (
 )
 
 func main() {
+	// ----------------------------------------------------
+	// ---------- PARTE CARGA DE PARAMETROS ---------------
+	// ----------------------------------------------------
+	if len(os.Args) < 2 {
+		fmt.Println("Faltan parámetros: archivo_pseudocodigo tamaño_proceso")
+		os.Exit(1)
+	}
+
+	config := os.Args[1]
+
 	err := logger.ConfigureLogger("memoria.log", "INFO")
 	if err != nil {
 		fmt.Println("No se pudo crear el logger -", err.Error())
 		os.Exit(1)
 	}
-	g.MemoryConfig = g.ConfigMemoria()
+	g.MemoryConfig = g.ConfigMemoria(config)
 	err = logger.SetLevel(g.MemoryConfig.LogLevel)
 	if err != nil {
 		logger.Fatal("No se pudo establecer el log-level: %v", err)
