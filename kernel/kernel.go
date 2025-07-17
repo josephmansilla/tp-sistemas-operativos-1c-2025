@@ -61,6 +61,7 @@ func main() {
 	algoritmos.ColaReady = algoritmos.Cola[*pcb.PCB]{}
 	algoritmos.ColaBloqueadoSuspendido = algoritmos.Cola[*pcb.PCB]{}
 	algoritmos.ColaSuspendidoReady = algoritmos.Cola[*pcb.PCB]{}
+	algoritmos.PedidosIO = algoritmos.Cola[*algoritmos.PedidoIO]{}
 
 	// Inicializar recursos compartidos
 	Utils.InicializarMutexes()

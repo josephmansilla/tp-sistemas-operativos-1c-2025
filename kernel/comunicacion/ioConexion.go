@@ -52,6 +52,12 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
 		instancia.Tipo, instancia.Ip, instancia.Puerto)
 
+	Utils.NotificarIOLibre <- Utils.IOEvent{
+		PID:    -1,
+		Nombre: mensajeRecibido.Nombre,
+		Puerto: mensajeRecibido.Puerto,
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("STATUS OK"))
 }
@@ -97,10 +103,16 @@ func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		logger.Info("FIN de IO: PID %d", pid)
-		Utils.NotificarFinIO <- Utils.IODesconexion{
+		Utils.NotificarFinIO <- Utils.IOEvent{
 			PID:    mensajeRecibido.PID,
 			Nombre: mensajeRecibido.Nombre,
 			Puerto: mensajeRecibido.Puerto,
 		}
+	}
+
+	Utils.NotificarIOLibre <- Utils.IOEvent{
+		PID:    mensajeRecibido.PID,
+		Nombre: mensajeRecibido.Nombre,
+		Puerto: mensajeRecibido.Puerto,
 	}
 }

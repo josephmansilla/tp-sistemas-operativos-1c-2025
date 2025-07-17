@@ -191,11 +191,19 @@ func BloquearProceso() {
 		Utils.MutexBloqueado.Unlock()
 
 		if ioAsignada == nil {
-			// No se encontró una IO libre, el proceso debe esperar (pero igual se bloquea)
+			// No se encontró una IO libre, el proceso debe esperar (pero igual se bloquea y se agrega a pedidos pendientes)
 			logger.Info("No hay IOs libres del tipo: %s. <%d> debe esperar", tipoIO, pid)
+			io := algoritmos.PedidoIO{
+				Nombre:   msg.Nombre,
+				PID:      pid,
+				Duracion: msg.Duracion,
+			}
+			Utils.MutexPedidosIO.Lock()
+			algoritmos.PedidosIO.Add(&io)
+			Utils.MutexPedidosIO.Unlock()
 		} else {
 			//Lo envia a IO hallada para bloquearse
-			logger.Info("Asignada IO <%s> a proceso <%d>", tipoIO, pid)
+			logger.Info("Asignada IO <%s> (puerto %d) a proceso <%d>", tipoIO, ioAsignada.Puerto, pid)
 			go comunicacion.EnviarContextoIO(*ioAsignada, pid, msg.Duracion)
 		}
 
