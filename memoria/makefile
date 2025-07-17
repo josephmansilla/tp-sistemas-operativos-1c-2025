@@ -20,6 +20,10 @@ cache:
 	$(RUN) memoria.go memoriaCache
 
 # === Prueba: Estabilidad General (EG) ===
+tlb:
+	$(RUN) memoria.go memoriaTLB
+
+# === Prueba: Estabilidad General (EG) ===
 eg:
 	$(RUN) memoria.go estabilidadGeneral
 
