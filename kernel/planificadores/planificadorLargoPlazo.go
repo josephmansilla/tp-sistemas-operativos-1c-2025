@@ -61,11 +61,12 @@ func PlanificadorLargoPlazo() {
 	go ManejadorCreacionProcesos()
 	go ManejadorInicializacionProcesos()
 	go ManejadorFinalizacionProcesos()
+	go Reintentador()
 }
 
 func ManejadorInicializacionProcesos() {
 	for {
-		//SIGNAL llega PROCESO a COLA NEW
+		//SIGNAL llega PROCESO a COLA NEW / SUSP.READY
 		<-Utils.InitProcess
 
 		//Al llegar un nuevo proceso a esta cola
@@ -75,11 +76,12 @@ func ManejadorInicializacionProcesos() {
 
 		//SE TOMA EL SIGUIENTE PROCESO A ENVIAR A READY
 		//(ORDENADOS PREVIAMENTE POR ALGORITMO)
-		var p = algoritmos.ColaNuevo.First()
-
+		var p *pcb.PCB
 		if !algoritmos.ColaSuspendidoReady.IsEmpty() {
 			//SI NO ESTA VACIA -> TIENE PRIORIDAD SUSP.READY
-			p = algoritmos.ColaBloqueadoSuspendido.First()
+			p = algoritmos.ColaSuspendidoReady.First()
+		} else {
+			p = algoritmos.ColaNuevo.First()
 		}
 
 		if p == nil {
@@ -87,27 +89,39 @@ func ManejadorInicializacionProcesos() {
 			continue
 		}
 
+		//MUESTRO LA COLA READY
+		MostrarColaReady()
+		//MUESTRO LA COLA NEW
+		MostrarColaNew()
+
 		filename := p.FileName
 		size := p.ProcessSize
 
 		//Intentar crear en Memoria
 		espacio := comunicacion.SolicitarEspacioEnMemoria(filename, size)
 		if espacio < size {
-			logger.Info("Memoria sin espacio, pid=%d queda pendiente", p)
-			// Esperar señal de que un proceso finalizó
-			<-Utils.LiberarMemoria
-			logger.Info("Recibida señal de espacio libre, reintentando pid=%d", p)
-			espacio = comunicacion.SolicitarEspacioEnMemoria(filename, size)
-			if espacio < size {
-				logger.Error("Reintento falló para pid=%d, abortando", p)
-				return
-			}
+			logger.Info("Memoria sin espacio, PID <%d> queda pendiente", p.PID)
+
+			// 1) Señal al planificador de corto plazo
+			Utils.NotificarDespachador <- p.PID //MANDO PID
+
+			// 2) Señal al planificador Largo para continuar
+			Utils.SemProcessCreateOK <- struct{}{}
+			continue
 		}
 
 		//DICE QUE SI, HAY ESPACIO
 		//MANDAR PROCESO A READY
 		agregarProcesoAReady(p, p.Estado)
 		comunicacion.EnviarArchivoMemoria(filename, size, p.PID)
+	}
+}
+
+func Reintentador() {
+	for {
+		//CUANDO MEMORIA LIBERA VUELVE A
+		<-Utils.LiberarMemoria
+		Utils.InitProcess <- struct{}{}
 	}
 }
 
@@ -287,7 +301,7 @@ func finalizarProceso(pid int, pc int, cpuID string) {
 	}
 
 	// 7. Log y métricas
-	logger.Info("## (<%d>) Finaliza proceso (%s)", proceso.PID)
+	logger.Info("## (<%d>) Finaliza proceso", proceso.PID)
 	logger.Info(proceso.ImprimirMetricas())
 
 	// 8. Señal para liberar memoria

@@ -30,6 +30,28 @@ func AddPMCP(p *pcb.PCB) {
 	ColaNuevo.elements = nuevaCola
 }
 
+func AddPMCPSusp(p *pcb.PCB) {
+	Utils.MutexSuspendidoReady.Lock()
+	defer Utils.MutexSuspendidoReady.Unlock()
+
+	insertado := false
+	nuevaCola := make([]*pcb.PCB, 0, len(ColaSuspendidoReady.elements)+1)
+
+	for _, actual := range ColaSuspendidoReady.elements {
+		if !insertado && p.ProcessSize < actual.ProcessSize {
+			nuevaCola = append(nuevaCola, p)
+			insertado = true
+		}
+		nuevaCola = append(nuevaCola, actual)
+	}
+
+	if !insertado {
+		nuevaCola = append(nuevaCola, p)
+	}
+
+	ColaSuspendidoReady.elements = nuevaCola
+}
+
 // definido por archivo de configuración:
 // - rafaga inicial estimada
 // - alpha

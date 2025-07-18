@@ -83,20 +83,6 @@ const (
 	MemoryDump    = "memoryDump"
 )
 
-// esta funcion es auxiliar de sendMemoryRequest
-/*func handleMemoryResponseError(response *http.Response, TypeRequest string) error {
-	logger.Debug("Memoria respondio a: %v con: %v", TypeRequest, response.StatusCode)
-	if response.StatusCode != http.StatusOK {
-		if response.StatusCode == http.StatusConflict { // Conflict es compactacion.
-			err := ErrorRequestType[Compactacion]
-			return err
-		}
-		err := ErrorRequestType[TypeRequest]
-		return err
-	}
-	return nil
-}*/
-
 var ErrorRequestType = map[string]error{
 	CreateProcess: errors.New("memoria: No hay espacio disponible en memoria "),
 	FinishProcess: errors.New("memoria: No se puedo finalizar el proceso"),

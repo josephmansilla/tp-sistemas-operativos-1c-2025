@@ -13,7 +13,7 @@ corto:
 
 # === Prueba: Mediano/Largo Plazo ===
 lym:
-	$(RUN) kernel.go PLANI_LYM_IO 0 medianoplazo
+	$(RUN) kernel.go PLANI_LYM_PLAZO 0 medianoplazo
 
 # === Prueba: SWAP ===
 swap:

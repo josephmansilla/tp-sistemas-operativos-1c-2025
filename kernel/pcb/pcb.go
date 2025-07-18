@@ -3,7 +3,6 @@ package pcb
 import (
 	"fmt"
 	"github.com/sisoputnfrba/tp-golang/kernel/globals"
-	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"time"
 )
 
@@ -67,7 +66,6 @@ func (p *PCB) ImprimirMetricas() string {
 		salida = salida[:len(salida)-1]
 	}
 
-	logger.Info(salida)
 	return salida
 }
 

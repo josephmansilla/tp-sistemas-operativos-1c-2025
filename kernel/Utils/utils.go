@@ -48,20 +48,20 @@ func InicializarMutexes() {
 
 // InicializarCanales crea y configura los canales con buffers adecuados.
 func InicializarCanales() {
-	ChannelProcessArguments = make(chan NewProcess, 10) // buffer para hasta 10 peticiones
-	ChannelFinishprocess = make(chan FinishProcess, 5)
+	ChannelProcessArguments = make(chan NewProcess, 20) // buffer para hasta 10 peticiones
+	ChannelFinishprocess = make(chan FinishProcess, 20)
 	InitProcess = make(chan struct{})           // sin buffer para sincronización exacta
 	SemProcessCreateOK = make(chan struct{}, 1) // semáforo de 1 slot
 	LiberarMemoria = make(chan struct{}, 1)
 
-	NotificarDespachador = make(chan int, 10) // buffer 10 procesos listos
-	NotificarComienzoIO = make(chan MensajeIOChannel, 10)
-	NotificarIOLibre = make(chan IOEvent, 10)
-	NotificarDesconexion = make(chan IOEvent, 10)
-	ContextoInterrupcion = make(chan InterruptProcess, 10)
-	ChannelProcessBlocked = make(chan BlockProcess, 10)
+	NotificarDespachador = make(chan int, 20) // buffer 10 procesos listos
+	NotificarComienzoIO = make(chan MensajeIOChannel, 20)
+	NotificarIOLibre = make(chan IOEvent, 20)
+	NotificarDesconexion = make(chan IOEvent, 20)
+	ContextoInterrupcion = make(chan InterruptProcess, 20)
+	ChannelProcessBlocked = make(chan BlockProcess, 20)
 	NotificarTimeoutBlocked = make(chan int)
-	FinIODesdeSuspBlocked = make(chan IOEvent, 0)
+	FinIODesdeSuspBlocked = make(chan IOEvent, 20)
 	IOWaiters = make(map[int]chan IOEvent)
 }
 

@@ -154,23 +154,6 @@ func BloquearProceso() {
 		}
 		Utils.MutexEjecutando.Unlock()
 
-		// Buscar IO disponible
-		globals.IOMu.Lock()
-		ioList, existe := globals.IOs[tipoIO] //Existe el tipo de IO en el map?
-		if !existe || len(ioList) == 0 {
-			// No existe el tipo de IO / No hay ninguna instancia
-			globals.IOMu.Unlock()
-
-			//Avisar EXIT A LARGO
-			Utils.ChannelFinishprocess <- Utils.FinishProcess{
-				PID:   proceso.PID,
-				PC:    proceso.PC,
-				CpuID: cpuID,
-			}
-			continue
-		}
-		globals.IOMu.Unlock()
-
 		liberarCPU(cpuID)
 
 		//ENVIAR A BLOCKED
@@ -179,6 +162,23 @@ func BloquearProceso() {
 		algoritmos.ColaBloqueado.Add(proceso)
 		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado BLOCKED", proceso.PID)
 		Utils.MutexBloqueado.Unlock()
+
+		// Buscar IO disponible
+		globals.IOMu.Lock()
+		ioList, existe := globals.IOs[tipoIO] //Existe el tipo de IO en el map?
+		if !existe || len(ioList) == 0 {
+			// No existe el tipo de IO / No hay ninguna instancia
+			globals.IOMu.Unlock()
+
+			//Avisar EXIT A LARGO
+			logger.Info("## No existe esa IO. (<%d>) Pasa a finalizar", proceso.PID)
+			Utils.ChannelFinishprocess <- Utils.FinishProcess{
+				PID: proceso.PID,
+				PC:  proceso.PC,
+			}
+			continue
+		}
+		globals.IOMu.Unlock()
 
 		//Cuando el corto plazo termina de bloquear al proceso en particular
 		//le avisa al Mediano plazo para que empiece el Timer para ESE proceso
@@ -273,5 +273,18 @@ func DesconexionIO() {
 			PID: proceso.PID,
 			PC:  proceso.PC,
 		}
+	}
+}
+func MostrarCOLABLOQUEADO() {
+	lista := algoritmos.ColaBloqueado.Values()
+
+	if len(lista) == 0 {
+		logger.Info("Cola NEW vacía")
+		return
+	}
+
+	logger.Info("Contenido de la cola New:")
+	for _, proceso := range lista {
+		logger.Info(" - PCB EN COLA New con PID: %d, TAMAÑO: %d", proceso.PID, proceso.ProcessSize)
 	}
 }

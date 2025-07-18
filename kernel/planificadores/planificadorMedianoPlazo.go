@@ -187,11 +187,23 @@ func AtenderSuspBlockedAFinIO() {
 				}
 			}
 			if proc != nil {
-				algoritmos.ColaBloqueadoSuspendido.Remove(proc)
-				pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
-				Utils.MutexSuspendidoReady.Lock()
-				algoritmos.ColaSuspendidoReady.Add(proc)
-				Utils.MutexSuspendidoReady.Unlock()
+				// Encolar en SUSP.READY segun algoritmo de ingreso
+				switch globals.KConfig.ReadyIngressAlgorithm {
+				case "FIFO":
+					Utils.MutexSuspendidoReady.Lock()
+					pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
+					algoritmos.ColaSuspendidoReady.Add(proc)
+					Utils.MutexSuspendidoReady.Unlock()
+					logger.Info("PID <%d> pasa de estado SUSP.BLOCKED a SUSP.READY (FIFO)", proc.PID)
+				case "PMCP":
+					pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
+					algoritmos.AddPMCPSusp(proc)
+					logger.Info("PID <%d> pasa de estado SUSP.BLOCKED a SUSP.READY (PMCP)", proc.PID)
+				default:
+					logger.Error("Algoritmo de ingreso desconocido")
+					return
+				}
+
 				logger.Info("## (%d) Pasa de SUSP.BLOCKED a SUSP.READY", proc.PID)
 				// Notificar a largo plazo para reintentar ingresar
 				Utils.InitProcess <- struct{}{}
