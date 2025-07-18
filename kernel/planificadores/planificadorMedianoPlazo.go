@@ -212,7 +212,7 @@ func AtenderSuspBlockedAFinIO() {
 		io := <-Utils.FinIODesdeSuspBlocked
 
 		Utils.MutexIOWaiters.Lock()
-		finIOChan, ok := Utils.IOWaiters[io.PID]
+		finIOChan := Utils.IOWaiters[io.PID]
 		Utils.MutexIOWaiters.Unlock()
 		ioEvt := <-finIOChan
 		// Para cada evento de SUSP.BLOCKED arrancoo un hilo
