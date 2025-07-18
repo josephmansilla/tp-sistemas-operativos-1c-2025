@@ -25,10 +25,17 @@ func ManejadorMedianoPlazo() {
 	for bp := range Utils.ChannelProcessBlocked {
 		// arrancá un timer en paralelo para CADA proceso bloqueado
 		//y lleno el MAP con un mutex entonces cada pid tiene un mutex individual
-		ch := make(chan Utils.IOEvent, 1)
+		/*ch := make(chan Utils.IOEvent, 1)
 		Utils.MutexIOWaiters.Lock()
 		Utils.IOWaiters[bp.PID] = ch
-		Utils.MutexIOWaiters.Unlock()
+		Utils.MutexIOWaiters.Unlock()*/
+		ch1 := make(chan Utils.IOEvent, 1)
+
+		// 2) Guárdalo en el map protegido con mutex
+		Utils.MutexIOFinishedWaiters.Lock()
+		Utils.FinIOWaiters[bp.PID] = ch1
+		logger.Error("INICIALICE CANAL DE ")
+		Utils.MutexIOFinishedWaiters.Unlock()
 		go monitorBloqueado(bp)
 	}
 }
@@ -114,22 +121,32 @@ func moverDeBlockedASuspBlocked(pid int) bool {
 func monitorBloqueado(bp Utils.BlockProcess) {
 	pid := bp.PID
 
-	// Obtengo el canal propio de este PID
-	Utils.MutexIOWaiters.Lock()
-	finIOChan, ok := Utils.IOWaiters[pid]
+	// Obtenemos ambos canales bajo sus mutex
+	/*Utils.MutexIOWaiters.Lock()
+	blockedCh, okB := Utils.IOWaiters[pid]
 	Utils.MutexIOWaiters.Unlock()
+	if !okB {
+		logger.Warn("monitorBloqueado: no existe blockedCh para PID %d", pid)
+		return
+	}*/
 
-	if !ok {
-		logger.Warn("monitorBloqueado: no existe canal para PID %d", pid)
+	Utils.MutexIOFinishedWaiters.Lock()
+	finishedCh, okF := Utils.FinIOWaiters[pid]
+	Utils.MutexIOFinishedWaiters.Unlock()
+	if !okF {
+		logger.Warn("monitorBloqueado: no existe finishedCh para PID %d", pid)
 		return
 	}
+
+	// 1) Esperamos señal de que realmente se bloqueó (del corto plazo)
+	/*<-blockedCh*/
 
 	logger.Info("Arrancó TIMER para PID <%d>", pid)
 	suspensión := time.Duration(globals.KConfig.SuspensionTime) * time.Millisecond
 	timer := time.NewTimer(suspensión)
 	defer timer.Stop()
 
-	// Encolar el pedido de I/O
+	// encolamos el pedido de I/O
 	Utils.MutexPedidosIO.Lock()
 	algoritmos.PedidosIO.Add(&algoritmos.PedidoIO{
 		Nombre:   bp.Nombre,
@@ -140,18 +157,18 @@ func monitorBloqueado(bp Utils.BlockProcess) {
 	Utils.NotificarIOLibre <- Utils.IOEvent{Nombre: bp.Nombre, PID: bp.PID}
 
 	select {
-	case ioEvt := <-finIOChan:
-		// Llega fin de IO antes del timeout → READY
+	case ioEvt := <-finishedCh:
+		// fin de I/O antes del timeout → READY
 		moverDeBlockedAReady(ioEvt)
 
 	case <-timer.C:
-		// Se agotó el tiempo → SUSP.BLOCKED
+		// timeout → SUSP.BLOCKED
 		if moverDeBlockedASuspBlocked(pid) {
 			logger.Info("PID <%d> → SUSP.BLOCKED (timeout)", pid)
 			if err := comunicacion.SolicitarSuspensionEnMemoria(pid); err == nil {
 				Utils.InitProcess <- struct{}{}
 			}
-			// Señalo al subplanificador que pase a SUSP.READY
+			// avisamos al subplanificador para pasarlo luego a SUSP.READY
 			Utils.FinIODesdeSuspBlocked <- Utils.IOEvent{PID: pid, Nombre: bp.Nombre}
 		}
 	}
@@ -159,55 +176,65 @@ func monitorBloqueado(bp Utils.BlockProcess) {
 
 // pasa de SUSP BLOQUEADO A SUSP READY (con FIN DE IO)
 func AtenderSuspBlockedAFinIO() {
-	for {
-		io := <-Utils.FinIODesdeSuspBlocked
-
+	for ev := range Utils.FinIODesdeSuspBlocked {
+		// Obtener el canal dedicado a este PID
 		Utils.MutexIOWaiters.Lock()
-		finIOChan := Utils.IOWaiters[io.PID]
+		finIOChan, ok := Utils.FinIOWaiters[ev.PID]
 		Utils.MutexIOWaiters.Unlock()
-		ioEvt := <-finIOChan
-		// Para cada evento de SUSP.BLOCKED arrancoo un hilo
-		logger.Info("Llega PID <%d> FIN DE IO a SUSP.BLOCKED", io.PID)
-
-		// Mover de SUSP.BLOCKED a SUSP.READY
-		Utils.MutexBloqueadoSuspendido.Lock()
-
-		//BUSCAR PCB EN SUSP.BLOCKED
-		var proc *pcb.PCB
-		for _, p := range algoritmos.ColaBloqueadoSuspendido.Values() {
-			if p.PID == io.PID {
-				proc = p
-				break
-			}
+		if !ok {
+			logger.Warn("AtenderSuspBlockedAFinIO: no hay canal para PID %d", ev.PID)
+			continue
 		}
 
-		Utils.MutexBloqueadoSuspendido.Unlock()
+		// Arrancar un goroutine que espere el verdadero fin de I/O
+		go func(pid int, ch chan Utils.IOEvent) {
+			logger.Info("Esperando fin de I/O para PID <%d> en SUSP.BLOCKED...", pid)
+			ioEvt := <-ch
+			logger.Info("ME LLEGO FIN DE IO PARA PROCESO DE PI: <%d>", ioEvt.PID)
 
-		//ENCOLAR PCB EN SUSP.READY
-		if proc != nil {
-			// Encolar en SUSP.READY segun algoritmo de ingreso
-			switch globals.KConfig.ReadyIngressAlgorithm {
-			case "FIFO":
-				Utils.MutexSuspendidoReady.Lock()
-				pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
-				algoritmos.ColaSuspendidoReady.Add(proc)
-				Utils.MutexSuspendidoReady.Unlock()
-				logger.Info("PID <%d> pasa de estado SUSP.BLOCKED a SUSP.READY (FIFO)", proc.PID)
-			case "PMCP":
-				pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
-				algoritmos.AddPMCPSusp(proc)
-				logger.Info("PID <%d> pasa de estado SUSP.BLOCKED a SUSP.READY (PMCP)", proc.PID)
-			default:
-				logger.Error("Algoritmo de ingreso desconocido")
-				return
+			// Pasar de SUSP.BLOCKED a SUSP.READY
+			Utils.MutexBloqueadoSuspendido.Lock()
+			var proc *pcb.PCB
+			for _, p := range algoritmos.ColaBloqueadoSuspendido.Values() {
+				if p.PID == pid {
+					proc = p
+					break
+				}
 			}
-			logger.Info("## (%d) Pasa de SUSP.BLOCKED a SUSP.READY", proc.PID)
+			Utils.MutexBloqueadoSuspendido.Unlock()
 
-			// Notificar a largo plazo para reintentar ingresar
-			Utils.InitProcess <- struct{}{}
-		} else {
-			logger.Warn("AtenderSuspBlockedAFinIO: PID %d no estaba en SUSP.BLOCKED", io.PID)
-		}
+			if proc != nil {
+				switch globals.KConfig.ReadyIngressAlgorithm {
+				case "FIFO":
+					Utils.MutexSuspendidoReady.Lock()
+					pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
+					algoritmos.ColaSuspendidoReady.Add(proc)
+					Utils.MutexSuspendidoReady.Unlock()
+					logger.Info("PID <%d> pasa de SUSP.BLOCKED a SUSP.READY (FIFO)", pid)
+				case "PMCP":
+					pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
+					algoritmos.AddPMCPSusp(proc)
+					logger.Info("PID <%d> pasa de SUSP.BLOCKED a SUSP.READY (PMCP)", pid)
+				default:
+					logger.Error("Algoritmo de ingreso desconocido")
+					return
+				}
+				logger.Info("## (%d) Pasa de SUSP.BLOCKED a SUSP.READY", pid)
+
+				// Notificar al planificador de largo plazo
+				Utils.InitProcess <- struct{}{}
+			} else {
+				logger.Warn("AtenderSuspBlockedAFinIO: PID %d no estaba en SUSP.BLOCKED", pid)
+			}
+
+			// Limpiar el canal dedicado a este PID
+			Utils.MutexIOWaiters.Lock()
+			delete(Utils.IOWaiters, pid)
+			Utils.MutexIOWaiters.Unlock()
+			//muestro cola suspready cada vez que llega un fin IO DEBERIA ESTAR CARGADA CON LOS PROCESOS
+			MostrarColasSUSPREADY()
+
+		}(ev.PID, finIOChan)
 	}
 }
 
@@ -286,6 +313,19 @@ func ManejadorIO(bp Utils.BlockProcess) {
 	//Lo envia a IO hallada para bloquearse
 	logger.Info("Asignada IO <%s> (puerto %d) a proceso <%d>", bp.Nombre, ioAsignada.Puerto, bp.PID)
 	go comunicacion.EnviarContextoIO(*ioAsignada, bp.PID, bp.Duracion)
+}
+func MostrarColasSUSPREADY() {
+	lista := algoritmos.ColaSuspendidoReady.Values()
+
+	if len(lista) == 0 {
+		logger.Info("Cola SUSPENDIDO READY vacía")
+		return
+	}
+
+	logger.Info("Contenido de la cola SUSPENDIDO READY:")
+	for _, proceso := range lista {
+		logger.Info(" - PCB EN COLA SUSPENDIDO READY con PID: %d, TAMAÑO: %d", proceso.PID, proceso.ProcessSize)
+	}
 }
 
 /*

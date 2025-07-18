@@ -36,6 +36,8 @@ var (
 	FinIODesdeSuspBlocked   chan IOEvent
 	IOWaiters               map[int]chan IOEvent
 	MutexIOWaiters          sync.Mutex
+	FinIOWaiters            map[int]chan IOEvent
+	MutexIOFinishedWaiters  sync.Mutex
 )
 
 // InicializarMutexes deja listas las variables de mutex.
@@ -63,6 +65,7 @@ func InicializarCanales() {
 	NotificarTimeoutBlocked = make(chan int)
 	FinIODesdeSuspBlocked = make(chan IOEvent, 20)
 	IOWaiters = make(map[int]chan IOEvent)
+	FinIOWaiters = make(map[int]chan IOEvent)
 }
 
 type MensajeIOChannel struct {

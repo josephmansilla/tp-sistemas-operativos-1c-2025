@@ -2,6 +2,7 @@ package globals
 
 import (
 	"errors"
+	"sync"
 )
 
 // No se si es correcto crear una carpeta globals
@@ -31,3 +32,4 @@ var ID string
 var TamanioPagina int
 var EntradasPorNivel int
 var CantidadNiveles int
+var MutexInterrupcion sync.Mutex
