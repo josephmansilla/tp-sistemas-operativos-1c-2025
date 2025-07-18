@@ -2,7 +2,6 @@ package traducciones
 
 import (
 	"container/list"
-	"sync"
 	"time"
 
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
@@ -20,7 +19,6 @@ type TLB struct {
 	orden       *list.List
 	maxEntradas int
 	algoritmo   string
-	mutex       sync.Mutex
 }
 
 func NuevaTLB() *TLB {
@@ -45,9 +43,6 @@ func (tlb *TLB) Buscar(nroPagina int) (int, bool) {
 		return -1, false
 	}
 
-	tlb.mutex.Lock()
-	defer tlb.mutex.Unlock()
-
 	if elem, ok := tlb.entradas[nroPagina]; ok {
 		if tlb.algoritmo == "LRU" {
 			tlb.orden.MoveToFront(elem)
@@ -65,9 +60,6 @@ func (tlb *TLB) AgregarEntrada(nroPagina int, marco int) {
 		logger.Debug("TLB deshabilitada: no se agrega entrada")
 		return
 	}
-
-	tlb.mutex.Lock()
-	defer tlb.mutex.Unlock()
 
 	if elem, ok := tlb.entradas[nroPagina]; ok {
 		elem.Value = EntradaTLB{NroPagina: nroPagina, Marco: marco}

@@ -104,22 +104,27 @@ func writeMemInstruccion(arguments []string) error {
 		logger.Info("Cache Activa")
 
 		err := traducciones.EscribirEnCache(nroPagina, datos)
-
 		if err != nil {
+			logger.Info("PID: %d - CACHE MISS - Página: %d ", globals.PIDActual, nroPagina)
 			traducciones.Cache.Agregar(nroPagina, datos, true)
-			logger.Info("PID: %d - CACHE MISS - Página: %d - Se agrega con datos: %s", globals.PIDActual, nroPagina, datos)
+
+			if err := traducciones.EscribirEnMemoria(dirFisica, datos); err != nil {
+				logger.Error("Error escribiendo en Memoria: %s", err)
+				return err
+			}
+			logger.Info("PID: %d - ESCRIBIR (Memoria) - Dirección Física: %d - Datos: %s", globals.PIDActual, dirFisica, datos)
 		} else {
 			logger.Info("PID: %d - CACHE WRITE - Página: %d - Datos actualizados: %s", globals.PIDActual, nroPagina, datos)
 		}
 	} else {
-
 		logger.Info("Cache Inactiva")
+
+		if err := traducciones.EscribirEnMemoria(dirFisica, datos); err != nil {
+			logger.Error("Error escribiendo en Memoria: %s", err)
+			return err
+		}
+		logger.Info("PID: %d - ESCRIBIR (Memoria) - Dirección Física: %d - Datos: %s", globals.PIDActual, dirFisica, datos)
 	}
-	if err := traducciones.EscribirEnMemoria(dirFisica, datos); err != nil {
-		logger.Error("Error escribiendo en Memoria: %s", err)
-		return err
-	}
-	logger.Info("PID: %d - ESCRIBIR (Memoria) - Dirección Física: %d - Datos: %s", globals.PIDActual, dirFisica, datos)
 	return nil
 }
 
@@ -141,6 +146,8 @@ func readMemInstruccion(arguments []string) error {
 	}
 	nroPagina := dirLogica / globals.TamanioPagina
 
+	dirFisica := traducciones.Traducir(dirLogica)
+
 	var valorLeido string
 
 	if traducciones.Cache.EstaActiva() {
@@ -151,24 +158,30 @@ func readMemInstruccion(arguments []string) error {
 			logger.Info("PID: %d - LEER (Cache Hit) - Página: %d - Valor: %s", globals.PIDActual, nroPagina, valorLeido)
 			return nil
 		}
+
 		logger.Info("PID: %d - LEER (Cache Miss) - Página: %d", globals.PIDActual, nroPagina)
+
+		valorLeido, err = traducciones.LeerEnMemoria(dirFisica, tamanio)
+		if err != nil {
+			logger.Error("Error leyendo de memoria: %v", err)
+			return err
+		}
+
+		traducciones.Cache.Agregar(nroPagina, valorLeido, false)
+
+		logger.Info("PID: %d - CACHE ADD - Página: %d", globals.PIDActual, nroPagina)
+		logger.Info("PID: %d - LEER (Memoria) - Dirección Física: %d - Valor: %s", globals.PIDActual, dirFisica, valorLeido)
 	} else {
 		logger.Info("Cache Inactiva")
-	}
 
-	dirFisica := traducciones.Traducir(dirLogica)
-	valorLeido, err = traducciones.LeerEnMemoria(dirFisica, tamanio)
-	if err != nil {
-		logger.Error("Error leyendo de memoria: %v", err)
-		return err
-	}
+		valorLeido, err = traducciones.LeerEnMemoria(dirFisica, tamanio)
+		if err != nil {
+			logger.Error("Error leyendo de memoria: %v", err)
+			return err
+		}
 
-	if traducciones.Cache.EstaActiva() {
-		traducciones.Cache.Agregar(nroPagina, valorLeido, false)
-		logger.Info("PID: %d - CACHE ADD - Página: %d", globals.PIDActual, nroPagina)
+		logger.Info("PID: %d - LEER (Memoria) - Dirección Física: %d - Valor: %s", globals.PIDActual, dirFisica, valorLeido)
 	}
-
-	logger.Info("PID: %d - LEER (Memoria) - Dirección Física: %d - Valor: %s", globals.PIDActual, dirFisica, valorLeido)
 	return nil
 }
 

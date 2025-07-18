@@ -2,7 +2,6 @@ package globals
 
 import (
 	"errors"
-	"sync"
 )
 
 // No se si es correcto crear una carpeta globals
@@ -26,7 +25,6 @@ var PCActual int
 var ClientConfig *Config
 var InterrupcionPendiente bool
 var PIDInterrumpido int
-var MutexInterrupcion sync.Mutex
 var ErrSyscallBloqueante = errors.New("proceso bloqueado por syscall IO")
 var SaltarIncrementoPC bool
 var ID string

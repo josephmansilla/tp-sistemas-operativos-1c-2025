@@ -125,9 +125,6 @@ func FaseExecute(nombre string, args []string) bool {
 }
 
 func FaseCheckInterrupt() bool {
-	globals.MutexInterrupcion.Lock()
-	defer globals.MutexInterrupcion.Unlock()
-
 	if !globals.InterrupcionPendiente {
 		return false
 	}
