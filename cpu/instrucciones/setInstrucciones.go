@@ -99,15 +99,12 @@ func writeMemInstruccion(arguments []string) error {
 	nroPagina := dirLogica / globals.TamanioPagina
 
 	dirFisica := traducciones.Traducir(dirLogica)
-	if err := traducciones.EscribirEnMemoria(dirFisica, datos); err != nil {
-		logger.Error("Error escribiendo en Memoria: %s", err)
-		return err
-	}
 
 	if traducciones.Cache.EstaActiva() {
 		logger.Info("Cache Activa")
 
 		err := traducciones.EscribirEnCache(nroPagina, datos)
+
 		if err != nil {
 			traducciones.Cache.Agregar(nroPagina, datos, true)
 			logger.Info("PID: %d - CACHE MISS - Página: %d - Se agrega con datos: %s", globals.PIDActual, nroPagina, datos)
@@ -115,9 +112,13 @@ func writeMemInstruccion(arguments []string) error {
 			logger.Info("PID: %d - CACHE WRITE - Página: %d - Datos actualizados: %s", globals.PIDActual, nroPagina, datos)
 		}
 	} else {
+
 		logger.Info("Cache Inactiva")
 	}
-
+	if err := traducciones.EscribirEnMemoria(dirFisica, datos); err != nil {
+		logger.Error("Error escribiendo en Memoria: %s", err)
+		return err
+	}
 	logger.Info("PID: %d - ESCRIBIR (Memoria) - Dirección Física: %d - Datos: %s", globals.PIDActual, dirFisica, datos)
 	return nil
 }
