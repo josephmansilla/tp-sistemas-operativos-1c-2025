@@ -154,20 +154,20 @@ func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 		globals.IOMu.Unlock()
 	}
 
-	// Aviso a DespacharIO
+	//1. Aviso a DespacharIO (Mediano Plazo)
 	//logger.Debug("AVISO A DESPACHADOR, PID: <%d>", evt.PID)
 	Utils.NotificarIOLibre <- evt
 
-	// Reenvío al canal individual de este PID (si existe)
+	//2. Reenvío al canal individual de este PID (si existe)
 	Utils.MutexIOWaiters.Lock()
-	if ch, ok := Utils.IOWaiters[evt.PID]; ok {
-		select {
-		case ch <- evt:
-		default:
-			// si ya había un evento pendiente, lo descartamos
-		}
-	}
+	_, ok := Utils.IOWaiters[evt.PID]
 	Utils.MutexIOWaiters.Unlock()
+
+	if ok {
+		Utils.FinIODesdeSuspBlocked <- Utils.IOEvent{PID: evt.PID, Nombre: evt.Nombre, Puerto: evt.Puerto}
+	} else {
+		logger.Warn("IO terminada pero no hay canal en IOWaiters para PID %d", evt.PID)
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
