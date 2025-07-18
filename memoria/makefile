@@ -1,6 +1,7 @@
 RUN = go run
 
 memoria:
+
 	$(RUN) memoria.go
 
 # === Prueba: Corto Plazo ===
