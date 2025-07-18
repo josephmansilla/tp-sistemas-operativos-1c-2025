@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -13,23 +12,6 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
-
-var (
-	pidEnEjecucion = -1
-	mu             sync.Mutex
-)
-
-func setPID(pid int) {
-	mu.Lock()
-	defer mu.Unlock()
-	pidEnEjecucion = pid
-}
-
-func getPID() int {
-	mu.Lock()
-	defer mu.Unlock()
-	return pidEnEjecucion
-}
 
 type MensajeAKernel struct {
 	Ip     string `json:"ip"`
@@ -77,7 +59,6 @@ func main() {
 		Puerto: globals.IoConfig.PortIo,
 		Nombre: globals.IoConfig.Type,
 	}
-	EnviarIpPuertoNombreAKernel(globals.IoConfig.IpKernel, globals.IoConfig.PortKernel, mensaje)
 
 	// ----------------------------------------------------
 	// ------------- MANEJO DE SEÑALES --------------------
@@ -89,6 +70,11 @@ func main() {
 	// ----------------------------------------------------
 	mux := http.NewServeMux()
 	mux.HandleFunc("/io/kernel", RecibirMensajeDeKernel)
+
+	// Esperar brevemente a que el servidor esté activo
+	time.Sleep(2000 * time.Millisecond)
+
+	EnviarIpPuertoNombreAKernel(globals.IoConfig.IpKernel, globals.IoConfig.PortKernel, mensaje)
 
 	// ----------------------------------------------------
 	// ------------------ SERVIDOR HTTP -------------------
@@ -126,30 +112,16 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 		return //hubo error
 	}
 
-	setPID(mensajeRecibido.PID)
-
 	//Realizo la operacion
 	logger.Info("## PID: <%d> - Inicio de IO - Tiempo: %d", mensajeRecibido.PID, mensajeRecibido.Duracion)
 	time.Sleep(time.Duration(mensajeRecibido.Duracion) * time.Millisecond)
 
 	//IO Finalizada
-	FinDeIO(pidEnEjecucion)
-}
-
-// Al finalizar deberá informar al Kernel que finalizó la solicitud de I/O
-// quedará a la espera de la siguiente petición.
-// ver el tema de FINALIZACION DE IO != FIN de timer de IO
-
-//*El Módulo IO, deberá notificar al Kernel de su desconexion,
-//para esto se deberá implementar el manejo de las señales SIGINT y SIGTERM,
-//para enviar la notificación y finalizar de manera controlada.
-
-func FinDeIO(pid int) {
-	logger.Info("## PID: <%d> - Fin de IO", pid)
+	logger.Info("## PID: <%d> - Fin de IO", mensajeRecibido.PID)
 	url := fmt.Sprintf("http://%s:%d/kernel/fin_io", globals.IoConfig.IpKernel, globals.IoConfig.PortKernel)
 
 	mensaje := MensajeFin{
-		PID:         getPID(),
+		PID:         mensajeRecibido.PID,
 		Desconexion: false,
 		Nombre:      globals.IoConfig.Type,
 		Puerto:      globals.IoConfig.PortIo,
@@ -161,10 +133,15 @@ func FinDeIO(pid int) {
 		logger.Info("Error enviando PID y Nombre a Kernel: %s", err.Error())
 		return
 	}
-
-	// Reiniciar PID
-	setPID(-1)
 }
+
+// Al finalizar deberá informar al Kernel que finalizó la solicitud de I/O
+// quedará a la espera de la siguiente petición.
+// ver el tema de FINALIZACION DE IO != FIN de timer de IO
+
+//*El Módulo IO, deberá notificar al Kernel de su desconexion,
+//para esto se deberá implementar el manejo de las señales SIGINT y SIGTERM,
+//para enviar la notificación y finalizar de manera controlada.
 
 // Mecanismo del SO para notificar a un proceso que debe hacer algo.
 // En este caso se entera cuando IO muere o presionan ctrl c / kill
@@ -176,10 +153,8 @@ func desconexion() {
 		logger.Info("Se recibió una señal de finalización. Cerrando IO...")
 
 		//Notificar al Kernel
-		pid := getPID()
-
 		mensaje := MensajeFin{
-			PID:         pid,
+			PID:         -1,
 			Desconexion: true,
 			Nombre:      globals.IoConfig.Type,
 			Puerto:      globals.IoConfig.PortIo,

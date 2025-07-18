@@ -29,9 +29,8 @@ var (
 	//AVISAR AL DESPACHADOR CUANDO UN PROCESO CAMBIA SU ESTADO
 	NotificarDespachador    chan int              //PASA A READY
 	NotificarComienzoIO     chan MensajeIOChannel //PASA A BLOQUEADO
-	NotificarFinIO          chan IOEvent          //FIN DE IO
 	NotificarIOLibre        chan IOEvent
-	NotificarDesconexion    chan IODesconexion    //Desconexion DE IO
+	NotificarDesconexion    chan IOEvent          //Desconexion DE IO
 	ContextoInterrupcion    chan InterruptProcess //FIN DE EXECUTE
 	NotificarTimeoutBlocked chan int
 	FinIODesdeSuspBlocked   chan IOEvent
@@ -57,9 +56,8 @@ func InicializarCanales() {
 
 	NotificarDespachador = make(chan int, 10) // buffer 10 procesos listos
 	NotificarComienzoIO = make(chan MensajeIOChannel, 10)
-	NotificarFinIO = make(chan IOEvent, 10)
 	NotificarIOLibre = make(chan IOEvent, 10)
-	NotificarDesconexion = make(chan IODesconexion, 10)
+	NotificarDesconexion = make(chan IOEvent, 10)
 	ContextoInterrupcion = make(chan InterruptProcess, 10)
 	ChannelProcessBlocked = make(chan BlockProcess, 10)
 	NotificarTimeoutBlocked = make(chan int)
@@ -73,12 +71,6 @@ type MensajeIOChannel struct {
 	Nombre   string
 	Duracion int
 	CpuID    string
-}
-
-type IODesconexion struct {
-	Nombre string
-	PID    int
-	Puerto int
 }
 type FinishProcess struct {
 	PID   int

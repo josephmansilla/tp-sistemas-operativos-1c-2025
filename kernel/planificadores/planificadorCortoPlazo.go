@@ -201,7 +201,6 @@ func DesconexionIO() {
 
 		// 1) Remover instancia de IO que tenga ese puerto
 		globals.IOMu.Lock()
-
 		// Buscar el tipo de IO directamente
 		instancias, existe := globals.IOs[io.Nombre]
 		if !existe {
@@ -211,9 +210,11 @@ func DesconexionIO() {
 		}
 
 		// Crear nueva lista de instancias, excluyendo la desconectada
+		var pidEjecutado = -1
 		nuevaLista := []globals.DatosIO{}
 		for _, instancia := range instancias {
 			if instancia.Puerto != io.Puerto {
+				pidEjecutado = instancia.PID
 				nuevaLista = append(nuevaLista, instancia)
 			} else {
 				logger.Info("Removida instancia IO <%s> con Puerto <%d>", io.Nombre, io.Puerto)
@@ -221,6 +222,7 @@ func DesconexionIO() {
 		}
 
 		// Si no quedan más instancias, eliminar el tipo del mapa
+		// TODO MANDAR A EXIT TODOS LOS PROCESOS QUE LA ESPERABAN
 		if len(nuevaLista) == 0 {
 			delete(globals.IOs, io.Nombre)
 			logger.Info("No quedan IOs activas del tipo <%s>, eliminado del mapa", io.Nombre)
@@ -229,28 +231,42 @@ func DesconexionIO() {
 		}
 		globals.IOMu.Unlock()
 
-		if io.PID < 0 {
-			continue // ignorar PIDs inválidos de procesos y desconectar
-		}
-
 		//Si la IO se desconecta mientras tiene un proceso...
-		//2) BUSCAR PCB en BLOCKED
+		//2) BUSCAR PCB en colas
 		var proceso *pcb.PCB
+
+		//Buscar en BLOCKED
 		Utils.MutexBloqueado.Lock()
 		for _, p := range algoritmos.ColaBloqueado.Values() {
-			if p.PID == io.PID {
+			if p.PID == pidEjecutado {
 				proceso = p
-				algoritmos.ColaBloqueado.Remove(proceso)
+				algoritmos.ColaBloqueado.Remove(p)
+				break
 			}
 		}
 		Utils.MutexBloqueado.Unlock()
 
+		//Si no está, buscar en BLOCKED_SUSPENDIDO
 		if proceso == nil {
-			logger.Warn("## PID <%d> desconectado pero no estaba en BLOCKED", io.PID)
+			logger.Warn("## PID <%d> desconectado pero no estaba en BLOCKED", pidEjecutado)
+
+			Utils.MutexBloqueadoSuspendido.Lock()
+			for _, p := range algoritmos.ColaBloqueadoSuspendido.Values() {
+				if p.PID == pidEjecutado {
+					proceso = p
+					algoritmos.ColaBloqueadoSuspendido.Remove(p)
+					break
+				}
+			}
+			Utils.MutexBloqueadoSuspendido.Unlock()
+		}
+
+		if proceso == nil {
+			logger.Warn("## PID <%d> desconectado pero no estaba en ninguna cola", pidEjecutado)
 			continue
 		}
 
-		logger.Info("## IO desconectado correctamente para PID <%d>", io.PID)
+		logger.Info("## IO desconectado correctamente para PID <%d>", pidEjecutado)
 
 		//3) MOVER A PROCESO A EXIT / NOTIFICAR A LARGO
 		Utils.ChannelFinishprocess <- Utils.FinishProcess{

@@ -40,9 +40,10 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 
 	globals.IOMu.Lock()
 	instancia := globals.DatosIO{
-		Tipo:   mensajeRecibido.Nombre,
-		Ip:     mensajeRecibido.Ip,
-		Puerto: mensajeRecibido.Puerto,
+		Tipo:    mensajeRecibido.Nombre,
+		Ip:      mensajeRecibido.Ip,
+		Puerto:  mensajeRecibido.Puerto,
+		Ocupada: false,
 	}
 
 	// Agrega a la lista correspondiente
@@ -104,19 +105,23 @@ func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 	//  Si es desconexión
 	if mensajeRecibido.Desconexion {
 		logger.Info("Desconexión de IO: Puerto %d, PID %d", evt.Puerto, evt.PID)
-		Utils.NotificarDesconexion <- Utils.IODesconexion{
-			PID:    evt.PID,
-			Nombre: evt.Nombre,
-			Puerto: evt.Puerto,
-		}
+		Utils.NotificarDesconexion <- evt
 	} else {
-		// Fin de IO normal
-		//a confirmar este
+		//Fin de IO normal
 		logger.Info("FIN de IO: PID %d", evt.PID)
-		Utils.NotificarFinIO <- evt
+		globals.IOMu.Lock()
+		for i := range globals.IOs[evt.Nombre] {
+			if evt.Puerto == globals.IOs[evt.Nombre][i].Puerto {
+				globals.IOs[evt.Nombre][i].Ocupada = false
+				globals.IOs[evt.Nombre][i].PID = -1
+				break
+			}
+		}
+		globals.IOMu.Unlock()
 	}
 
 	// Aviso a DespacharIO
+	//logger.Debug("AVISO A DESPACHADOR, PID: <%d>", evt.PID)
 	Utils.NotificarIOLibre <- evt
 
 	// Reenvío al canal individual de este PID (si existe)

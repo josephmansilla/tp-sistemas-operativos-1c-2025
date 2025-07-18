@@ -13,7 +13,7 @@ import (
 func PlanificadorMedianoPlazo() {
 	logger.Info("Iniciando el planificador de Mediano Plazo")
 	go ManejadorMedianoPlazo()
-	//ESTA FUNCION VA A ATENDER EL REQUERIMIENTO QUE PASE DE SUSṔ BLQOUEADO A SUSP READY.
+	//ESTA FUNCION VA A ATENDER EL REQUERIMIENTO QUE PASE DE SUSP.BLOCKED A SUSP.READY.
 	go AtenderSuspBlockedAFinIO()
 	go DespacharIO()
 }
@@ -129,7 +129,19 @@ func monitorBloqueado(bp Utils.BlockProcess) {
 	defer timer.Stop()
 
 	//DESPACHAR A IO
-	go ManejadorIO(bp)
+	//agregar pedido a listaDepedidos
+	Utils.MutexPedidosIO.Lock()
+	algoritmos.PedidosIO.Add(&algoritmos.PedidoIO{
+		Nombre:   bp.Nombre,
+		PID:      bp.PID,
+		Duracion: bp.Duracion,
+	})
+	Utils.MutexPedidosIO.Unlock()
+
+	Utils.NotificarIOLibre <- Utils.IOEvent{
+		Nombre: bp.Nombre,
+		PID:    bp.PID,
+	}
 
 	select {
 	case ioEvt := <-finIOChan:
@@ -211,10 +223,9 @@ func DespacharIO() {
 
 		//BUSCAR PEDIDOS DE IO pendientes
 		pedido := algoritmos.PedidosIO.First() // FIFO
-		algoritmos.PedidosIO.Remove(pedido)
 		Utils.MutexPedidosIO.Unlock()
 
-		// Buscar IO libre del tipo pedido.Nombre
+		// Buscar una instancia de IO LIBRE del tipo Nombre
 		globals.IOMu.Lock()
 		var ioAsignada *globals.DatosIO
 		for i := range globals.IOs[pedido.Nombre] {
@@ -228,16 +239,13 @@ func DespacharIO() {
 		globals.IOMu.Unlock()
 
 		if ioAsignada == nil {
-			// No se encontró una IO libre, reencolar el pedido
-			logger.Warn("No se encontró IO libre al despachar. Reintentando luego...")
-			Utils.MutexPedidosIO.Lock()
-			algoritmos.PedidosIO.Add(pedido)
-			Utils.MutexPedidosIO.Unlock()
-			time.Sleep(10 * time.Millisecond) // evitar busy loop
+			// No se encontró una IO libre
+			logger.Warn("No se encontró IO libre: %s. PID <%d> Debe esperar", pedido.Nombre, pedido.PID)
 			continue
 		}
 
 		logger.Info("Asignada IO <%s> (puerto %d) a proceso <%d>", ioAsignada.Tipo, ioAsignada.Puerto, pedido.PID)
+		algoritmos.PedidosIO.Remove(pedido)
 		go comunicacion.EnviarContextoIO(*ioAsignada, pedido.PID, pedido.Duracion)
 	}
 }
