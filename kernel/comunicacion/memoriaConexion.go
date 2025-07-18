@@ -24,6 +24,10 @@ type ConsultaAMemoria struct {
 	Arguments interface{} `json:"argumentos"` // <-- puede ser cualquier tipo ahora (map, struct, etc.)
 }
 
+type FinProceso struct {
+	PID int `json:"pid"`
+}
+
 type Pid int
 
 type Hilo struct {
@@ -75,6 +79,19 @@ func EnviarArchivoMemoria(fileName string, tamanio int, pid int) {
 	}
 }
 
+func LiberarMemoria(pid int) {
+	url := fmt.Sprintf("http://%s:%d/memoria/finalizacionProceso", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
+
+	mensaje := FinProceso{
+		PID: pid,
+	}
+
+	err := data.EnviarDatos(url, mensaje)
+	if err != nil {
+		logger.Error("Error enviando EXIT a Memoria: %s", err.Error())
+	}
+}
+
 // PARA MANJERAR LOS MENSAJES DEL ENDPOINT QUE ESTAN EN MEMORIA
 // por ejemplo: http.HandleFunc("/kernel/createProcess", createProcess)
 const (
@@ -86,40 +103,6 @@ const (
 var ErrorRequestType = map[string]error{
 	CreateProcess: errors.New("memoria: No hay espacio disponible en memoria "),
 	FinishProcess: errors.New("memoria: No se puedo finalizar el proceso"),
-}
-
-func SolicitarCreacionEnMemoria(fileName string, tamanio, pid int) (bool, error) {
-	url := fmt.Sprintf("http://%s:%d/memoria/inicializacionProceso",
-		globals.KConfig.MemoryAddress,
-		globals.KConfig.MemoryPort,
-	)
-
-	req := inicializacionRequest{
-		Filename: fileName,
-		Tamanio:  tamanio,
-		PID:      pid,
-	}
-
-	resp, err := data.EnviarDatosConRespuesta(url, req)
-	if err != nil {
-		logger.Error("Error enviando request de inicialización a Memoria: %v", err)
-		return false, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		logger.Warn("Memoria respondió HTTP %d al solicitar creación", resp.StatusCode)
-		return false, fmt.Errorf("memoria HTTP %d", resp.StatusCode)
-	}
-
-	var rta inicializacionResponse
-	if err := json.NewDecoder(resp.Body).Decode(&rta); err != nil {
-		logger.Error("Error decodificando respuesta de inicialización de Memoria: %v", err)
-		return false, err
-	}
-
-	logger.Info("Memoria inicializaciónProceso respondió: %s", rta.Mensaje)
-	return rta.Exito, nil
 }
 
 type inicializacionRequest struct {
