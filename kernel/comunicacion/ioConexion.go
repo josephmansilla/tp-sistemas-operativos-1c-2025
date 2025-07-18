@@ -7,6 +7,8 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	logger "github.com/sisoputnfrba/tp-golang/utils/logger"
 	"net/http"
+	"strings"
+	"time"
 )
 
 // Body JSON a recibir
@@ -64,7 +66,7 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 }
 
 // Enviar PID y Duracion a IO
-func EnviarContextoIO(instanciaIO globals.DatosIO, pid int, duracion int) {
+/*func EnviarContextoIO(instanciaIO globals.DatosIO, pid int, duracion int) {
 
 	url := fmt.Sprintf("http://%s:%d/io/kernel", instanciaIO.Ip, instanciaIO.Puerto)
 
@@ -80,6 +82,38 @@ func EnviarContextoIO(instanciaIO globals.DatosIO, pid int, duracion int) {
 		logger.Info("Error enviando PID y Duracion a IO: %s", err.Error())
 		return
 	}
+}*/
+func EnviarContextoIO(instanciaIO globals.DatosIO, pid int, duracion int) {
+	url := fmt.Sprintf("http://%s:%d/io/kernel", instanciaIO.Ip, instanciaIO.Puerto)
+	mensaje := MensajeAIO{
+		Pid:      pid,
+		Duracion: duracion,
+	}
+
+	logger.Info("## (%d) - Bloqueado por IO: %s", pid, instanciaIO.Tipo)
+
+	const maxIntentos = 3
+	const backoff = 200 * time.Millisecond
+
+	var err error
+	for intento := 1; intento <= maxIntentos; intento++ {
+		err = data.EnviarDatos(url, mensaje)
+		if err == nil {
+			// Éxito: salimos
+			return
+		}
+		// Si no es connection refused, no tiene sentido reintentar
+		if !strings.Contains(err.Error(), "connection refused") {
+			logger.Warn("Error enviando a IO (no recoverable): %v", err)
+			return
+		}
+		// es Connection refused: esperamos y reintentamos
+		logger.Warn("Intento %d: connection refused al enviar a IO, reintentando en %s...", intento, backoff)
+		time.Sleep(backoff)
+	}
+
+	// Tras varios intentos fallidos
+	logger.Error("No se pudo conectar a IO %s tras %d intentos: %v", instanciaIO.Tipo, maxIntentos, err)
 }
 
 // Al momento de recibir un mensaje de una IO se deberá verificar

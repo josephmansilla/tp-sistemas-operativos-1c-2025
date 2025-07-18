@@ -72,7 +72,6 @@ func main() {
 	mux.HandleFunc("/io/kernel", RecibirMensajeDeKernel)
 
 	// Esperar brevemente a que el servidor esté activo
-	time.Sleep(2000 * time.Millisecond)
 
 	EnviarIpPuertoNombreAKernel(globals.IoConfig.IpKernel, globals.IoConfig.PortKernel, mensaje)
 
