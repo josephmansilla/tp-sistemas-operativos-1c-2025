@@ -158,8 +158,8 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		adm.IncrementarMetrica(proceso, 1, adm.IncrementarSubidasMP)
-		proceso.EstaEnSwap = false
+		adm.IncrementarMetrica(proceso, 1, adm.IncrementarBajadasSwap)
+		proceso.EstaEnSwap = true
 
 		tiempoTranscurrido := time.Now().Sub(inicio)
 		g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
@@ -216,8 +216,8 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		adm.IncrementarMetrica(proceso, 1, adm.IncrementarBajadasSwap)
-		proceso.EstaEnSwap = true
+		adm.IncrementarMetrica(proceso, 1, adm.IncrementarSubidasMP)
+		proceso.EstaEnSwap = false
 
 		tiempoTranscurrido := time.Now().Sub(inicio)
 		g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)

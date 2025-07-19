@@ -69,7 +69,7 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 		}
 	}(file)
 
-	pos, errSeek := file.Seek(0, io.SeekEnd) // siempre se apunta al final del archivo! (pense que no, alto bobo)
+	_, errSeek := file.Seek(0, io.SeekEnd) // siempre se apunta al final del archivo! (pense que no, alto bobo)
 	if errSeek != nil {
 		logger.Error("Error al setear el puntero para SWAP: %v", errSeek)
 		return errSeek
@@ -79,7 +79,10 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 		Entradas:         make(map[int]*g.EntradaSwapInfo),
 		NumerosDePaginas: make([]int, 0),
 	}
-	for _, entrada := range entradas {
+	var posicionPunteroArchivo = 0
+	for i := 0; i < len(entradas); i++ {
+		entrada := entradas[i]
+
 		_, errWrite := file.Write(entrada.Datos)
 		if errWrite != nil {
 			logger.Error("Error al escribir el archivo: %v", errWrite)
@@ -87,7 +90,11 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 		}
 
 		longitudEscrito := len(entrada.Datos)
-		posicionPunteroArchivo := int(pos)
+		posicionPunteroArchivo += longitudEscrito
+
+		if entrada.NumeroPagina == 0 {
+			posicionPunteroArchivo = 0
+		}
 
 		info.Entradas[entrada.NumeroPagina] = &g.EntradaSwapInfo{
 			NumeroPagina:   entrada.NumeroPagina,
@@ -100,8 +107,9 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 		g.SwapIndex[pid] = info
 		g.MutexSwapIndex.Unlock()
 
-		logger.Info("## PID: <%d> - <MEMORIA A SWAP> - Posición en SWAP: <%d> - Tamaño: <%d>",
+		logger.Info("## PID: <%d> - <MEMORIA A SWAP> - Entrada: <%d> - Posición en SWAP: <%d> - Tamaño: <%d>",
 			pid,
+			entrada.NumeroPagina,
 			posicionPunteroArchivo,
 			longitudEscrito,
 		)
