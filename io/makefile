@@ -4,7 +4,7 @@ uno:
 	$(RUN) io.go
 
 io:
-	nano ../cpu/configs/config.json
+	nano ../io/configs/config.json
 	$(RUN) io.go
 
 # === Prueba: Corto Plazo ===
