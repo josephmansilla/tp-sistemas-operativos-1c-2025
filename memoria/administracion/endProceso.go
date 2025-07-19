@@ -19,7 +19,6 @@ func LiberarProceso(pid int) (g.MetricasProceso, error) {
 			return g.MetricasProceso{}, err
 		}
 	}
-	g.MutexMetrica[pid] = nil
 
 	proceso, errDesocupacion := DesocuparProcesoDeEstructurasGlobales(pid)
 	if errDesocupacion != nil {
@@ -47,6 +46,8 @@ func DesocuparProcesoDeEstructurasGlobales(pid int) (proceso *g.Proceso, err err
 	g.MutexSwapIndex.Lock()
 	delete(g.SwapIndex, pid)
 	g.MutexSwapIndex.Unlock()
+
+	g.MutexMetrica[pid] = nil
 
 	return
 }
@@ -104,3 +105,5 @@ func RemoverEspacioMemoria(inicio int, limite int) (err error) {
 
 	return nil
 }
+
+// // ========== LIBERO ESPACIO EN SWAP ==========
