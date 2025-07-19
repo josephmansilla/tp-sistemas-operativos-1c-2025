@@ -6,26 +6,38 @@ memoria:
 
 # === Prueba: Corto Plazo ===
 corto:
+	nano ../memoria/configs/corto.json
+	@echo "Comienza la prueba de Corto Plazo"
 	$(RUN) memoria.go cortoPlazo
 
 # === Prueba: Mediano/Largo Plazo ===
 lym:
+	nano ../memoria/configs/medianoLargo.json
+	@echo "Comienza la prueba de Mediano y Largo plazo"
 	$(RUN) memoria.go medianoLargoPlazo
 
 # === Prueba: SWAP ===
 swap:
+	nano ../memoria/configs/swap.json
+	@echo "Comienza la prueba de SWAP"
 	$(RUN) memoria.go memoriaSwap
 
 # === Prueba: CACHE ===
 cache:
+	nano ../memoria/configs/cache.json
+	@echo "Comienza la prueba de Cache"
 	$(RUN) memoria.go memoriaCache
 
-# === Prueba: Estabilidad General (EG) ===
+# === Prueba: TLB ===
 tlb:
+	nano ../memoria/configs/tlb.json
+	@echo "Comienza la prueba de TLB"
 	$(RUN) memoria.go memoriaTLB
 
 # === Prueba: Estabilidad General (EG) ===
 eg:
+	nano ../memoria/configs/estabilidad.json
+	@echo "Comienza la prueba de Estabilidad General"
 	$(RUN) memoria.go estabilidadGeneral
 
 # === Detener todos los procesos (por si quedan en background) ===
