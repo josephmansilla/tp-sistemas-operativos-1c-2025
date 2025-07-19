@@ -82,11 +82,8 @@ func LiberarTablaPaginas(tabla *g.TablaPagina) (err error) {
 
 		}
 		tabla.EntradasPaginas = nil
-	} else {
-		errPagina := logger.ErrNoInstance
-		logger.Error("No hay instancia de la página: %v", errPagina)
-		return errPagina
 	}
+
 	return
 }
 

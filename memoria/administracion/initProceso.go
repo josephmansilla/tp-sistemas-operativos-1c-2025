@@ -21,7 +21,7 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 	if g.ProcesosPorPID[pid] != nil {
 		g.MutexProcesosPorPID.Unlock()
 		logger.Error("El proceso PID <%d> ya existe", pid)
-		return fmt.Errorf("el proceso PID <%d> ya existe", pid)
+		return logger.ErrDuplicatePID
 	} else {
 		g.MutexProcesosPorPID.Unlock()
 	}
@@ -31,7 +31,6 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 		Metricas:             InicializarMetricas(),
 		InstruccionesEnBytes: make(map[int][]byte),
 	}
-	logger.Info("## Proceso creado en memoria para PID <%d>", pid)
 
 	g.MutexProcesosPorPID.Lock()
 	g.ProcesosPorPID[pid] = nuevoProceso
@@ -50,7 +49,8 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 
 	err = AsignarPaginasParaPID(nuevoProceso, tamanioProceso)
 
-	logger.Info("## Datos asignados correctamente para PID <%d>", pid)
+	logger.Info("## Proceso del PID <%d> instanciado exitosamente", pid)
+	logger.Info("## Espacio de usuario del PID <%d> cargado exitosamente", pid)
 
 	return nil
 }
@@ -68,11 +68,6 @@ func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
 	resultado = framesNecesarios <= g.CantidadFramesLibres
 	g.MutexCantidadFramesLibres.Unlock()
 
-	if resultado {
-		logger.Info("Se consultó si había %d frames y retornó TRUE...", framesNecesarios)
-	} else {
-		logger.Info("Se consultó si había %d frames y retornó FALSE...", framesNecesarios)
-	}
 	return
 }
 
@@ -145,9 +140,9 @@ func AsignarPaginasParaPID(proceso *g.Proceso, tamanio int) error {
 			EstaPresente: true,
 		}
 		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, i, entradaPagina)
-		logger.Info("## Entrada <%d> ; PID <%d> ; Frame <%d>...", i, proceso.PID, numeroFrame)
+		logger.Info("## Entrada <%d> ; PID <%d> ; Frame <%d>", i, proceso.PID, numeroFrame)
 	}
-	logger.Info("%% Quedan <%d> frames libes", g.CantidadFramesLibres)
+	logger.Info("## Quedan <%d> frames libes", g.CantidadFramesLibres)
 	return nil
 }
 
@@ -175,7 +170,7 @@ func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, en
 	}
 	actual.EntradasPaginas[indices[len(indices)-1]] = entrada
 
-	logger.Info("Insertada entrada para página <%d> (indices=%v)", numeroPagina, indices)
+	// logger.Info("Insertada entrada para página <%d> (indices=%v)", numeroPagina, indices)
 }
 
 func AsignarFrameLibre() (int, error) {
@@ -193,42 +188,4 @@ func AsignarFrameLibre() (int, error) {
 	}
 	return -10, logger.ErrNoMemory
 
-}
-
-// ========== METRICAS ==========
-
-func InicializarMetricas() (metricas g.MetricasProceso) {
-	metricas = g.MetricasProceso{
-		AccesosTablasPaginas:     0,
-		InstruccionesSolicitadas: 0,
-		BajadasSwap:              0,
-		SubidasMP:                0,
-		LecturasDeMemoria:        0,
-		EscriturasDeMemoria:      0,
-	}
-	return
-}
-
-func IncrementarMetrica(proceso *g.Proceso, cantidad int, funcMetrica g.OperacionMetrica) {
-	g.MutexMetrica[proceso.PID].Lock()
-	funcMetrica(&proceso.Metricas, cantidad)
-	g.MutexMetrica[proceso.PID].Unlock()
-}
-func IncrementarAccesosTablasPaginas(metrica *g.MetricasProceso, cantidad int) {
-	metrica.AccesosTablasPaginas += cantidad
-}
-func IncrementarInstruccionesSolicitadas(metrica *g.MetricasProceso, cantidad int) {
-	metrica.InstruccionesSolicitadas += cantidad
-}
-func IncrementarBajadasSwap(metrica *g.MetricasProceso, cantidad int) {
-	metrica.BajadasSwap += cantidad
-}
-func IncrementarSubidasMP(metrica *g.MetricasProceso, cantidad int) {
-	metrica.SubidasMP += cantidad
-}
-func IncrementarLecturaDeMemoria(metrica *g.MetricasProceso, cantidad int) {
-	metrica.LecturasDeMemoria += cantidad
-}
-func IncrementarEscrituraDeMemoria(metrica *g.MetricasProceso, cantidad int) {
-	metrica.EscriturasDeMemoria += cantidad
 }
