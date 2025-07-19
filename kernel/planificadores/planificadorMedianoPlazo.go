@@ -34,7 +34,7 @@ func ManejadorMedianoPlazo() {
 		// 2) Guárdalo en el map protegido con mutex
 		Utils.MutexIOFinishedWaiters.Lock()
 		Utils.FinIOWaiters[bp.PID] = ch1
-		logger.Error("INICIALICE CANAL DE ")
+		//logger.Error("INICIALICE CANAL DE ")
 		Utils.MutexIOFinishedWaiters.Unlock()
 		go monitorBloqueado(bp)
 	}
@@ -232,9 +232,9 @@ func AtenderSuspBlockedAFinIO() {
 			Utils.MutexIOWaiters.Lock()
 			delete(Utils.IOWaiters, pid)
 			Utils.MutexIOWaiters.Unlock()
-			//muestro cola suspready cada vez que llega un fin IO DEBERIA ESTAR CARGADA CON LOS PROCESOS
-			MostrarColasSUSPREADY()
 
+			//muestro cola suspready cada vez que llega un fin IO DEBERIA ESTAR CARGADA CON LOS PROCESOS
+			//MostrarColasSUSPREADY()
 		}(ev.PID, finIOChan)
 	}
 }
@@ -281,40 +281,6 @@ func DespacharIO() {
 	}
 }
 
-func ManejadorIO(bp Utils.BlockProcess) {
-	// Buscar una instancia de IO LIBRE
-	globals.IOMu.Lock()
-	ioList := globals.IOs[bp.Nombre]
-	var ioAsignada *globals.DatosIO
-	for i := range ioList {
-		if !ioList[i].Ocupada {
-			ioList[i].Ocupada = true
-			ioList[i].PID = bp.PID
-			ioAsignada = &ioList[i]
-			break
-		}
-	}
-	globals.IOMu.Unlock()
-
-	if ioAsignada == nil {
-		//No se encontró una IO libre, el proceso debe esperar
-		//(se agrega a pedidos pendientes)
-		//LOOP ESPERANDO SEMAFOROS DE IOS LIBRES
-		logger.Info("No hay IOs libres del tipo: %s. <%d> debe esperar", bp.Nombre, bp.PID)
-		Utils.MutexPedidosIO.Lock()
-		algoritmos.PedidosIO.Add(&algoritmos.PedidoIO{
-			Nombre:   bp.Nombre,
-			PID:      bp.PID,
-			Duracion: bp.Duracion,
-		})
-		Utils.MutexPedidosIO.Unlock()
-		return
-	}
-
-	//Lo envia a IO hallada para bloquearse
-	logger.Info("Asignada IO <%s> (puerto %d) a proceso <%d>", bp.Nombre, ioAsignada.Puerto, bp.PID)
-	go comunicacion.EnviarContextoIO(*ioAsignada, bp.PID, bp.Duracion)
-}
 func MostrarColasSUSPREADY() {
 	lista := algoritmos.ColaSuspendidoReady.Values()
 
@@ -328,53 +294,3 @@ func MostrarColasSUSPREADY() {
 		logger.Info(" - PCB EN COLA SUSPENDIDO READY con PID: %d, TAMAÑO: %d", proceso.PID, proceso.ProcessSize)
 	}
 }
-
-/*
-	func monitorBloqueado(bp Utils.BlockProcess) {
-		pid := bp.PID
-
-		//ACA se guarda la referencia ala posicion del mutex correspondiente al mismo proceso que abrio el hilo de monitor
-		Utils.MutexIOWaiters.Lock()
-		finIOChan, ok := Utils.IOWaiters[pid]
-		Utils.MutexIOWaiters.Unlock()
-		if !ok {
-			logger.Warn("monitorBloqueado: no existe canal para PID %d", pid)
-			return
-		}
-
-		logger.Info("Arrancó TIMER para PID <%d>", pid)
-		suspensión := time.Duration(globals.KConfig.SuspensionTime) * time.Millisecond
-		timer := time.NewTimer(suspensión)
-		defer timer.Stop()
-
-		//DESPACHAR A IO
-		//agregar pedido a listaDepedidos
-		Utils.MutexPedidosIO.Lock()
-		algoritmos.PedidosIO.Add(&algoritmos.PedidoIO{
-			Nombre:   bp.Nombre,
-			PID:      bp.PID,
-			Duracion: bp.Duracion,
-		})
-		Utils.MutexPedidosIO.Unlock()
-
-		Utils.NotificarIOLibre <- Utils.IOEvent{
-			Nombre: bp.Nombre,
-			PID:    bp.PID,
-		}
-
-		select {
-		case ioEvt := <-finIOChan:
-			// fin de IO antes del timeout → READY
-			moverDeBlockedAReady(ioEvt)
-
-		case <-timer.C:
-			if moverDeBlockedASuspBlocked(pid) {
-				logger.Info("PID <%d> → SUSP.BLOCKED (timeout)", pid)
-				if err := comunicacion.SolicitarSuspensionEnMemoria(pid); err == nil {
-					Utils.InitProcess <- struct{}{}
-				}
-				Utils.FinIODesdeSuspBlocked <- Utils.IOEvent{PID: pid, Nombre: bp.Nombre}
-			}
-		}
-	}
-*/

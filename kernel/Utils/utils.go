@@ -21,7 +21,6 @@ var (
 	//Canales de señalización
 	ChannelProcessArguments chan NewProcess
 	InitProcess             chan struct{}
-	LlamarLargo             chan struct{}
 	LiberarMemoria          chan struct{}
 	SemProcessCreateOK      chan struct{}
 	ChannelFinishprocess    chan FinishProcess

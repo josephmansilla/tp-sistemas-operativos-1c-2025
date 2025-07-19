@@ -107,7 +107,7 @@ func ManejadorInicializacionProcesos() {
 			Utils.NotificarDespachador <- p.PID //MANDO PID
 
 			// 2) Señal al planificador Largo para continuar
-			Utils.SemProcessCreateOK <- struct{}{}
+			//Utils.SemProcessCreateOK <- struct{}{}
 			continue
 		}
 
@@ -175,7 +175,7 @@ func agregarProcesoAReady(proceso *pcb.PCB, estadoAnterior string) {
 	Utils.NotificarDespachador <- proceso.PID //MANDO PID
 
 	// 5) Señal al planificador Largo para continuar
-	Utils.SemProcessCreateOK <- struct{}{}
+	//Utils.SemProcessCreateOK <- struct{}{}
 
 	//MUESTRO LA COLA DE READY PARA VER SI SE AGREGAN CORRECTAMENTE
 	MostrarColaReady()

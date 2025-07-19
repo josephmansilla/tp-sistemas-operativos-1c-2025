@@ -135,7 +135,8 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 			Tamanio:  tamanio,
 		}
 	}()
-	<-Utils.SemProcessCreateOK
+
+	//<-Utils.SemProcessCreateOK
 
 	// 4) Responder de inmediato
 	w.WriteHeader(http.StatusOK)
