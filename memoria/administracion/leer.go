@@ -23,10 +23,6 @@ func ObtenerDatosMemoria(direccionFisica int) (datosLectura g.RespuestaLectura) 
 	if direccionFisica+bytesRestantes > finFrame {
 		logger.Error("Out of range - Lectura fuera del marco asignado")
 	}
-	/* ALWAYS FALSE
-	if bytesRestantes < 0 {
-		logger.Error("La lectura es más grande que la página")
-	}*/
 
 	datosEnBytes := make([]byte, bytesRestantes)
 
