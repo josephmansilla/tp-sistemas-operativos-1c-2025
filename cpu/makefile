@@ -1,19 +1,19 @@
 RUN = go run
 
 uno:
-	nano ../cpu/configs/config.json
+	nano ../cpu/configs/1EG.json
 	$(RUN) cpu.go 1
 
 dos:
-	nano ../cpu/configs/config.json
+	nano ../cpu/configs/2EG.json
 	$(RUN) cpu.go 2
 
 tres:
-	nano ../cpu/configs/config.json
+	nano ../cpu/configs/3EG.json
 	$(RUN) cpu.go 3
 
 cuatro:
-	nano ../cpu/configs/config.json
+	nano ../cpu/configs/4EG.json
 	$(RUN) cpu.go 4
 
 # === Prueba: Corto Plazo ===
