@@ -10,6 +10,7 @@ var FramesLibres []bool             //los frames van a estar en True si están l
 var CantidadFramesLibres int        // simplemente recuenta la cantidad de frames
 var ProcesosPorPID map[int]*Proceso // guardo procesos con los PID
 var SwapIndex map[int]*SwapProcesoInfo
+var PunteroSwap int
 
 // ================== SEMAFOROS GLOBALES ==================
 

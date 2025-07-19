@@ -150,6 +150,8 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
 
+	logger.Info("## Escritura en espacio de memoria Éxitosa")
+
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar la escritura de la pagina: %v", err)
 		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
