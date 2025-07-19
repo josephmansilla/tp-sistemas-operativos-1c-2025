@@ -6,25 +6,28 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
-func LiberarProceso(pid int) (metricas g.MetricasProceso, err error) {
-	var proceso *g.Proceso
-	metricas = g.MetricasProceso{}
-	err = nil
+func LiberarProceso(pid int) (g.MetricasProceso, error) {
 
-	proceso, err = DesocuparProcesoDeEstructurasGlobales(pid)
-	if err != nil {
-		return metricas, err
-	}
-	metricas = proceso.Metricas
+	g.MutexProcesosPorPID.Lock()
+	proceso := g.ProcesosPorPID[pid]
+	g.MutexProcesosPorPID.Unlock()
+
+	metricas := proceso.Metricas
 	for _, tabla := range proceso.TablaRaiz {
-		err := LiberarTablaPaginas(tabla, pid)
+		err := LiberarTablaPaginas(tabla)
 		if err != nil {
 			return g.MetricasProceso{}, err
 		}
 	}
 	g.MutexMetrica[pid] = nil
-	logger.Info("## Se liberó la memoria para el PID: %d", pid)
-	return
+
+	proceso, errDesocupacion := DesocuparProcesoDeEstructurasGlobales(pid)
+	if errDesocupacion != nil {
+		return metricas, errDesocupacion
+	}
+	// DesocuparProcesoDeSwap(proceso)
+
+	return metricas, nil
 }
 
 // ========== LIBERAR VECTORES GLOBALES ==========
@@ -50,12 +53,12 @@ func DesocuparProcesoDeEstructurasGlobales(pid int) (proceso *g.Proceso, err err
 
 // ========== DEJAR NULO LOS PUNTEROS DE LA TABLA DE PAGINAS ==========
 
-func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
+func LiberarTablaPaginas(tabla *g.TablaPagina) (err error) {
 	err = nil
 
 	if tabla.Subtabla != nil {
 		for index, subtabla := range tabla.Subtabla {
-			err := LiberarTablaPaginas(subtabla, pid)
+			err := LiberarTablaPaginas(subtabla)
 			if err != nil {
 				logger.Error("Error al liberar la tabla de páginas: %v", err)
 				return logger.ErrNoTabla
@@ -66,22 +69,22 @@ func LiberarTablaPaginas(tabla *g.TablaPagina, pid int) (err error) {
 	}
 	if tabla.EntradasPaginas != nil {
 		for _, entrada := range tabla.EntradasPaginas {
-			if entrada.EstaPresente {
-				tamanioPagina := g.MemoryConfig.PagSize
-				direccionFisica := entrada.NumeroFrame * tamanioPagina
-				err = RemoverEspacioMemoria(direccionFisica, direccionFisica+tamanioPagina)
-				MarcarLibreFrame(entrada.NumeroFrame)
-				if err != nil {
-					logger.Error("Error al remover espacio de memoria del frame: \"%d\" ; %v", entrada.NumeroFrame, err)
-				}
-			} else {
-				logger.Error("Proceso está en SWAP")
+
+			tamanioPagina := g.MemoryConfig.PagSize
+			direccionFisica := entrada.NumeroFrame * tamanioPagina
+			err = RemoverEspacioMemoria(direccionFisica, direccionFisica+tamanioPagina)
+			MarcarLibreFrame(entrada.NumeroFrame)
+			if err != nil {
+				logger.Error("Error al remover espacio de memoria del frame: %d ; %v", entrada.NumeroFrame, err)
+				return err
 			}
 
 		}
 		tabla.EntradasPaginas = nil
 	} else {
-		return logger.ErrNoInstance
+		errPagina := logger.ErrNoInstance
+		logger.Error("No hay instancia de la página: %v", errPagina)
+		return errPagina
 	}
 	return
 }

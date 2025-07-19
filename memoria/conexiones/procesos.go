@@ -63,8 +63,8 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## PID: <%d>  - Proceso Destruido - "+
 		"Métricas - Acc.T.Pag: <%d>; Inst.Sol.: <%d>; "+
-		"SWAP: <%d>; Mem. Prin.: <%d>; Lec.Mem.: <&d>; "+
-		"Esc.Mem.: <Esc.Mem.>", pid, metricas.AccesosTablasPaginas,
+		"SWAP: <%d>; Mem. Prin.: <%d>; Lec.Mem.: <%d>; "+
+		"Esc.Mem.: <%d>", pid, metricas.AccesosTablasPaginas,
 		metricas.InstruccionesSolicitadas, metricas.BajadasSwap, metricas.SubidasMP,
 		metricas.LecturasDeMemoria, metricas.EscriturasDeMemoria)
 
