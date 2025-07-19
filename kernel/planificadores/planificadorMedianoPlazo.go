@@ -101,7 +101,7 @@ func moverDeBlockedASuspBlocked(pid int) bool {
 
 	if proceso == nil {
 		// No se encontró el proceso en BLOCKED
-		logger.Info("## MedianoPlazo: No se encontró en Blocked")
+		//logger.Info("## MedianoPlazo: No se encontró en Blocked")
 		//Utils.MutexBloqueado.Unlock()
 		return false
 	}
@@ -141,7 +141,7 @@ func monitorBloqueado(bp Utils.BlockProcess) {
 	// 1) Esperamos señal de que realmente se bloqueó (del corto plazo)
 	/*<-blockedCh*/
 
-	logger.Info("Arrancó TIMER para PID <%d>", pid)
+	//logger.Info("Arrancó TIMER para PID <%d>", pid)
 	suspensión := time.Duration(globals.KConfig.SuspensionTime) * time.Millisecond
 	timer := time.NewTimer(suspensión)
 	defer timer.Stop()
@@ -189,9 +189,9 @@ func AtenderSuspBlockedAFinIO() {
 
 		// Arrancar un goroutine que espere el verdadero fin de I/O
 		go func(pid int, ch chan Utils.IOEvent) {
-			logger.Info("Esperando fin de I/O para PID <%d> en SUSP.BLOCKED...", pid)
+			//logger.Info("Esperando fin de I/O para PID <%d> en SUSP.BLOCKED...", pid)
 			ioEvt := <-ch
-			logger.Info("ME LLEGO FIN DE IO PARA PROCESO DE PI: <%d>", ioEvt.PID)
+			logger.Info("FIN DE IO PARA PROCESO PID: <%d>", ioEvt.PID)
 
 			// Pasar de SUSP.BLOCKED a SUSP.READY
 			Utils.MutexBloqueadoSuspendido.Lock()
@@ -220,7 +220,7 @@ func AtenderSuspBlockedAFinIO() {
 					logger.Error("Algoritmo de ingreso desconocido")
 					return
 				}
-				logger.Info("## (%d) Pasa de SUSP.BLOCKED a SUSP.READY", pid)
+				//logger.Info("## (%d) Pasa de SUSP.BLOCKED a SUSP.READY", pid)
 
 				// Notificar al planificador de largo plazo
 				Utils.InitProcess <- struct{}{}

@@ -69,7 +69,6 @@ func ManejadorInicializacionProcesos() {
 		//SIGNAL llega PROCESO a COLA NEW / SUSP.READY
 		<-Utils.InitProcess
 
-		logger.Info("LLEGO A LARGO")
 		//Al llegar un nuevo proceso a esta cola
 		//y la misma esté vacía
 		//y no se tengan procesos en la cola de SUSP READY,
@@ -91,9 +90,9 @@ func ManejadorInicializacionProcesos() {
 		}
 
 		//MUESTRO LA COLA READY
-		MostrarColaReady()
+		//MostrarColaReady()
 		//MUESTRO LA COLA NEW
-		MostrarColaNew()
+		//MostrarColaNew()
 
 		filename := p.FileName
 		size := p.ProcessSize
@@ -178,9 +177,9 @@ func agregarProcesoAReady(proceso *pcb.PCB, estadoAnterior string) {
 	//Utils.SemProcessCreateOK <- struct{}{}
 
 	//MUESTRO LA COLA DE READY PARA VER SI SE AGREGAN CORRECTAMENTE
-	MostrarColaReady()
+	//MostrarColaReady()
 	//MUESTRO LA COLA NEW PARA VER SI ESTAN VACIAS
-	MostrarColaNew()
+	//MostrarColaNew()
 }
 
 // RECIBIR SYSCALLS DE EXIT
@@ -247,7 +246,7 @@ func finalizarProceso(pid int, pc int, cpuID string) {
 
 	// 4. Si no está en ninguna, loguear error
 	if proceso == nil {
-		logger.Error("No se pudo finalizar PID=%d, no encontrado en ninguna cola", pid)
+		//logger.Error("No se pudo finalizar PID=%d, no encontrado en ninguna cola", pid)
 		return
 	}
 

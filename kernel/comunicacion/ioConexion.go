@@ -146,13 +146,13 @@ func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 	Utils.MutexIOFinishedWaiters.Unlock()
 
 	if !exists {
-		logger.Warn("RecibirFinDeIO: no hay canal FinIOWaiters para PID %d", evt.PID)
+		//logger.Warn("RecibirFinDeIO: no hay canal FinIOWaiters para PID %d", evt.PID)
 	} else {
 		select {
 		case ch <- evt:
-			logger.Error("ENVIE FIN DE IO A CANAL DE %d", evt.PID)
+			logger.Debug("ENVIE FIN DE IO A CANAL DE %d", evt.PID)
 		default:
-			logger.Warn("RecibirFinDeIO: canal FinIOWaiters[%d] lleno, descartando evento", evt.PID)
+			logger.Debug("RecibirFinDeIO: canal FinIOWaiters[%d] lleno, descartando evento", evt.PID)
 		}
 	}
 	Utils.FinIODesdeSuspBlocked <- Utils.IOEvent{PID: evt.PID, Nombre: evt.Nombre, Puerto: evt.Puerto}

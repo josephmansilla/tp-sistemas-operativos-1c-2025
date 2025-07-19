@@ -90,7 +90,7 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 	estimado := globals.KConfig.InitialEstimate
 
 	logger.Info("## (<%d>) - Solicitó syscall: <INIT_PROC>", pid)
-	logger.Info("Se ha recibido: Filename: %s Tamaño Memoria: %d", fileName, tamanio)
+	//logger.Info("Se ha recibido: Filename: %s Tamaño Memoria: %d", fileName, tamanio)
 
 	// 3) Despachar la creación en segundo plano
 	go func() {

@@ -22,7 +22,7 @@ func DespacharProceso() {
 		// WAIT hasta que llegue un proceso a READY
 		//o se libere una CPU por SYSCALL DE EXIT O I/O
 		<-Utils.NotificarDespachador
-		logger.Debug("Arranca Despachador")
+		//logger.Debug("Arranca Despachador")
 
 		var proceso *pcb.PCB
 
@@ -39,7 +39,7 @@ func DespacharProceso() {
 		}
 
 		if proceso == nil {
-			logger.Info("No hay proceso listo para planificar")
+			//logger.Info("No hay proceso listo para planificar")
 			continue
 		}
 
@@ -55,7 +55,7 @@ func DespacharProceso() {
 		}
 
 		if cpuID == "" {
-			logger.Info("No hay CPU disponible para ejecutar el proceso <%d>", proceso.PID)
+			//logger.Info("No hay CPU disponible para ejecutar el proceso <%d>", proceso.PID)
 
 			if globals.KConfig.SchedulerAlgorithm == "SRT" {
 				algoritmos.Desalojo(proceso)
@@ -89,7 +89,7 @@ func liberarCPU(cpuID string) {
 	cpu.Ocupada = false
 	globals.CPUs[cpuID] = cpu
 
-	logger.Info("CPU <%s> libre", cpuID)
+	//logger.Info("CPU <%s> libre", cpuID)
 
 	Utils.NotificarDespachador <- 1
 }
@@ -102,7 +102,7 @@ func DesalojarProceso() {
 		pc := msg.PC
 		cpuID := msg.CpuID
 
-		logger.Info("## (<%d>) Interrumpido de CPU <%s>", pid, cpuID)
+		//logger.Info("## (<%d>) Interrumpido de CPU <%s>", pid, cpuID)
 
 		//BUSCAR en EXECUTE y actualizar PC proveniente de CPU
 		var proceso *pcb.PCB
@@ -263,7 +263,7 @@ func DesconexionIO() {
 
 		//Si no está, buscar en BLOCKED_SUSPENDIDO
 		if proceso == nil {
-			logger.Warn("## PID <%d> desconectado pero no estaba en BLOCKED", pidEjecutado)
+			//logger.Warn("## PID <%d> desconectado pero no estaba en BLOCKED", pidEjecutado)
 
 			Utils.MutexBloqueadoSuspendido.Lock()
 			for _, p := range algoritmos.ColaBloqueadoSuspendido.Values() {
@@ -277,11 +277,11 @@ func DesconexionIO() {
 		}
 
 		if proceso == nil {
-			logger.Warn("## PID <%d> desconectado pero no estaba en ninguna cola", pidEjecutado)
+			//logger.Warn("## PID <%d> desconectado pero no estaba en ninguna cola", pidEjecutado)
 			continue
 		}
 
-		logger.Info("## IO desconectado correctamente para PID <%d>", pidEjecutado)
+		//logger.Info("## IO desconectado correctamente para PID <%d>", pidEjecutado)
 
 		//3) MOVER A PROCESO A EXIT / NOTIFICAR A LARGO
 		Utils.ChannelFinishprocess <- Utils.FinishProcess{
