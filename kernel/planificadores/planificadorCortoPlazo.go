@@ -222,10 +222,25 @@ func DesconexionIO() {
 		}
 
 		// Si no quedan más instancias, eliminar el tipo del mapa
-		// TODO MANDAR A EXIT TODOS LOS PROCESOS QUE LA ESPERABAN
+		// MANDAR A EXIT TODOS LOS PROCESOS QUE LA ESPERABAN
 		if len(nuevaLista) == 0 {
 			delete(globals.IOs, io.Nombre)
 			logger.Info("No quedan IOs activas del tipo <%s>, eliminado del mapa", io.Nombre)
+			Utils.MutexPedidosIO.Lock()
+			for _, pedido := range algoritmos.PedidosIO.Values() {
+				if pedido.Nombre != io.Nombre {
+					continue
+				}
+				// Avisar a Memoria para liberar recursos
+				comunicacion.LiberarMemoria(pedido.PID)
+
+				// Enviar a EXIT con métricas
+				finalizarProceso(pedido.PID, 0, "")
+
+				// Eliminar el pedido de la estructura
+				algoritmos.PedidosIO.Remove(pedido)
+			}
+			Utils.MutexPedidosIO.Unlock()
 		} else {
 			globals.IOs[io.Nombre] = nuevaLista
 		}

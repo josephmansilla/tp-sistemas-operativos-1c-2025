@@ -65,24 +65,6 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("STATUS OK"))
 }
 
-// Enviar PID y Duracion a IO
-/*func EnviarContextoIO(instanciaIO globals.DatosIO, pid int, duracion int) {
-
-	url := fmt.Sprintf("http://%s:%d/io/kernel", instanciaIO.Ip, instanciaIO.Puerto)
-
-	mensaje := MensajeAIO{
-		Pid:      pid,
-		Duracion: duracion,
-	}
-
-	logger.Info("## (%d) - Bloqueado por IO: %s", mensaje.Pid, instanciaIO.Tipo)
-
-	err := data.EnviarDatos(url, mensaje)
-	if err != nil {
-		logger.Info("Error enviando PID y Duracion a IO: %s", err.Error())
-		return
-	}
-}*/
 func EnviarContextoIO(instanciaIO globals.DatosIO, pid int, duracion int) {
 	url := fmt.Sprintf("http://%s:%d/io/kernel", instanciaIO.Ip, instanciaIO.Puerto)
 	mensaje := MensajeAIO{

@@ -1,7 +1,6 @@
 RUN = go run
 
 memoria:
-
 	$(RUN) memoria.go
 
 # === Prueba: Corto Plazo ===
@@ -17,7 +16,7 @@ lym:
 	$(RUN) memoria.go medianoLargo
 
 # === Prueba: SWAP ===
-swap:
+swapp:
 	nano ../memoria/configs/swap.json
 	@echo "Comienza la prueba de SWAP"
 	$(RUN) memoria.go swap

@@ -13,6 +13,8 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
+var pid = -1
+
 type MensajeAKernel struct {
 	Ip     string `json:"ip"`
 	Puerto int    `json:"puerto"`
@@ -111,6 +113,7 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 		return //hubo error
 	}
 
+	pid = mensajeRecibido.PID
 	//Realizo la operacion
 	logger.Info("## PID: <%d> - Inicio de IO - Tiempo: %d", mensajeRecibido.PID, mensajeRecibido.Duracion)
 	time.Sleep(time.Duration(mensajeRecibido.Duracion) * time.Millisecond)
@@ -132,6 +135,7 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 		logger.Info("Error enviando PID y Nombre a Kernel: %s", err.Error())
 		return
 	}
+	pid = -1
 }
 
 // Al finalizar deberá informar al Kernel que finalizó la solicitud de I/O
@@ -153,7 +157,7 @@ func desconexion() {
 
 		//Notificar al Kernel
 		mensaje := MensajeFin{
-			PID:         -1,
+			PID:         pid,
 			Desconexion: true,
 			Nombre:      globals.IoConfig.Type,
 			Puerto:      globals.IoConfig.PortIo,
