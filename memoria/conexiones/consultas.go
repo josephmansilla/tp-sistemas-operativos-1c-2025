@@ -38,7 +38,7 @@ func EnviarConfiguracionMemoriaHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error al decodear mensaje del JSON", http.StatusInternalServerError)
 		return
 	}
-	logger.Info("Recibí petición de configuración desde PID: %d", pidData.PID)
+	// logger.Info("Recibí petición de configuración desde PID: %d", pidData.PID)
 
 	mensaje := g.RespuestaConfigMemoria{
 		TamanioPagina:    g.MemoryConfig.PagSize,

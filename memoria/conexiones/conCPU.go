@@ -39,7 +39,7 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Info("## PID: <%d>  - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, respuesta.Instruccion)
+	logger.Info("## PID: <%d> - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, respuesta.Instruccion)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar la obtencion de instruccion: %v", err)
@@ -49,6 +49,9 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
+	g.MutexOperacionMemoria.Lock()
+	defer g.MutexOperacionMemoria.Unlock()
+
 	var mensaje g.ConsultaMarco
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {
@@ -70,7 +73,7 @@ func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
 		NumeroMarco: marco,
 	}
 
-	logger.Info("## Número Frame enviado: %d ", marco)
+	logger.Info("## Número Frame enviado: <%d>", marco)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar enviar entrada pagina handler: %v", err)
@@ -80,6 +83,9 @@ func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
+	g.MutexOperacionMemoria.Lock()
+	defer g.MutexOperacionMemoria.Unlock()
+
 	inicio := time.Now()
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
 
@@ -100,7 +106,7 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 		Valor: respuesta.Valor[:tamanioALeer],
 	}
 
-	logger.Info("## PID: <%d>  - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
+	logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
 
 	tiempoTranscurrido := time.Now().Sub(inicio)
 	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
@@ -115,6 +121,9 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
+	g.MutexOperacionMemoria.Lock()
+	defer g.MutexOperacionMemoria.Unlock()
+
 	inicio := time.Now()
 	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
 

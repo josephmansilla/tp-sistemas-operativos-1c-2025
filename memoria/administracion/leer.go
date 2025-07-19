@@ -53,7 +53,7 @@ func ModificarEstadoEntradaLectura(pid int) error {
 	}
 
 	IncrementarMetrica(proceso, 1, IncrementarLecturaDeMemoria)
-	logger.Info("## Modificacion del estado entrada exitosa")
+	//logger.Info("## Modificacion del estado entrada exitosa")
 
 	return nil
 }

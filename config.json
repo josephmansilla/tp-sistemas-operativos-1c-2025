@@ -1,17 +1,17 @@
 {
-  "ip_memoria": "127.0.0.1",
+  "ip_memoria": "192.168.1.6X",
   "puerto_memoria": 8083,
 
   "ip_kernel": "127.0.0.1",
   "puerto_kernel": 8081,
 
-  "ip_cpu": "127.0.0.1",
+  "ip_cpu": "192.168.1.6X",
   "puerto_cpu1": 8085,
   "puerto_cpu2":8085,
   "puerto_cpu3": 8086,
   "puerto_cpu4": 8087,
 
-  "ip_io": "127.0.0.1",
+  "ip_io": "192.168.1.6X",
   "puerto_io1": 8089,
   "puerto_io2": 8090,
   "puerto_io3": 8091,
@@ -25,7 +25,7 @@
   "swapfile_path": "./swap/swapfile.bin",
   "swap_delay": 2500,
   "dump_path": "./dump/",
-  "scripts_path": "../pruebas/",
+  "scripts_path": "./scripts/",
 
   "scheduler_algorithm": "FIFO",
   "ready_ingress_algorithm": "FIFO",

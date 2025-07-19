@@ -47,7 +47,8 @@ func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
-
+	g.MutexOperacionMemoria.Lock()
+	defer g.MutexOperacionMemoria.Unlock()
 	var mensaje g.ConsultaProceso
 
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
@@ -61,11 +62,13 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Hubo un error al eliminar el proceso %v", err)
 	}
 
-	logger.Info("## PID: <%d>  - Proceso Destruido - "+
+	logger.Info("## PID: <%d> - Proceso Destruido - "+
 		"Métricas - Acc.T.Pag: <%d>; Inst.Sol.: <%d>; "+
-		"SWAP: <%d>; Mem. Prin.: <%d>; Lec.Mem.: <&d>; "+
-		"Esc.Mem.: <Esc.Mem.>", pid, metricas.AccesosTablasPaginas,
-		metricas.InstruccionesSolicitadas, metricas.BajadasSwap, metricas.SubidasMP,
+		"SWAP: <%d>; Mem. Prin.: <%d>; "+
+		"Lec.Mem.: <%d>; Esc.Mem.: <%d>",
+		pid,
+		metricas.AccesosTablasPaginas, metricas.InstruccionesSolicitadas,
+		metricas.BajadasSwap, metricas.SubidasMP,
 		metricas.LecturasDeMemoria, metricas.EscriturasDeMemoria)
 
 	respuesta := g.RespuestaMemoria{
@@ -81,8 +84,10 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
-	var dump g.ConsultaDump
+	g.MutexOperacionMemoria.Lock()
+	defer g.MutexOperacionMemoria.Unlock()
 
+	var dump g.ConsultaDump
 	if err := data.LeerJson(w, r, &dump); err != nil {
 		return
 	}
@@ -117,6 +122,9 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
+	g.MutexOperacionMemoria.Lock()
+	defer g.MutexOperacionMemoria.Unlock()
+
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond
 	ignore := 0
@@ -130,10 +138,11 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	g.MutexProcesosPorPID.Lock()
-	estaProcesoEnSwap := g.ProcesosPorPID[mensaje.PID].EstaEnSwap
+	proceso := g.ProcesosPorPID[mensaje.PID]
 	g.MutexProcesosPorPID.Unlock()
 
-	if estaProcesoEnSwap {
+	if proceso.EstaEnSwap {
+		logger.Debug("PID <%d> Ya está en SWAP", mensaje.PID)
 		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: "Ya esta en SWAP"}
 		ignore = 1
 	}
@@ -149,6 +158,9 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		adm.IncrementarMetrica(proceso, 1, adm.IncrementarBajadasSwap)
+		proceso.EstaEnSwap = true
+
 		tiempoTranscurrido := time.Now().Sub(inicio)
 		g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
 
@@ -162,6 +174,9 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
+	g.MutexOperacionMemoria.Lock()
+	defer g.MutexOperacionMemoria.Unlock()
+
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond
 	ignore := 0
@@ -175,10 +190,11 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	g.MutexProcesosPorPID.Lock()
-	estaProcesoEnMemoria := g.ProcesosPorPID[mensaje.PID].EstaEnSwap
+	proceso := g.ProcesosPorPID[mensaje.PID]
 	g.MutexProcesosPorPID.Unlock()
 
-	if !estaProcesoEnMemoria {
+	if !proceso.EstaEnSwap {
+		logger.Debug("PID <%d> Ya está en MEMORIA", mensaje.PID)
 		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: "Ya esta en Memoria"}
 		ignore = 1
 	}
@@ -199,6 +215,9 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 			respuesta = g.RespuestaMemoria{Exito: false, Mensaje: fmt.Sprintf("Error: %s", errEntradasMem.Error())}
 			return
 		}
+
+		adm.IncrementarMetrica(proceso, 1, adm.IncrementarSubidasMP)
+		proceso.EstaEnSwap = false
 
 		tiempoTranscurrido := time.Now().Sub(inicio)
 		g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
