@@ -32,13 +32,12 @@ func RealizarDumpMemoria(pid int) (vector []string, err error) {
 			fin = len(g.MemoriaPrincipal) - 1
 			continue
 		}
-
+		copiado := make([]byte, fin-inicio)
 		g.MutexMemoriaPrincipal.Lock()
-		datos := g.MemoriaPrincipal[inicio:fin]
+		copy(copiado, g.MemoriaPrincipal[inicio:fin])
 		g.MutexMemoriaPrincipal.Unlock()
-
-		datosEnString := string(datos)
-		resul := fmt.Sprintf("Direccion Fisica: %d | Frame: %d | Datos: %q\n", inicio, numeroFrame, datosEnString)
+		
+		resul := fmt.Sprintf("Direccion Fisica: %d | Frame: %d | Datos: %q\n", inicio, numeroFrame, string(copiado))
 
 		vector[numeroFrame] = resul
 	}

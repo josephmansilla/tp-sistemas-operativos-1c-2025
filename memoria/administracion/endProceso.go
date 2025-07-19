@@ -47,7 +47,7 @@ func DesocuparProcesoDeEstructurasGlobales(pid int) (proceso *g.Proceso, err err
 	delete(g.SwapIndex, pid)
 	g.MutexSwapIndex.Unlock()
 
-	g.MutexMetrica[pid] = nil
+	delete(g.MutexMetrica, pid)
 
 	return
 }

@@ -19,6 +19,7 @@ var MutexCantidadFramesLibres sync.Mutex
 var MutexEstructuraFramesLibres sync.Mutex
 var MutexMetrica map[int]*sync.Mutex
 var MutexSwapIndex sync.Mutex
+var MutexOperacionMemoria sync.Mutex
 
 // ================== TABLA Y ENTRADA DE PÁGINAS ==================
 

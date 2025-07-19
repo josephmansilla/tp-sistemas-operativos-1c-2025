@@ -39,7 +39,7 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Info("## PID: <%d>  - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, respuesta.Instruccion)
+	logger.Info("## PID: <%d> - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, respuesta.Instruccion)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar la obtencion de instruccion: %v", err)

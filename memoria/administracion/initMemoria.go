@@ -7,21 +7,19 @@ import (
 )
 
 func InicializarMemoriaPrincipal() {
-
-	cantidadFrames := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
-
-	g.MemoriaPrincipal = make([]byte, g.MemoryConfig.MemorySize)
-	ConfigurarFrames(cantidadFrames)
-	InstanciarEstructurasGlobales()
+	InstanciarEstructurasGlobales(g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize)
 
 	logger.Info("Memoria Principal Inicializada con %d bytes de tamaño con %d frames de %d bytes.",
-		g.MemoryConfig.MemorySize, cantidadFrames, g.MemoryConfig.PagSize)
+		g.MemoryConfig.MemorySize, g.MemoryConfig.MemorySize/g.MemoryConfig.PagSize, g.MemoryConfig.PagSize)
 }
 
-func InstanciarEstructurasGlobales() {
+func InstanciarEstructurasGlobales(cantidadFrames int) {
+	g.MemoriaPrincipal = make([]byte, g.MemoryConfig.MemorySize)
 	g.ProcesosPorPID = make(map[int]*g.Proceso)
 	g.SwapIndex = make(map[int]*g.SwapProcesoInfo)
 	g.MutexMetrica = make(map[int]*sync.Mutex, g.MemoryConfig.MemorySize)
+	
+	ConfigurarFrames(cantidadFrames)
 }
 
 func ConfigurarFrames(cantidadFrames int) {

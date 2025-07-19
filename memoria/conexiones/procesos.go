@@ -47,7 +47,8 @@ func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
-
+	g.MutexOperacionMemoria.Lock()
+	defer g.MutexOperacionMemoria.Unlock()
 	var mensaje g.ConsultaProceso
 
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
@@ -83,8 +84,10 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
-	var dump g.ConsultaDump
+	g.MutexOperacionMemoria.Lock()
+	defer g.MutexOperacionMemoria.Unlock()
 
+	var dump g.ConsultaDump
 	if err := data.LeerJson(w, r, &dump); err != nil {
 		return
 	}
@@ -119,6 +122,9 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
+	g.MutexOperacionMemoria.Lock()
+	defer g.MutexOperacionMemoria.Unlock()
+
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond
 	ignore := 0
@@ -168,6 +174,9 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
+	g.MutexOperacionMemoria.Lock()
+	defer g.MutexOperacionMemoria.Unlock()
+
 	inicio := time.Now()
 	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond
 	ignore := 0

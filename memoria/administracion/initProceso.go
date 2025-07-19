@@ -16,6 +16,7 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 		logger.Error("No hay memoria suficiente para proceso PID <%d>", pid)
 		return fmt.Errorf("no hay memoria disponible para el proceso: %v", logger.ErrNoMemory)
 	}
+	g.MutexMetrica[pid] = new(sync.Mutex)
 
 	g.MutexProcesosPorPID.Lock()
 	if g.ProcesosPorPID[pid] != nil {
