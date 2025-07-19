@@ -39,7 +39,7 @@ func NuevaTLB() *TLB {
 
 func (tlb *TLB) Buscar(nroPagina int) (int, bool) {
 	if tlb.maxEntradas == 0 {
-		logger.Info("TLB deshabilitada (0 entradas)")
+		//logger.Info("TLB deshabilitada (0 entradas)")
 		return -1, false
 	}
 

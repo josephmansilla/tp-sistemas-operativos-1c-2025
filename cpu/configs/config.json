@@ -9,6 +9,6 @@
   "tlb_replacement": "LRU",
   "cache_entries": 2,
   "cache_delay": 250,
-  "cache_replacement": "CLOCK",
+  "cache_replacement": "CLOCK-M",
   "log_level": "INFO"
 }

@@ -77,7 +77,7 @@ func (c *CachePaginas) MarcarUso(nroPagina int) {
 	for i := range c.Entradas {
 		if c.Entradas[i].NroPagina == nroPagina {
 			c.Entradas[i].Usado = true
-			logger.Info("PID: %d - Cache USO - Página %d marcada con bit de uso en true", globals.PIDActual, nroPagina)
+			//logger.Info("PID: %d - Cache USO - Página %d marcada con bit de uso en true", globals.PIDActual, nroPagina)
 			return
 		}
 	}
@@ -91,12 +91,12 @@ func EscribirEnCache(nroPagina int, datos string) error {
 			Cache.Entradas[i].Contenido = datos
 			Cache.Entradas[i].Modificado = true
 			Cache.Entradas[i].Usado = true
-			logger.Info("Se escribió %s en página %d", datos, nroPagina)
+			//logger.Info("Se escribió %s en página %d", datos, nroPagina)
 			return nil
 		}
 	}
 	err := fmt.Errorf("no se encontró la página %d en la caché", nroPagina)
-	logger.Error("Error: %v", err)
+	//logger.Error("Error: %v", err)
 	return err
 }
 
@@ -114,23 +114,29 @@ func (c *CachePaginas) reemplazarEntrada(nueva EntradaCache) {
 func (c *CachePaginas) reemplazoClock(nueva EntradaCache) {
 	for {
 		entrada := &c.Entradas[c.Puntero]
+
 		if !entrada.Usado {
+			// Si la página actual fue modificada, escribir en memoria
 			tamPagina := globals.TamanioPagina
 			dirLogica := entrada.NroPagina * tamPagina
 			dirFisica := Traducir(dirLogica)
+
 			if dirFisica != -1 {
 				err := EscribirEnMemoria(dirFisica, entrada.Contenido)
 				if err != nil {
 					logger.Error("Error al escribir página modificada %d en dirección física %d: %v", entrada.NroPagina, dirFisica, err)
 				} else {
-					logger.Info("Página modificada %d escrita en dirección física %d antes de reemplazo", entrada.NroPagina, dirFisica)
+					logger.Info("PID: %d - Memory Update - Pagina: %d - Frame: %d", globals.PIDActual, entrada.NroPagina, dirFisica)
 				}
 			}
+
+			logger.Info("Reemplazo CLOCK - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
+			c.Entradas[c.Puntero] = nueva
+			c.Puntero = (c.Puntero + 1) % c.MaxEntradas
+			return
 		}
-		logger.Info("Reemplazo CLOCK - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
-		c.Entradas[c.Puntero] = nueva
-		c.Puntero = (c.Puntero + 1) % c.MaxEntradas // Para volver a 0 si se pasa de las entradas -> (3+1) % 4 = 0
-		return
+
+		// Marcar la entrada como no usada
 		entrada.Usado = false
 		c.Puntero = (c.Puntero + 1) % c.MaxEntradas
 	}
@@ -143,7 +149,7 @@ func (c *CachePaginas) reemplazoClockM(nueva EntradaCache) {
 			indice := (c.Puntero + i) % c.MaxEntradas
 			entrada := &c.Entradas[indice]
 			if !entrada.Usado && !entrada.Modificado {
-				logger.Info("Reemplazo CLOCK-M (0,0) - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
+				//logger.Info("Reemplazo CLOCK-M (0,0) - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
 				c.Entradas[indice] = nueva
 				c.Puntero = (indice + 1) % c.MaxEntradas
 				return
@@ -164,10 +170,10 @@ func (c *CachePaginas) reemplazoClockM(nueva EntradaCache) {
 					if err != nil {
 						logger.Error("Error al escribir página modificada %d en dirección física %d: %v", entrada.NroPagina, dirFisica, err)
 					} else {
-						logger.Info("Página modificada %d escrita en dirección física %d antes de reemplazo", entrada.NroPagina, dirFisica)
+						logger.Info("PID: %d - Memory Update - Pagina: %d - Frame: %d", globals.PIDActual, entrada.NroPagina, dirFisica)
 					}
 				}
-				logger.Info("Reemplazo CLOCK-M (0,1) - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
+				//logger.Info("Reemplazo CLOCK-M (0,1) - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
 				c.Entradas[indice] = nueva
 				c.Puntero = (indice + 1) % c.MaxEntradas
 				return
@@ -205,7 +211,7 @@ func (c *CachePaginas) LimpiarCache() {
 				continue
 			}
 
-			logger.Info("Página modificada %d escrita en dirección física %d", entrada.NroPagina, dirFisica)
+			logger.Info("PID: %d - Memory Update - Pagina: %d - Frame: %d", globals.PIDActual, entrada.NroPagina, dirFisica)
 		}
 	}
 
@@ -213,5 +219,5 @@ func (c *CachePaginas) LimpiarCache() {
 	c.Entradas = make([]EntradaCache, 0, c.MaxEntradas)
 	c.Puntero = 0
 
-	logger.Info("Caché vaciada correctamente")
+	//logger.Info("Caché vaciada correctamente")
 }
