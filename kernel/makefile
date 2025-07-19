@@ -2,25 +2,25 @@ RUN = go run
 
 # === Prueba: Corto Plazo ===
 corto:
-	nano ../kernel/configs/config.json
+	nano ../kernel/configs/cortoplazo.json
 	@echo "Comienza la prueba de Corto Plazo"
 	$(RUN) kernel.go PLANI_CORTO_PLAZO 0 cortoplazo
 
 # === Prueba: Mediano/Largo Plazo ===
 lym:
-	nano ../kernel/configs/config.json
+	nano ../kernel/configs/medianoplazo.json
 	@echo "Comienza la prueba de Mediano y Largo Plazo"
 	$(RUN) kernel.go PLANI_LYM_PLAZO 0 medianoplazo
 
 # === Prueba: SWAP ===
 swap:
-	nano ../kernel/configs/config.json
+	nano ../kernel/configs/swap.json
 	@echo "Comienza la prueba de SWAP"
 	$(RUN) kernel.go MEMORIA_IO 90 swap
 
 # === Prueba: CACHE ===
 cache:
-	nano ../kernel/configs/config.json
+	nano ../kernel/configs/cache.json
 	@echo "Comienza la prueba de Cache"
 	$(RUN) kernel.go MEMORIA_BASE 256 cache
 
@@ -33,7 +33,7 @@ tlb:
 
 # === Prueba: Estabilidad General (EG) ===
 eg:
-	nano ../kernel/configs/config.json
+	nano ../kernel/configs/estabilidad.json
 	@echo "Comienza la prueba de Estabilidad"
 	$(RUN) kernel.go ESTABILIDAD_GENERAL 0 estabilidad
 

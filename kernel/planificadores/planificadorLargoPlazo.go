@@ -69,6 +69,7 @@ func ManejadorInicializacionProcesos() {
 		//SIGNAL llega PROCESO a COLA NEW / SUSP.READY
 		<-Utils.InitProcess
 
+		logger.Info("LLEGO A LARGO")
 		//Al llegar un nuevo proceso a esta cola
 		//y la misma esté vacía
 		//y no se tengan procesos en la cola de SUSP READY,
@@ -157,6 +158,7 @@ func agregarProcesoAReady(proceso *pcb.PCB, estadoAnterior string) {
 
 	// 3) Remover de su cola anterior
 	if estadoAnterior == pcb.EstadoSuspReady {
+		comunicacion.DesuspensionMemoria(proceso.PID)
 		Utils.MutexSuspendidoReady.Lock()
 		algoritmos.ColaSuspendidoReady.Remove(proceso)
 		Utils.MutexSuspendidoReady.Unlock()

@@ -181,6 +181,7 @@ func AtenderSuspBlockedAFinIO() {
 		Utils.MutexIOWaiters.Lock()
 		finIOChan, ok := Utils.FinIOWaiters[ev.PID]
 		Utils.MutexIOWaiters.Unlock()
+
 		if !ok {
 			logger.Warn("AtenderSuspBlockedAFinIO: no hay canal para PID %d", ev.PID)
 			continue

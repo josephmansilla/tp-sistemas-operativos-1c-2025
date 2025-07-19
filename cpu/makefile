@@ -19,7 +19,7 @@ cuatro:
 # === Prueba: Corto Plazo ===
 corto:
 	@echo "Comienza la prueba de Corto Plazo"
-	$(RUN) cpu.go 1 &
+	$(RUN) cpu.go 1
 	$(RUN) cpu.go 2
 
 # === Prueba: Mediano/Largo Plazo ===
