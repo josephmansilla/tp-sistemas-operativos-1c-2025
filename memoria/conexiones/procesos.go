@@ -14,6 +14,8 @@ import (
 )
 
 func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
+	g.MutexOperacionMemoria.Lock()
+	defer g.MutexOperacionMemoria.Unlock()
 	var mensaje g.InitProceso
 	respuesta := g.RespuestaMemoria{
 		Exito:   true,

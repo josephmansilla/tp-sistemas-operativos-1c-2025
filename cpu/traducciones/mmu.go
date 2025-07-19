@@ -71,6 +71,7 @@ func Traducir(dirLogica int) int {
 
 	// Agrego entrada a la TLB
 	tlb.AgregarEntrada(nroPagina, marco)
+	logger.Info("PID: %d - OBTENER MARCO - Pagina: %d - Marco: %d", globals.PIDActual, nroPagina, marco)
 
 	return marco*tamPagina + desplazamiento
 }
@@ -115,7 +116,7 @@ func accederTabla(pid int, indices []int) (int, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&respuesta); err != nil {
 		return -1, err
 	}
-	logger.Info("Marco Recibido: %d", respuesta.NumeroMarco)
+	//logger.Info("Marco Recibido: %d", respuesta.NumeroMarco)
 
 	return respuesta.NumeroMarco, nil
 }
@@ -150,8 +151,8 @@ func LeerEnMemoria(dirFisica int, tamanio int) (string, error) {
 		return "", err
 	}
 
-	logger.Info("Direccion Fisica: %d y Tamanio: %d enviados correctamente a memoria", dirFisica, tamanio)
-	logger.Info("Valor leído: %s", respuesta.ValorLeido)
+	//logger.Info("Direccion Fisica: %d y Tamanio: %d enviados correctamente a memoria", dirFisica, tamanio)
+	//logger.Info("Valor leído: %s", respuesta.ValorLeido)
 
 	return respuesta.ValorLeido, nil
 }
@@ -172,6 +173,6 @@ func EscribirEnMemoria(dirFisica int, datos string) error {
 		return err
 	}
 
-	logger.Info("Direccion Fisica: %d y Datos: %s enviados correctamente a memoria", dirFisica, datos)
+	logger.Info("PID: %d - Accion: ESCRIBIR - Dirección Física: %d - Datos: %s", globals.PIDActual, dirFisica, datos)
 	return nil
 }

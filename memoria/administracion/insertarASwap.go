@@ -79,7 +79,8 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 		Entradas:         make(map[int]*g.EntradaSwapInfo),
 		NumerosDePaginas: make([]int, 0),
 	}
-	var posicionPunteroArchivo = 0
+	posicionPunteroArchivo := g.PunteroSwap
+
 	for i := 0; i < len(entradas); i++ {
 		entrada := entradas[i]
 
@@ -93,7 +94,7 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 		posicionPunteroArchivo += longitudEscrito
 
 		if entrada.NumeroPagina == 0 {
-			posicionPunteroArchivo = 0
+			posicionPunteroArchivo = g.PunteroSwap
 		}
 
 		info.Entradas[entrada.NumeroPagina] = &g.EntradaSwapInfo{
@@ -103,10 +104,6 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 		}
 		info.NumerosDePaginas = append(info.NumerosDePaginas, entrada.NumeroPagina)
 
-		g.MutexSwapIndex.Lock()
-		g.SwapIndex[pid] = info
-		g.MutexSwapIndex.Unlock()
-
 		logger.Info("## PID: <%d> - <MEMORIA A SWAP> - Entrada: <%d> - Posición en SWAP: <%d> - Tamaño: <%d>",
 			pid,
 			entrada.NumeroPagina,
@@ -114,6 +111,11 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 			longitudEscrito,
 		)
 	}
+	g.MutexSwapIndex.Lock()
+	g.SwapIndex[pid] = info
+	g.MutexSwapIndex.Unlock()
+
+	g.PunteroSwap = posicionPunteroArchivo
 
 	return nil
 }

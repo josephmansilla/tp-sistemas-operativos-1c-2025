@@ -8,6 +8,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/data"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"strconv"
+	"strings"
 )
 
 type Instruccion func(arguments []string) error
@@ -61,7 +62,7 @@ func noopInstruccion(arguments []string) error {
 		logger.Error("Error en los argumentos de la instrucción: %s", err)
 		return err
 	}
-	logger.Info("## PID: %d - Instrucción NOOP ejecutada. No se realizó ninguna acción.", globals.PIDActual)
+	logger.Info("## PID: %d - EJECUTADA: NOOP - %s", globals.PIDActual, strings.Join(arguments, " "))
 	return nil
 }
 
@@ -80,7 +81,7 @@ func gotoInstruccion(arguments []string) error {
 	globals.PCActual = nuevoPC
 	globals.SaltarIncrementoPC = true
 
-	logger.Info("## PID: %d - Instrucción GOTO ejecutada. Nuevo PC: %d", globals.PIDActual, globals.PCActual)
+	logger.Info("## PID: %d - EJECUTADA: GOTO - %s", globals.PIDActual, strings.Join(arguments, " "))
 	return nil
 }
 
@@ -101,30 +102,29 @@ func writeMemInstruccion(arguments []string) error {
 	dirFisica := traducciones.Traducir(dirLogica)
 
 	if traducciones.Cache.EstaActiva() {
-		logger.Info("Cache Activa")
+		//logger.Info("Cache Activa")
 
 		err := traducciones.EscribirEnCache(nroPagina, datos)
 		if err != nil {
 			logger.Info("PID: %d - CACHE MISS - Página: %d ", globals.PIDActual, nroPagina)
-			traducciones.Cache.Agregar(nroPagina, datos, true)
 
-			if err := traducciones.EscribirEnMemoria(dirFisica, datos); err != nil {
-				logger.Error("Error escribiendo en Memoria: %s", err)
-				return err
-			}
-			logger.Info("PID: %d - ESCRIBIR (Memoria) - Dirección Física: %d - Datos: %s", globals.PIDActual, dirFisica, datos)
+			traducciones.Cache.Agregar(nroPagina, datos, true)
+			logger.Info("PID: %d - CACHE ADD - Página: %d", globals.PIDActual, nroPagina)
+
+			//logger.Info("PID: %d - ESCRIBIR (CACHE MISS) - Página: %d - Datos: %s", globals.PIDActual, nroPagina, datos)
 		} else {
-			logger.Info("PID: %d - CACHE WRITE - Página: %d - Datos actualizados: %s", globals.PIDActual, nroPagina, datos)
+			logger.Info("PID: %d - CACHE HIT - Página: %d", globals.PIDActual, nroPagina)
 		}
 	} else {
-		logger.Info("Cache Inactiva")
+		//logger.Info("Cache Inactiva")
 
 		if err := traducciones.EscribirEnMemoria(dirFisica, datos); err != nil {
 			logger.Error("Error escribiendo en Memoria: %s", err)
 			return err
 		}
-		logger.Info("PID: %d - ESCRIBIR (Memoria) - Dirección Física: %d - Datos: %s", globals.PIDActual, dirFisica, datos)
 	}
+	logger.Info("PID: %d - Accion: ESCRIBIR - Direccion Fisica: %d - Valor:%s", globals.PIDActual, dirFisica, datos)
+	logger.Info("## PID: %d - EJECUTADA: WRITE - %s", globals.PIDActual, strings.Join(arguments, " "))
 	return nil
 }
 
@@ -151,15 +151,15 @@ func readMemInstruccion(arguments []string) error {
 	var valorLeido string
 
 	if traducciones.Cache.EstaActiva() {
-		logger.Info("Cache Activa")
+		//logger.Info("Cache Activa")
 
 		valorLeido, hit := traducciones.Cache.Buscar(nroPagina)
 		if hit {
-			logger.Info("PID: %d - LEER (Cache Hit) - Página: %d - Valor: %s", globals.PIDActual, nroPagina, valorLeido)
+			//logger.Info("PID: %d - CACHE HIT - Página: %d", globals.PIDActual, nroPagina)
 			return nil
 		}
 
-		logger.Info("PID: %d - LEER (Cache Miss) - Página: %d", globals.PIDActual, nroPagina)
+		//logger.Info("PID: %d - CACHE MISS - Página: %d", globals.PIDActual, nroPagina)
 
 		valorLeido, err = traducciones.LeerEnMemoria(dirFisica, tamanio)
 		if err != nil {
@@ -168,20 +168,19 @@ func readMemInstruccion(arguments []string) error {
 		}
 
 		traducciones.Cache.Agregar(nroPagina, valorLeido, false)
-
 		logger.Info("PID: %d - CACHE ADD - Página: %d", globals.PIDActual, nroPagina)
-		logger.Info("PID: %d - LEER (Memoria) - Dirección Física: %d - Valor: %s", globals.PIDActual, dirFisica, valorLeido)
+		logger.Info("PID: %d - Accion: LEER - Dirección Física: %d - Valor: %s", globals.PIDActual, dirFisica, valorLeido)
 	} else {
-		logger.Info("Cache Inactiva")
+		//logger.Info("Cache Inactiva")
 
 		valorLeido, err = traducciones.LeerEnMemoria(dirFisica, tamanio)
 		if err != nil {
 			logger.Error("Error leyendo de memoria: %v", err)
 			return err
 		}
-
-		logger.Info("PID: %d - LEER (Memoria) - Dirección Física: %d - Valor: %s", globals.PIDActual, dirFisica, valorLeido)
+		logger.Info("PID: %d - Accion: LEER - Dirección Física: %d - Valor: %s", globals.PIDActual, dirFisica, valorLeido)
 	}
+	logger.Info("## PID: %d - EJECUTADA: READ - %s", globals.PIDActual, strings.Join(arguments, " "))
 	return nil
 }
 
@@ -204,7 +203,7 @@ func dumpMemoryInstruccion(arguments []string) error {
 		return err
 	}
 
-	logger.Info("Syscall DUMP_MEMORY realizada exitosamente")
+	logger.Info("## PID: %d - EJECUTADA: DUMP_MEMORY - %s", globals.PIDActual, strings.Join(arguments, " "))
 	return nil
 }
 
@@ -239,7 +238,7 @@ func ioInstruccion(arguments []string) error {
 
 	traducciones.Cache.LimpiarCache()
 
-	logger.Info("Syscall IO realizada exitosamente")
+	logger.Info("## PID: %d - EJECUTADA: IO - %s", globals.PIDActual, strings.Join(arguments, " "))
 	return globals.ErrSyscallBloqueante
 }
 
@@ -264,7 +263,7 @@ func exitInstruccion(arguments []string) error {
 
 	traducciones.Cache.LimpiarCache()
 
-	logger.Info("Syscall EXIT realizada exitosamente")
+	logger.Info("## PID: %d - EJECUTADA: EXIT - %s", globals.PIDActual, strings.Join(arguments, " "))
 	return nil
 }
 
@@ -295,7 +294,7 @@ func iniciarProcesoInstruccion(arguments []string) error {
 		return err
 	}
 
-	logger.Info("Syscall INIT_PROC realizada exitosamente")
+	logger.Info("## PID: %d - EJECUTADA: INIT_PROC - %s", globals.PIDActual, strings.Join(arguments, " "))
 	return nil
 }
 

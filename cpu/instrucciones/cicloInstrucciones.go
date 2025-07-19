@@ -62,11 +62,11 @@ func FaseFetch(ipDestino string, puertoDestino int) {
 			break
 		}
 
-		logger.Info("Instrucción recibida (PC %d): %s", globals.PCActual, respuesta.Instruccion)
+		//logger.Info("Instrucción recibida (PC %d): %s", globals.PCActual, respuesta.Instruccion)
 
 		// Parsear y ejecutar instrucción
 		if seguir := FaseDecode(respuesta.Instruccion); !seguir {
-			log.Println("Se pidió un syscall, finalizando ejecución del proceso.")
+			//log.Println("Se pidió un syscall, finalizando ejecución del proceso.")
 			break
 		}
 
@@ -103,7 +103,7 @@ func FaseExecute(nombre string, args []string) bool {
 
 	if err != nil {
 		if err == globals.ErrSyscallBloqueante {
-			logger.Error("Proceso %d bloqueado por syscall IO", globals.PIDActual)
+			//logger.Error("Proceso %d bloqueado por syscall IO", globals.PIDActual)
 			return false // Detener ejecución por syscall IO
 		}
 
@@ -112,12 +112,12 @@ func FaseExecute(nombre string, args []string) bool {
 	}
 
 	if nombre == "EXIT" {
-		logger.Info("PID %d ejecutó EXIT. Finalizando ejecución.", globals.PIDActual)
+		//logger.Info("PID %d ejecutó EXIT. Finalizando ejecución.", globals.PIDActual)
 		return false
 	}
 
 	if FaseCheckInterrupt() {
-		logger.Info("Finalizando ejecución por interrupción.")
+		//logger.Info("Finalizando ejecución por interrupción.")
 		return false
 	}
 
@@ -137,7 +137,7 @@ func FaseCheckInterrupt() bool {
 			globals.PIDInterrumpido, globals.PIDActual)
 		return false
 	}
-
+	logger.Info("Me llego una interrupcion al puerto Interrupt")
 	traducciones.Cache.LimpiarCache()
 
 	pid := globals.PIDActual
@@ -174,7 +174,7 @@ func FaseCheckInterrupt() bool {
 		return false
 	}
 
-	logger.Info("Contexto interrumpido enviado a Kernel. PID: %d, PC: %d", pid, pc)
+	//logger.Info("Contexto interrumpido enviado a Kernel. PID: %d, PC: %d", pid, pc)
 
 	// Limpiar la interrupción
 	globals.InterrupcionPendiente = false

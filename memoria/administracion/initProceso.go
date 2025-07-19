@@ -16,7 +16,6 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 		logger.Error("No hay memoria suficiente para proceso PID <%d>", pid)
 		return fmt.Errorf("no hay memoria disponible para el proceso: %v", logger.ErrNoMemory)
 	}
-	g.MutexMetrica[pid] = new(sync.Mutex)
 
 	g.MutexProcesosPorPID.Lock()
 	if g.ProcesosPorPID[pid] != nil {
@@ -36,7 +35,7 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 	g.MutexProcesosPorPID.Lock()
 	g.ProcesosPorPID[pid] = nuevoProceso
 	g.MutexProcesosPorPID.Unlock()
-	g.MutexMetrica[nuevoProceso.PID] = &sync.Mutex{}
+	g.MutexMetrica[pid] = new(sync.Mutex)
 
 	if nuevoProceso.TablaRaiz == nil {
 		logger.Error("TablaRaiz es nil para proceso PID <%d>", pid)
@@ -141,7 +140,7 @@ func AsignarPaginasParaPID(proceso *g.Proceso, tamanio int) error {
 			EstaPresente: true,
 		}
 		InsertarEntradaPaginaEnTabla(proceso.TablaRaiz, i, entradaPagina)
-		logger.Info("## Entrada <%d> ; PID <%d> ; Frame <%d>", i, proceso.PID, numeroFrame)
+		logger.Info("## PID <%d> - Entrada <%d> - Frame <%d>", i, proceso.PID, numeroFrame)
 	}
 	logger.Info("## Quedan <%d> frames libes", g.CantidadFramesLibres)
 	return nil
