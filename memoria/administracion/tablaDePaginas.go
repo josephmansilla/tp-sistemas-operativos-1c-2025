@@ -22,6 +22,22 @@ func CrearIndicePara(numeroPaginaLogica int) (indicesParaTabla []int) {
 	return
 }
 
+func ObtenerEntradaPagina(pid int, indices []int) (int, error) {
+	g.MutexProcesosPorPID.Lock()
+	proceso, errPro := g.ProcesosPorPID[pid]
+	g.MutexProcesosPorPID.Unlock()
+	if !errPro {
+		logger.Error("Processo Buscado no existe")
+		return -1, fmt.Errorf("el proceso no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
+	}
+	entradaPagina, errPag := BuscarEntradaPagina(proceso, indices)
+	if errPag != nil {
+		logger.Error("Error al buscar la entrada de página")
+		return -1, fmt.Errorf("la entrada no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
+	}
+	return entradaPagina.NumeroFrame, nil
+}
+
 func BuscarEntradaPagina(proceso *g.Proceso, indicesParaTabla []int) (entradaDeseada *g.EntradaPagina, err error) {
 	if proceso == nil {
 		logger.Error("Proceso es nil en BuscarEntradaPagina")
@@ -74,20 +90,4 @@ func BuscarEntradaPagina(proceso *g.Proceso, indicesParaTabla []int) (entradaDes
 
 	IncrementarMetrica(proceso, 1, IncrementarAccesosTablasPaginas)
 	return entradaDeseada, nil
-}
-
-func ObtenerEntradaPagina(pid int, indices []int) (int, error) {
-	g.MutexProcesosPorPID.Lock()
-	proceso, errPro := g.ProcesosPorPID[pid]
-	g.MutexProcesosPorPID.Unlock()
-	if !errPro {
-		logger.Error("Processo Buscado no existe")
-		return -1, fmt.Errorf("el proceso no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
-	}
-	entradaPagina, errPag := BuscarEntradaPagina(proceso, indices)
-	if errPag != nil {
-		logger.Error("Error al buscar la entrada de página")
-		return -1, fmt.Errorf("la entrada no existe o nunca fue inicializada: %w", logger.ErrNoInstance)
-	}
-	return entradaPagina.NumeroFrame, nil
 }
