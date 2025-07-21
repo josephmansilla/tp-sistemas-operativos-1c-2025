@@ -2,6 +2,7 @@ package algoritmos
 
 import (
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"sync"
 )
 
@@ -36,3 +37,59 @@ var ColaReady Cola[*pcb.PCB]
 var ColaBloqueadoSuspendido Cola[*pcb.PCB]
 var ColaSuspendidoReady Cola[*pcb.PCB]
 var PedidosIO Cola[*PedidoIO]
+
+func MostrarCOLABLOQUEADO() {
+	lista := ColaBloqueado.Values()
+
+	if len(lista) == 0 {
+		logger.Info("Cola NEW vacía")
+		return
+	}
+
+	logger.Info("Contenido de la cola New:")
+	for _, proceso := range lista {
+		logger.Info(" - PCB EN COLA New con PID: %d, TAMAÑO: %d", proceso.PID, proceso.ProcessSize)
+	}
+}
+
+func MostrarColaReady() {
+	lista := ColaReady.Values()
+
+	if len(lista) == 0 {
+		logger.Info("Cola READY vacía")
+		return
+	}
+
+	logger.Info("Contenido de la cola READY:")
+	for _, proceso := range lista {
+		logger.Info(" - PCB EN COLA READY con PID: %d", proceso.PID)
+	}
+}
+
+func MostrarColaNew() {
+	lista := ColaNuevo.Values()
+
+	if len(lista) == 0 {
+		logger.Info("Cola NEW vacía")
+		return
+	}
+
+	logger.Info("Contenido de la cola New:")
+	for _, proceso := range lista {
+		logger.Info(" - PCB EN COLA New con PID: %d, TAMAÑO: %d", proceso.PID, proceso.ProcessSize)
+	}
+}
+
+func MostrarColasSUSPREADY() {
+	lista := ColaSuspendidoReady.Values()
+
+	if len(lista) == 0 {
+		logger.Info("Cola SUSPENDIDO READY vacía")
+		return
+	}
+
+	logger.Info("Contenido de la cola SUSPENDIDO READY:")
+	for _, proceso := range lista {
+		logger.Info(" - PCB EN COLA SUSPENDIDO READY con PID: %d, TAMAÑO: %d", proceso.PID, proceso.ProcessSize)
+	}
+}

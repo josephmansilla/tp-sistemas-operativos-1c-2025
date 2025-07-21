@@ -117,7 +117,7 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 			Utils.MutexNuevo.Unlock()
 			logger.Info("PCB <%d> añadido a NEW (FIFO)", pid)
 		case "PMCP":
-			algoritmos.AddPMCP(&pcbNuevo)
+			algoritmos.AddPMCPNew(&pcbNuevo)
 			pcb.CambiarEstado(&pcbNuevo, pcb.EstadoNew)
 			logger.Info("PCB <%d> añadido a NEW (PMCP)", pid)
 		default:

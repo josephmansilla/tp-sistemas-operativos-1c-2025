@@ -1,7 +1,7 @@
 {
   "ip_kernel": "127.0.0.1",
   "port_kernel": 8081,
-  "port_io": 8103,
+  "port_io": 8105,
   "ip_io": "127.0.0.1",
   "log_level": "INFO",
   "type": "DISCO"
