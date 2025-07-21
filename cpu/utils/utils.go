@@ -31,7 +31,7 @@ type ConsultaConfigMemoria struct {
 }
 
 func Config() *globals.Config {
-	const path = "../cpu/configs/config.json" // ← archivo fijo en el directorio cpu
+	path := fmt.Sprintf("../cpu/configs/config%s.json", globals.ID)
 
 	var config globals.Config
 

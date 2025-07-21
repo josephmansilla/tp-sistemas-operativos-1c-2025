@@ -24,7 +24,7 @@ func TestBuscarPagina(t *testing.T) {
 }
 
 func TestActivacionCache(t *testing.T) {
-	err := CargarConfigCPU("../configs/PLANI.json")
+	err := CargarConfigCPU("../configs/config1.json")
 	if err != nil {
 		t.Fatalf("Error cargando config: %v", err)
 	}

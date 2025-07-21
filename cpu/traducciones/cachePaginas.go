@@ -132,7 +132,6 @@ func (c *CachePaginas) reemplazoClock(nueva EntradaCache) {
 
 			logger.Info("Reemplazo CLOCK - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
 			c.Entradas[c.Puntero] = nueva
-			c.Puntero = (c.Puntero + 1) % c.MaxEntradas
 			return
 		}
 

@@ -19,7 +19,6 @@ func main() {
 	}
 	globals.ID = os.Args[1]
 
-	// Logger
 	logFileName := fmt.Sprintf("logs/cpu_%s.log", globals.ID)
 	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
@@ -32,23 +31,19 @@ func main() {
 
 	logger.Info("======== Comenzó la ejecución del CPU con ID: %s ========", globals.ID)
 
-	// Cargar config desde "config.json" raíz
 	config := utils.Config()
 
-	// Asignar IP y puerto según ID
 	globals.ClientConfig = config
 
 	traducciones.Max = globals.ClientConfig.CacheEntries
 	traducciones.InitTLB()
 	traducciones.InitCache()
 
-	// Configuración de Memoria
 	err = utils.RecibirConfiguracionMemoria(globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
 	if err != nil {
 		logger.Fatal("Error al obtener la configuración de memoria: %v", err)
 	}
 
-	// Servidor HTTP
 	mux := http.NewServeMux()
 	mux.HandleFunc("/cpu/kernel", utils.RecibirContextoDeKernel)
 	mux.HandleFunc("/cpu/interrupcion", utils.RecibirInterrupcion)
@@ -62,9 +57,7 @@ func main() {
 		}
 	}()
 
-	// Conexión con Kernel
 	utils.EnviarIpPuertoIDAKernel(globals.ClientConfig.IpKernel, globals.ClientConfig.PortKernel, globals.ClientConfig.IpSelf, globals.ClientConfig.PortSelf, globals.ID)
 
-	// Bloqueo el main
 	select {}
 }
