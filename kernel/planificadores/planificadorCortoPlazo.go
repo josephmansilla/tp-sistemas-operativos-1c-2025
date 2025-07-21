@@ -200,45 +200,7 @@ func DesconexionIO() {
 		io := <-Utils.NotificarDesconexion
 		logger.Warn("Se desconectó una IO <%s:%d> - PID activo: <%d>", io.Nombre, io.Puerto, io.PID)
 
-		//Si la IO se desconecta mientras tiene un proceso...
-		var proceso *pcb.PCB
-
-		// 1. Buscar y remover de BLOCKED
-		Utils.MutexBloqueado.Lock()
-		for _, p := range algoritmos.ColaBloqueado.Values() {
-			if p.PID == io.PID {
-				proceso = p
-				algoritmos.ColaBloqueado.Remove(p)
-				break
-			}
-		}
-		Utils.MutexBloqueado.Unlock()
-
-		// 2. Buscar y remover de BLOCKED_SUSPENDED si no se encontró
-		if proceso == nil {
-			//logger.Warn("## PID <%d> desconectado pero no estaba en BLOCKED", pidEjecutado)
-
-			Utils.MutexBloqueadoSuspendido.Lock()
-			for _, p := range algoritmos.ColaBloqueadoSuspendido.Values() {
-				if p.PID == io.PID {
-					proceso = p
-					algoritmos.ColaBloqueadoSuspendido.Remove(p)
-					break
-				}
-			}
-			Utils.MutexBloqueadoSuspendido.Unlock()
-		}
-
-		// 3. Si estaba esperando una IO, mandarlo a EXIT
-		if proceso != nil {
-			logger.Info("Finalizando PID <%d> por desconexión de IO <%s>", proceso.PID, io.Nombre)
-			Utils.ChannelFinishprocess <- Utils.FinishProcess{
-				PID: proceso.PID,
-				PC:  proceso.PC,
-			}
-		}
-
-		// 4. Remover instancia de IO
+		// 1. Remover instancia de IO
 		globals.IOMu.Lock()
 		// Buscar el tipo de IO directamente
 		instancias, existe := globals.IOs[io.Nombre]
@@ -281,6 +243,44 @@ func DesconexionIO() {
 			globals.IOs[io.Nombre] = nuevaLista
 		}
 		globals.IOMu.Unlock()
+
+		//Si la IO se desconecta mientras tiene un proceso...
+		var proceso *pcb.PCB
+
+		// 1. Buscar y remover de BLOCKED
+		Utils.MutexBloqueado.Lock()
+		for _, p := range algoritmos.ColaBloqueado.Values() {
+			if p.PID == io.PID {
+				proceso = p
+				algoritmos.ColaBloqueado.Remove(p)
+				break
+			}
+		}
+		Utils.MutexBloqueado.Unlock()
+
+		// 2. Buscar y remover de BLOCKED_SUSPENDED si no se encontró
+		if proceso == nil {
+			//logger.Warn("## PID <%d> desconectado pero no estaba en BLOCKED", pidEjecutado)
+
+			Utils.MutexBloqueadoSuspendido.Lock()
+			for _, p := range algoritmos.ColaBloqueadoSuspendido.Values() {
+				if p.PID == io.PID {
+					proceso = p
+					algoritmos.ColaBloqueadoSuspendido.Remove(p)
+					break
+				}
+			}
+			Utils.MutexBloqueadoSuspendido.Unlock()
+		}
+
+		// 3. Si estaba esperando una IO, mandarlo a EXIT
+		if proceso != nil {
+			logger.Info("Finalizando PID <%d> por desconexión de IO <%s>", proceso.PID, io.Nombre)
+			Utils.ChannelFinishprocess <- Utils.FinishProcess{
+				PID: proceso.PID,
+				PC:  proceso.PC,
+			}
+		}
 	}
 }
 

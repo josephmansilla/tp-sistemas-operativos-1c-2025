@@ -172,6 +172,7 @@ func desconexion() {
 			err = data.EnviarDatos(url, mensaje)
 			if err == nil {
 				// Éxito: salimos
+				os.Exit(0)
 				return
 			}
 			// Si no es connection refused, no tiene sentido reintentar
@@ -183,6 +184,5 @@ func desconexion() {
 			logger.Warn("Intento %d: connection refused al enviar a IO, reintentando en %s...", intento, backoff)
 			time.Sleep(backoff)
 		}
-		os.Exit(0)
 	}()
 }
