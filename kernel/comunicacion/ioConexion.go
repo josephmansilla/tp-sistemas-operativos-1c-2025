@@ -156,11 +156,6 @@ func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	Utils.FinIODesdeSuspBlocked <- Utils.IOEvent{PID: evt.PID, Nombre: evt.Nombre, Puerto: evt.Puerto}
-	/*if ok {
-		Utils.FinIODesdeSuspBlocked <- Utils.IOEvent{PID: evt.PID, Nombre: evt.Nombre, Puerto: evt.Puerto}
-	} else {
-		logger.Warn("IO terminada pero no hay canal en IOWaiters para PID %d", evt.PID)
-	}*/
 
 	w.WriteHeader(http.StatusOK)
 }

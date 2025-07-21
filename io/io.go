@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -74,7 +75,6 @@ func main() {
 	mux.HandleFunc("/io/kernel", RecibirMensajeDeKernel)
 
 	// Esperar brevemente a que el servidor esté activo
-
 	EnviarIpPuertoNombreAKernel(globals.IoConfig.IpKernel, globals.IoConfig.PortKernel, mensaje)
 
 	// ----------------------------------------------------
@@ -164,10 +164,24 @@ func desconexion() {
 		}
 
 		url := fmt.Sprintf("http://%s:%d/kernel/fin_io", globals.IoConfig.IpKernel, globals.IoConfig.PortKernel)
-		err := data.EnviarDatos(url, mensaje)
-		if err != nil {
-			logger.Info("Error enviando fin a Kernel: %s", err.Error())
-			return
+		const maxIntentos = 3
+		const backoff = 200 * time.Millisecond
+
+		var err error
+		for intento := 1; intento <= maxIntentos; intento++ {
+			err = data.EnviarDatos(url, mensaje)
+			if err == nil {
+				// Éxito: salimos
+				return
+			}
+			// Si no es connection refused, no tiene sentido reintentar
+			if !strings.Contains(err.Error(), "connection refused") {
+				logger.Warn("Error enviando a IO (no recoverable): %v", err)
+				return
+			}
+			// es Connection refused: esperamos y reintentamos
+			logger.Warn("Intento %d: connection refused al enviar a IO, reintentando en %s...", intento, backoff)
+			time.Sleep(backoff)
 		}
 		os.Exit(0)
 	}()
