@@ -150,7 +150,7 @@ func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 	} else {
 		select {
 		case ch <- evt:
-			logger.Debug("ENVIE FIN DE IO A CANAL DE %d", evt.PID)
+			//logger.Debug("ENVIE FIN DE IO A CANAL DE %d", evt.PID)
 		default:
 			logger.Debug("RecibirFinDeIO: canal FinIOWaiters[%d] lleno, descartando evento", evt.PID)
 		}

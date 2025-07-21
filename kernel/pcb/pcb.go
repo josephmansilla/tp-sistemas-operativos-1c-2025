@@ -58,7 +58,7 @@ func (p *PCB) ImprimirMetricas() string {
 	for _, estado := range estados {
 		count := p.ME[estado]
 		tiempo := p.MT[estado]
-		salida += fmt.Sprintf(" %s (%d) (%.2f ms),", estado, count, tiempo)
+		salida += fmt.Sprintf(" %s (%d) (%.0f ms),", estado, count, tiempo)
 	}
 
 	// Eliminar la última coma

@@ -172,6 +172,7 @@ func desconexion() {
 			err = data.EnviarDatos(url, mensaje)
 			if err == nil {
 				// Éxito: salimos
+				logger.Info("======== Final de Ejecución IO ========")
 				os.Exit(0)
 				return
 			}
