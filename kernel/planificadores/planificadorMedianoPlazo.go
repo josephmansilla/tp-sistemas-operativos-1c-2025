@@ -75,11 +75,15 @@ func moverDeBlockedAReady(ioLibre Utils.IOEvent) bool {
 	globals.IOMu.Unlock()
 
 	// Agregar a READY
-	Utils.MutexReady.Lock()
-	pcb.CambiarEstado(proceso, pcb.EstadoReady)
-	algoritmos.ColaReady.Add(proceso)
 	logger.Info("## <%d> finalizó IO y pasa a READY", ioLibre.PID)
-	Utils.MutexReady.Unlock()
+	agregarProcesoAReady(proceso)
+
+	/*
+		Utils.MutexReady.Lock()
+		pcb.CambiarEstado(proceso, pcb.EstadoReady)
+		algoritmos.ColaReady.Add(proceso)
+		Utils.MutexReady.Unlock()
+	*/
 
 	//Señal al corto plazo para despachar
 	Utils.NotificarDespachador <- ioLibre.PID
@@ -174,7 +178,7 @@ func monitorBloqueado(bp Utils.BlockProcess) {
 	}
 }
 
-// pasa de SUSP BLOQUEADO A SUSP READY (con FIN DE IO)
+// pasa de SUSP BLOCKED A SUSP READY (con FIN DE IO)
 func AtenderSuspBlockedAFinIO() {
 	for ev := range Utils.FinIODesdeSuspBlocked {
 		// Obtener el canal dedicado a este PID
@@ -220,7 +224,6 @@ func AtenderSuspBlockedAFinIO() {
 					logger.Error("Algoritmo de ingreso desconocido")
 					return
 				}
-				//logger.Info("## (%d) Pasa de SUSP.BLOCKED a SUSP.READY", pid)
 
 				// Notificar al planificador de largo plazo
 				Utils.InitProcess <- struct{}{}
@@ -235,6 +238,7 @@ func AtenderSuspBlockedAFinIO() {
 
 			//muestro cola suspready cada vez que llega un fin IO DEBERIA ESTAR CARGADA CON LOS PROCESOS
 			//MostrarColasSUSPREADY()
+
 		}(ev.PID, finIOChan)
 	}
 }
@@ -278,19 +282,5 @@ func DespacharIO() {
 		logger.Info("Asignada IO <%s> (puerto %d) a proceso <%d>", ioAsignada.Tipo, ioAsignada.Puerto, pedido.PID)
 		algoritmos.PedidosIO.Remove(pedido)
 		go comunicacion.EnviarContextoIO(*ioAsignada, pedido.PID, pedido.Duracion)
-	}
-}
-
-func MostrarColasSUSPREADY() {
-	lista := algoritmos.ColaSuspendidoReady.Values()
-
-	if len(lista) == 0 {
-		logger.Info("Cola SUSPENDIDO READY vacía")
-		return
-	}
-
-	logger.Info("Contenido de la cola SUSPENDIDO READY:")
-	for _, proceso := range lista {
-		logger.Info(" - PCB EN COLA SUSPENDIDO READY con PID: %d, TAMAÑO: %d", proceso.PID, proceso.ProcessSize)
 	}
 }

@@ -120,11 +120,14 @@ func DesalojarProceso() {
 		liberarCPU(cpuID)
 
 		//ENVIAR A READY
-		Utils.MutexBloqueado.Lock()
-		pcb.CambiarEstado(proceso, pcb.EstadoReady)
-		algoritmos.ColaReady.Add(proceso)
-		logger.Info("## (<%d>) Pasa del estado EXECUTE al estado READY", proceso.PID)
-		Utils.MutexBloqueado.Unlock()
+		/*
+			Utils.MutexBloqueado.Lock()
+			pcb.CambiarEstado(proceso, pcb.EstadoReady)
+			algoritmos.ColaReady.Add(proceso)
+			logger.Info("## (<%d>) Pasa del estado EXECUTE al estado READY", proceso.PID)
+			Utils.MutexBloqueado.Unlock()
+		*/
+		agregarProcesoAReady(proceso)
 
 		//AVISAR QUE UN PROCESO LLEGA A READY
 		Utils.NotificarDespachador <- proceso.PID
@@ -281,19 +284,5 @@ func DesconexionIO() {
 				PC:  proceso.PC,
 			}
 		}
-	}
-}
-
-func MostrarCOLABLOQUEADO() {
-	lista := algoritmos.ColaBloqueado.Values()
-
-	if len(lista) == 0 {
-		logger.Info("Cola NEW vacía")
-		return
-	}
-
-	logger.Info("Contenido de la cola New:")
-	for _, proceso := range lista {
-		logger.Info(" - PCB EN COLA New con PID: %d, TAMAÑO: %d", proceso.PID, proceso.ProcessSize)
 	}
 }

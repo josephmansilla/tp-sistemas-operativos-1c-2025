@@ -81,7 +81,7 @@ func ManejadorInicializacionProcesos() {
 			//SI NO ESTA VACIA -> TIENE PRIORIDAD SUSP.READY
 			p = algoritmos.ColaSuspendidoReady.First()
 		} else {
-			p = algoritmos.ColaNuevo.First()
+			p = algoritmos.ColaNuevo.First() //YA ORDENADOS POR FIFO O PMCP EN SYSCALL INIT
 		}
 
 		if p == nil {
@@ -96,24 +96,34 @@ func ManejadorInicializacionProcesos() {
 
 		filename := p.FileName
 		size := p.ProcessSize
+		estadoAnterior := p.Estado
 
 		//Intentar crear en Memoria
 		espacio := comunicacion.SolicitarEspacioEnMemoria(filename, size)
 		if espacio < size {
 			logger.Info("Memoria sin espacio, PID <%d> queda pendiente", p.PID)
 
-			// 1) Señal al planificador de corto plazo
-			Utils.NotificarDespachador <- p.PID //MANDO PID
-
-			// 2) Señal al planificador Largo para continuar
-			//Utils.SemProcessCreateOK <- struct{}{}
+			// 1) Señal al planificador de corto plazo que continue
+			Utils.NotificarDespachador <- p.PID
 			continue
+		}
+
+		//Remover de su cola anterior
+		if estadoAnterior == pcb.EstadoSuspReady {
+			comunicacion.DesuspensionMemoria(p.PID)
+			Utils.MutexSuspendidoReady.Lock()
+			algoritmos.ColaSuspendidoReady.Remove(p)
+			Utils.MutexSuspendidoReady.Unlock()
+		} else if estadoAnterior == pcb.EstadoNew {
+			Utils.MutexNuevo.Lock()
+			algoritmos.ColaNuevo.Remove(p)
+			Utils.MutexNuevo.Unlock()
 		}
 
 		//DICE QUE SI, HAY ESPACIO
 		//MANDAR PROCESO A READY
 		comunicacion.EnviarArchivoMemoria(filename, size, p.PID)
-		agregarProcesoAReady(p, p.Estado)
+		agregarProcesoAReady(p)
 	}
 }
 
@@ -135,46 +145,36 @@ func ManejadorCreacionProcesos() {
 		fileName := msg.Filename
 		size := msg.Tamanio
 		pid := msg.PID
-		logger.Info("Solicitud INIT_PROC recibida: filename=%s, size=%d, pid=%d", fileName, size, pid)
+		logger.Debug("Solicitud INIT_PROC recibida: filename=%s, size=%d, pid=%d", fileName, size, pid)
 
 		// AVISAR QUE SE CREO UN PROCESO AL LARGO PLAZO
 		Utils.InitProcess <- struct{}{}
 	}
 }
 
-func agregarProcesoAReady(proceso *pcb.PCB, estadoAnterior string) {
-	// 1) Chequear el PCB existe?
-	if proceso == nil {
-		logger.Error("PCB no existe (agregarProcesoAReady)")
+func agregarProcesoAReady(proceso *pcb.PCB) {
+	// 1) estado anterior
+	estadoAnterior := proceso.Estado
+
+	// 2) Agregar a READY segun algoritmo de ingreso
+	switch globals.KConfig.ReadyIngressAlgorithm {
+	case "FIFO":
+		Utils.MutexReady.Lock()
+		pcb.CambiarEstado(proceso, pcb.EstadoReady)
+		algoritmos.ColaReady.Add(proceso)
+		Utils.MutexReady.Unlock()
+	case "PMCP":
+		pcb.CambiarEstado(proceso, pcb.EstadoReady)
+		algoritmos.AddPMCPReady(proceso)
+	default:
+		logger.Error("Algoritmo de ingreso desconocido")
 		return
-	}
-
-	// 2) Agregar a READY
-	Utils.MutexReady.Lock()
-	pcb.CambiarEstado(proceso, pcb.EstadoReady)
-	algoritmos.ColaReady.Add(proceso)
-	Utils.MutexReady.Unlock()
-
-	// 3) Remover de su cola anterior
-	if estadoAnterior == pcb.EstadoSuspReady {
-		comunicacion.DesuspensionMemoria(proceso.PID)
-		Utils.MutexSuspendidoReady.Lock()
-		algoritmos.ColaSuspendidoReady.Remove(proceso)
-		Utils.MutexSuspendidoReady.Unlock()
-
-	} else if estadoAnterior == pcb.EstadoNew {
-		Utils.MutexNuevo.Lock()
-		algoritmos.ColaNuevo.Remove(proceso)
-		Utils.MutexNuevo.Unlock()
 	}
 
 	logger.Info("## (<%d>) Pasa de estado %s a estado READY", proceso.PID, estadoAnterior)
 
 	// 4) Señal al planificador de corto plazo
 	Utils.NotificarDespachador <- proceso.PID //MANDO PID
-
-	// 5) Señal al planificador Largo para continuar
-	//Utils.SemProcessCreateOK <- struct{}{}
 
 	//MUESTRO LA COLA DE READY PARA VER SI SE AGREGAN CORRECTAMENTE
 	//MostrarColaReady()
@@ -268,32 +268,4 @@ func finalizarProceso(pid int, pc int, cpuID string) {
 	// 8. Señal para liberar memoria
 	//reintentos de creación pendientes
 	Utils.LiberarMemoria <- struct{}{}
-}
-
-func MostrarColaReady() {
-	lista := algoritmos.ColaReady.Values()
-
-	if len(lista) == 0 {
-		logger.Info("Cola READY vacía")
-		return
-	}
-
-	logger.Info("Contenido de la cola READY:")
-	for _, proceso := range lista {
-		logger.Info(" - PCB EN COLA READY con PID: %d", proceso.PID)
-	}
-}
-
-func MostrarColaNew() {
-	lista := algoritmos.ColaNuevo.Values()
-
-	if len(lista) == 0 {
-		logger.Info("Cola NEW vacía")
-		return
-	}
-
-	logger.Info("Contenido de la cola New:")
-	for _, proceso := range lista {
-		logger.Info(" - PCB EN COLA New con PID: %d, TAMAÑO: %d", proceso.PID, proceso.ProcessSize)
-	}
 }
