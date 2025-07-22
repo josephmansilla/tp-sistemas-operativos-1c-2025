@@ -3,7 +3,7 @@
     "port_memory": 8083,
     "ip_kernel": "127.0.0.1",
     "port_kernel": 8081,
-    "scheduler_algorithm": "SRT",
+    "scheduler_algorithm": "SJF",
     "ready_ingress_algorithm": "PMCP",
     "alpha": 0.75,
     "initial_estimate": 100,

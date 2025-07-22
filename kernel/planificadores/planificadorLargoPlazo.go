@@ -80,6 +80,7 @@ func ManejadorInicializacionProcesos() {
 		if !algoritmos.ColaSuspendidoReady.IsEmpty() {
 			//SI NO ESTA VACIA -> TIENE PRIORIDAD SUSP.READY
 			p = algoritmos.ColaSuspendidoReady.First()
+
 		} else {
 			p = algoritmos.ColaNuevo.First() //YA ORDENADOS POR FIFO O PMCP EN SYSCALL INIT
 		}
@@ -114,7 +115,9 @@ func ManejadorInicializacionProcesos() {
 			Utils.MutexSuspendidoReady.Lock()
 			algoritmos.ColaSuspendidoReady.Remove(p)
 			Utils.MutexSuspendidoReady.Unlock()
+
 		} else if estadoAnterior == pcb.EstadoNew {
+			comunicacion.EnviarArchivoMemoria(filename, size, p.PID)
 			Utils.MutexNuevo.Lock()
 			algoritmos.ColaNuevo.Remove(p)
 			Utils.MutexNuevo.Unlock()
@@ -122,7 +125,6 @@ func ManejadorInicializacionProcesos() {
 
 		//DICE QUE SI, HAY ESPACIO
 		//MANDAR PROCESO A READY
-		comunicacion.EnviarArchivoMemoria(filename, size, p.PID)
 		agregarProcesoAReady(p)
 	}
 }
