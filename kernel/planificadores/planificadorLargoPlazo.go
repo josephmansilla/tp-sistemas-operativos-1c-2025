@@ -56,7 +56,7 @@ func PlanificadorLargoPlazo() {
 	pcb.CambiarEstado(primerProceso, pcb.EstadoReady)
 
 	Utils.NotificarDespachador <- primerProceso.PID //SIGNAL QUE PASO A READY. MANDO PID
-	logger.Info("## (<%d>) Pasa de estado NEW a estado %s", primerProceso.PID, primerProceso.Estado)
+	logger.Info("## (<%d>) Pasa del estado NEW al estado %s", primerProceso.PID, primerProceso.Estado)
 
 	go ManejadorCreacionProcesos()
 	go ManejadorInicializacionProcesos()
@@ -171,7 +171,7 @@ func agregarProcesoAReady(proceso *pcb.PCB) {
 		return
 	}
 
-	logger.Info("## (<%d>) Pasa de estado %s a estado READY", proceso.PID, estadoAnterior)
+	logger.Info("## (<%d>) Pasa del estado %s al estado READY", proceso.PID, estadoAnterior)
 
 	// 4) Señal al planificador de corto plazo
 	Utils.NotificarDespachador <- proceso.PID //MANDO PID
@@ -208,7 +208,7 @@ func finalizarProceso(pid int, pc int, cpuID string) {
 	for _, p := range algoritmos.ColaEjecutando.Values() {
 		if p.PID == pid {
 			algoritmos.ColaEjecutando.Remove(p)
-			logger.Info("## (<%d>) Pasa de estado EXECUTE a estado EXIT", p.PID)
+			logger.Info("## (<%d>) Pasa del estado EXECUTE al estado EXIT", p.PID)
 			p.PC = pc
 			proceso = p
 			break
@@ -222,7 +222,7 @@ func finalizarProceso(pid int, pc int, cpuID string) {
 		for _, p := range algoritmos.ColaBloqueado.Values() {
 			if p.PID == pid {
 				algoritmos.ColaBloqueado.Remove(p)
-				logger.Info("## (<%d>) Pasa de estado BLOCKED a estado EXIT", p.PID)
+				logger.Info("## (<%d>) Pasa del estado BLOCKED al estado EXIT", p.PID)
 				proceso = p
 				break
 			}
@@ -236,7 +236,7 @@ func finalizarProceso(pid int, pc int, cpuID string) {
 		for _, p := range algoritmos.ColaBloqueadoSuspendido.Values() {
 			if p.PID == pid {
 				algoritmos.ColaBloqueadoSuspendido.Remove(p)
-				logger.Info("## (<%d>) Pasa de estado SUSP.BLOCKED a estado EXIT", p.PID)
+				logger.Info("## (<%d>) Pasa del estado SUSP.BLOCKED al estado EXIT", p.PID)
 				proceso = p
 				break
 			}
@@ -262,7 +262,7 @@ func finalizarProceso(pid int, pc int, cpuID string) {
 	}
 
 	// 7. Log y métricas
-	logger.Info("## (<%d>) Finaliza proceso", proceso.PID)
+	logger.Info("## (<%d>) - Finaliza el proceso", proceso.PID)
 	logger.Info(proceso.ImprimirMetricas())
 
 	// 8. Señal para liberar memoria

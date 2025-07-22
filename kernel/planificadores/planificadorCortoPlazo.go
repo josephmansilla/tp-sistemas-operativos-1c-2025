@@ -24,6 +24,8 @@ func DespacharProceso() {
 		<-Utils.NotificarDespachador
 		//logger.Debug("Arranca Despachador")
 
+		algoritmos.MostrarColaReady()
+
 		var proceso *pcb.PCB
 
 		switch globals.KConfig.SchedulerAlgorithm {
@@ -120,13 +122,6 @@ func DesalojarProceso() {
 		liberarCPU(cpuID)
 
 		//ENVIAR A READY
-		/*
-			Utils.MutexBloqueado.Lock()
-			pcb.CambiarEstado(proceso, pcb.EstadoReady)
-			algoritmos.ColaReady.Add(proceso)
-			logger.Info("## (<%d>) Pasa del estado EXECUTE al estado READY", proceso.PID)
-			Utils.MutexBloqueado.Unlock()
-		*/
 		agregarProcesoAReady(proceso)
 
 		//AVISAR QUE UN PROCESO LLEGA A READY

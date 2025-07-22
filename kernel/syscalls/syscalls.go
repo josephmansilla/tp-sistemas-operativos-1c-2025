@@ -89,7 +89,7 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 
 	estimado := globals.KConfig.InitialEstimate
 
-	logger.Info("## (<%d>) - Solicitó syscall: <INIT_PROC>", pid)
+	logger.Info("## (<%d>) - Solicitó syscall: <INIT_PROC>", msg.PID)
 	//logger.Info("Se ha recibido: Filename: %s Tamaño Memoria: %d", fileName, tamanio)
 
 	// 3) Despachar la creación en segundo plano
@@ -115,11 +115,11 @@ func InitProcess(w http.ResponseWriter, r *http.Request) {
 			algoritmos.ColaNuevo.Add(&pcbNuevo)
 			pcb.CambiarEstado(&pcbNuevo, pcb.EstadoNew)
 			Utils.MutexNuevo.Unlock()
-			logger.Info("PCB <%d> añadido a NEW (FIFO)", pid)
+			//logger.Debug("## <%d> añadido a NEW (FIFO)", pid)
 		case "PMCP":
 			algoritmos.AddPMCPNew(&pcbNuevo)
 			pcb.CambiarEstado(&pcbNuevo, pcb.EstadoNew)
-			logger.Info("PCB <%d> añadido a NEW (PMCP)", pid)
+			//logger.Debug("## <%d> añadido a NEW (PMCP)", pid)
 		default:
 			logger.Error("Algoritmo de ingreso desconocido")
 			return
@@ -204,7 +204,7 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	pc := mensajeRecibido.PC
 	tipoIO := mensajeRecibido.Nombre
 
-	logger.Info("Syscall recibida: “## (<%d>) - Solicitó syscall: <IO>”", pid)
+	logger.Info("## (<%d>) - Solicitó syscall: <IO>”", pid)
 	logger.Info("Nombre IO: %s Duracion: %d", tipoIO, mensajeRecibido.Duracion)
 
 	//SIGNAL A Planif. CORTO PLAZO QUE LLEGO I/O

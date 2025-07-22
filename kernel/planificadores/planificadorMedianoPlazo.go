@@ -215,16 +215,17 @@ func AtenderSuspBlockedAFinIO() {
 					pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
 					algoritmos.ColaSuspendidoReady.Add(proc)
 					Utils.MutexSuspendidoReady.Unlock()
-					logger.Info("PID <%d> pasa de SUSP.BLOCKED a SUSP.READY (FIFO)", pid)
+					//logger.Info("PID <%d> pasa del estado SUSP.BLOCKED al estado SUSP.READY (FIFO)", pid)
 				case "PMCP":
 					pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
 					algoritmos.AddPMCPSusp(proc)
-					logger.Info("PID <%d> pasa de SUSP.BLOCKED a SUSP.READY (PMCP)", pid)
+					//logger.Info("PID <%d> pasa de SUSP.BLOCKED a SUSP.READY (PMCP)", pid)
 				default:
 					logger.Error("Algoritmo de ingreso desconocido")
 					return
 				}
 
+				logger.Info("PID <%d> pasa del estado SUSP.BLOCKED al estado SUSP.READY", pid)
 				// Notificar al planificador de largo plazo
 				Utils.InitProcess <- struct{}{}
 			} else {

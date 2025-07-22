@@ -120,11 +120,11 @@ func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 
 	//  Si es desconexión
 	if mensajeRecibido.Desconexion {
-		logger.Info("Desconexión de IO: Puerto %d, PID %d", evt.Puerto, evt.PID)
+		logger.Info("Desconexión de IO: %s - Puerto %d - PID %d", evt.Nombre, evt.Puerto, evt.PID)
 		Utils.NotificarDesconexion <- evt
 	} else {
 		//Fin de IO normal
-		logger.Info("FIN de IO: PID %d", evt.PID)
+		logger.Info("FIN de IO: %s - PID %d", evt.Nombre, evt.PID)
 		globals.IOMu.Lock()
 		for i := range globals.IOs[evt.Nombre] {
 			if evt.Puerto == globals.IOs[evt.Nombre][i].Puerto {
