@@ -39,6 +39,8 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	g.CalcularEjecutarSleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond)
+
 	logger.Info("## PID: <%d> - Obtener instrucción: <%d> - Instrucción: <%s>", mensaje.PID, mensaje.PC, respuesta.Instruccion)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
