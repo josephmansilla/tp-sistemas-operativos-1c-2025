@@ -127,8 +127,6 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	g.MutexOperacionMemoria.Lock()
 	defer g.MutexOperacionMemoria.Unlock()
 
-	inicio := time.Now()
-	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond
 	ignore := 0
 	var mensaje g.ConsultaProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
@@ -163,9 +161,8 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		adm.IncrementarMetrica(proceso, 1, adm.IncrementarBajadasSwap)
 		proceso.EstaEnSwap = true
 
-		tiempoTranscurrido := time.Now().Sub(inicio)
-		g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
-
+		g.CalcularEjecutarSleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond)
+		logger.Info("## Suspensión del PID <%d> éxitosa", mensaje.PID)
 	}
 
 	if errEncode := json.NewEncoder(w).Encode(respuesta); errEncode != nil {
@@ -179,8 +176,6 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	g.MutexOperacionMemoria.Lock()
 	defer g.MutexOperacionMemoria.Unlock()
 
-	inicio := time.Now()
-	retrasoSwap := time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond
 	ignore := 0
 	var mensaje g.ConsultaProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
@@ -221,8 +216,9 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		adm.IncrementarMetrica(proceso, 1, adm.IncrementarSubidasMP)
 		proceso.EstaEnSwap = false
 
-		tiempoTranscurrido := time.Now().Sub(inicio)
-		g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
+		g.CalcularEjecutarSleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond)
+
+		logger.Info("## Desuspensión del PID <%d> éxitosa", mensaje.PID)
 
 	}
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {

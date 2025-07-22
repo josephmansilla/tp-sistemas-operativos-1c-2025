@@ -86,9 +86,6 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	g.MutexOperacionMemoria.Lock()
 	defer g.MutexOperacionMemoria.Unlock()
 
-	inicio := time.Now()
-	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
-
 	var mensaje g.LecturaProceso
 	err := data.LeerJson(w, r, &mensaje)
 	if err != nil {
@@ -108,10 +105,9 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
 
-	tiempoTranscurrido := time.Now().Sub(inicio)
-	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
+	g.CalcularEjecutarSleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond)
 
-	logger.Info("## Lectura en espacio de memoria Éxitosa")
+	logger.Info("## Lectura en espacio del PID <%d> de memoria éxitosa", mensaje.PID)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar la lectura de pagina: %v", err)
@@ -123,9 +119,6 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	g.MutexOperacionMemoria.Lock()
 	defer g.MutexOperacionMemoria.Unlock()
-
-	inicio := time.Now()
-	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
 
 	var mensaje g.EscrituraProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
@@ -147,10 +140,9 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("## PID: <%d> - <Escritura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
 
-	tiempoTranscurrido := time.Now().Sub(inicio)
-	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
+	g.CalcularEjecutarSleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond)
 
-	logger.Info("## Escritura en espacio de memoria Éxitosa")
+	logger.Info("## Escritura en espacio del PID <%d> de memoria éxitosa", mensaje.PID)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
 		logger.Error("Error al serializar la escritura de la pagina: %v", err)

@@ -6,11 +6,8 @@ import (
 	"time"
 )
 
-func CalcularEjecutarSleep(tiempoTranscurrido time.Duration, retraso time.Duration) {
-	tiempoRestante := retraso - tiempoTranscurrido
-	if tiempoRestante < retraso {
-		time.Sleep(tiempoRestante)
-	}
+func CalcularEjecutarSleep(tiempo time.Duration) {
+	time.Sleep(tiempo)
 }
 
 func CalcularCantidadEntradas(tamanio int) (resultado int, err error) {
