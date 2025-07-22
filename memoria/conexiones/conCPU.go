@@ -75,6 +75,8 @@ func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
 		NumeroMarco: marco,
 	}
 
+	g.CalcularEjecutarSleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond)
+
 	logger.Info("## Número Frame enviado: <%d>", marco)
 
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
