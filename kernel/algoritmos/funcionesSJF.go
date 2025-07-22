@@ -26,6 +26,6 @@ func SeleccionarSJF() *pcb.PCB {
 			masChico = p
 		}
 	}
-	logger.Info("Seleccionado SJF: <%d>", masChico.PID)
+	logger.Info("Seleccionado SJF: <%d> | Rafaga: %.0f", masChico.PID, masChico.EstimadoRafaga)
 	return masChico
 }
