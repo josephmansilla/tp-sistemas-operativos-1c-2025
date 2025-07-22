@@ -29,7 +29,7 @@ func Desalojo(procesoEntrante *pcb.PCB) {
 
 	for _, p := range ColaEjecutando.Values() {
 		duracion := time.Since(p.TiempoEstado)
-		tiempoEjecutado := float64(duracion.Microseconds())
+		tiempoEjecutado := float64(duracion.Milliseconds())
 		tiempoRestante := p.EstimadoRafaga - tiempoEjecutado
 
 		// Queremos interrumpir al que tenga MAYOR tiempo restante

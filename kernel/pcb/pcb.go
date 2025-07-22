@@ -33,7 +33,9 @@ type PCB struct {
 }
 
 //Ej ME: "ready": 3 → el proceso estuvo 3 veces en el estado listo.
-//Ej MT: "execute": 12 → el proceso estuvo 12 unidades de tiempo en ejecución.
+//Ej MT: "execute": 12000 → el proceso estuvo 12000 ms de tiempo en ejecución.
+// MT → tiempo acumulado en MILISEGUNDOS por cada estado
+// EstimadoRafaga → también en MILISEGUNDOS
 
 // Saber si son nulos
 func (a *PCB) Null() *PCB {
@@ -75,7 +77,7 @@ func CambiarEstado(p *PCB, nuevoEstado string) {
 
 	if estadoAnterior == EstadoExecute {
 		duracion := time.Since(p.TiempoEstado)
-		rafagaReal := float64(duracion.Microseconds())
+		rafagaReal := float64(duracion.Milliseconds())
 		//Actualizar rafaga real de CPU si viene de Execute
 		ActualizarEstimacionRafaga(p, rafagaReal)
 	}
@@ -90,7 +92,7 @@ func CambiarEstado(p *PCB, nuevoEstado string) {
 // Calcula antes de irse el tiempo que estuvo en ese estado
 func FinalizarEstado(p *PCB, estadoAnterior string) {
 	duracion := time.Since(p.TiempoEstado) //p.TiempoEnEstado()
-	ms := float64(duracion.Microseconds())
+	ms := float64(duracion.Milliseconds())
 	p.MT[estadoAnterior] += ms
 }
 

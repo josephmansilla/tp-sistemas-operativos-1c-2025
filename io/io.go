@@ -24,7 +24,7 @@ type MensajeAKernel struct {
 
 type MensajeDeKernel struct {
 	PID      int `json:"pid"`
-	Duracion int `json:"duracion"` // en segundos
+	Duracion int `json:"duracion"` // en milisegundos
 }
 
 type MensajeFin struct {
