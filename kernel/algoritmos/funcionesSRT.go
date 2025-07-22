@@ -42,7 +42,8 @@ func Desalojo(procesoEntrante *pcb.PCB) {
 
 	//COMPARAR TIEMPO RESTANTE CON LA RAFAGA ENTRANTE
 	if procesoAInterrumpir != nil && tiempoEntrante < mayorTiempoRestante {
-		logger.Info("SRT: Proceso <%d> interrumpe a <%d> en CPU <%s> (%.2f < %.2f)",
+		logger.Info("## (<%d>) - Desalojado por algoritmo SJF/SRT", procesoEntrante.PID)
+		logger.Debug("SRT: Proceso <%d> interrumpe a <%d> en CPU <%s> (%.2f < %.2f)",
 			procesoEntrante.PID, procesoAInterrumpir.PID, cpuAInterrumpir, tiempoEntrante, mayorTiempoRestante)
 		comunicacion.AvisarDesalojoCPU(cpuAInterrumpir, procesoAInterrumpir)
 	} else {
