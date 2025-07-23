@@ -68,11 +68,11 @@ func EnviarContextoCPU(id string, pcb *pcb.PCB) {
 		PID: pcb.PID,
 		PC:  pcb.PC,
 	}
-	logger.Info("Enviando PID <%d> y PC <%d> a CPU", mensaje.PID, mensaje.PC)
+	//logger.Info("Enviando PID <%d> y PC <%d> a CPU", mensaje.PID, mensaje.PC)
 
 	err := data.EnviarDatos(url, mensaje)
 	if err != nil {
-		logger.Info("Error enviando PID y PC a CPU: %s", err.Error())
+		logger.Error("Error enviando PID y PC a CPU: %s", err.Error())
 		return
 	}
 }
@@ -91,7 +91,7 @@ func AvisarDesalojoCPU(id string, pcb *pcb.PCB) {
 	mensaje := MensajeACPU{
 		PID: pcb.PID,
 	}
-	logger.Info("Enviando INTERRUPCION PID <%d> y PC <%d> a CPU", mensaje.PID, mensaje.PC)
+	//logger.Info("Enviando INTERRUPCION PID <%d> y PC <%d> a CPU", mensaje.PID, mensaje.PC)
 
 	err := data.EnviarDatos(url, mensaje)
 	if err != nil {

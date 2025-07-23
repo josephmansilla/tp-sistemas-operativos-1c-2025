@@ -28,7 +28,7 @@ func Desalojar(procesoEntrante *pcb.PCB) (cpuID string, desalojado *pcb.PCB) {
 		//si el nuevo tiene menor
 		tiempoEjecutado := float64(time.Since(p.TiempoEstado).Milliseconds())
 		tiempoRestante := p.EstimadoRafaga - tiempoEjecutado
-		logger.Debug("SRT: PID <%d> - Ejecutado: %.0f ms - Restante: %.0f ms", p.PID, tiempoEjecutado, tiempoRestante)
+		//logger.Debug("SRT: PID <%d> - Ejecutado: %.0f ms - Restante: %.0f ms", p.PID, tiempoEjecutado, tiempoRestante)
 
 		if tiempoRestante > mayorTiempoRestante {
 			mayorTiempoRestante = tiempoRestante
@@ -38,8 +38,8 @@ func Desalojar(procesoEntrante *pcb.PCB) (cpuID string, desalojado *pcb.PCB) {
 	}
 
 	if procesoAInterrumpir == nil || tiempoEntrante >= mayorTiempoRestante {
-		logger.Debug("SRT: Proceso <%d> NO tiene menor tiempo restante que los procesos ejecutando (%.0f > %.0f)",
-			procesoEntrante.PID, tiempoEntrante, mayorTiempoRestante)
+		//logger.Debug("SRT: Proceso <%d> NO tiene menor tiempo restante que los procesos ejecutando (%.0f > %.0f)",
+		//	procesoEntrante.PID, tiempoEntrante, mayorTiempoRestante)
 		return "", nil
 	}
 
