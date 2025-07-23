@@ -2,7 +2,6 @@ package administracion
 
 import (
 	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
-	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"io"
 	"os"
 )
@@ -44,12 +43,6 @@ func DesocuparProcesoDeSwap(pid int) error {
 // ========== LIBERO ESPACIO EN SWAP ==========
 
 func BorrarSeccionSwap(archivo *os.File, posicionInicial int64, tamanio int) error {
-	defer func(archivo *os.File) {
-		err := archivo.Close()
-		if err != nil {
-			logger.Error("Archivo SWAP cerrado...")
-		}
-	}(archivo)
 
 	_, errSeek := archivo.Seek(posicionInicial, io.SeekStart)
 	if errSeek != nil {
