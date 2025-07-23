@@ -19,13 +19,17 @@ func LiberarProceso(pid int) (g.MetricasProceso, error) {
 		}
 	}
 
-	_, errDesocupacion := DesocuparProcesoDeEstructurasGlobales(pid)
-	if errDesocupacion != nil {
-		return metricas, errDesocupacion
+	if !proceso.EstaEnSwap {
+		_, errDesocupacion := DesocuparProcesoDeEstructurasGlobales(pid)
+		if errDesocupacion != nil {
+			return metricas, errDesocupacion
+		}
 	}
-	errSwap := DesocuparProcesoDeSwap(pid)
-	if errSwap != nil {
-		return g.MetricasProceso{}, errSwap
+	if proceso.EstaEnSwap {
+		errSwap := DesocuparProcesoDeSwap(pid)
+		if errSwap != nil {
+			return g.MetricasProceso{}, errSwap
+		}
 	}
 
 	return metricas, nil
