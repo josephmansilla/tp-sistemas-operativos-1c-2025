@@ -68,23 +68,23 @@ func BuscarEntradaPagina(proceso *g.Proceso, indicesParaTabla []int) (entradaDes
 		tablaApuntada = tablaApuntada.Subtabla[indicesParaTabla[i]]
 		if tablaApuntada == nil {
 			logger.Error("La subtabla no existe en el índice <%d>", indicesParaTabla[i])
-			return nil, fmt.Errorf("la subtabla no existe en índice %d", indicesParaTabla[i])
+			return nil, logger.ErrNoInstance
 		}
 	}
 
 	if tablaApuntada.EntradasPaginas == nil {
 		logger.Error("Las EntradasPaginas era nil para el índice <%v> para el PID <%d>", indicesParaTabla, proceso.PID)
-		return nil, fmt.Errorf("la entrada nunca fue inicializada")
+		return nil, logger.ErrNoInstance
 	}
 
 	entradaDeseada = tablaApuntada.EntradasPaginas[indicesParaTabla[len(indicesParaTabla)-1]]
 	if entradaDeseada == nil {
 		logger.Error("La entrada buscada no existe del PID <%d>", proceso.PID)
-		return nil, fmt.Errorf("la entrada buscada no existe")
+		return nil, logger.ErrNoInstance
 	}
 
 	if entradaDeseada.EstaPresente == false {
-		// 		logger.Error("## No se encuentra presente en memoria el frame del PID <%d>", proceso.PID)
+		//logger.Info("Se pasa a presente entrada <%d> de PID <%d>", entradaDeseada, proceso.PID)
 		return entradaDeseada, nil
 	}
 

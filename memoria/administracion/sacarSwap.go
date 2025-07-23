@@ -44,12 +44,25 @@ func CargarEntradasDesdeSwap(pid int) (entradas map[int]g.EntradaSwap, err error
 		if errSeek != nil {
 			return nil, errSeek
 		}
-		datos := make([]byte, 0)
+
+		datos := make([]byte, entrada.Tamanio)
+
+		_, errRead := file.Read(datos)
+		if errRead != nil {
+			return nil, errRead
+		}
+
 		enviarEntrada := g.EntradaSwap{
 			NumeroPagina: info.NumerosDePaginas[i],
 			Datos:        datos,
 		}
 		entradas[i] = enviarEntrada // i era : info.NumerosDePaginas[i]
+
+		errBorrar := BorrarSeccionSwap(file, int64(entrada.PosicionInicio), entrada.Tamanio)
+		if errBorrar != nil {
+			logger.Error("No se pudo limpiar la sección de swap: %v", err)
+		}
+
 	}
 	return entradas, nil
 }
@@ -108,6 +121,7 @@ func ActualizarEntradaPaginaEnTabla(pid int, numeroPagina int, frameLibre int) e
 
 	entrada, err := BuscarEntradaPagina(proceso, indice)
 	if err != nil {
+		logger.Error("EntradaPagina de PID <%d> Error: %v", pid, err)
 		return err
 	}
 	entrada.NumeroFrame = frameLibre

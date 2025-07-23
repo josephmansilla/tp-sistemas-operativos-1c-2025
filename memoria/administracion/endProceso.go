@@ -20,11 +20,14 @@ func LiberarProceso(pid int) (g.MetricasProceso, error) {
 		}
 	}
 
-	proceso, errDesocupacion := DesocuparProcesoDeEstructurasGlobales(pid)
+	_, errDesocupacion := DesocuparProcesoDeEstructurasGlobales(pid)
 	if errDesocupacion != nil {
 		return metricas, errDesocupacion
 	}
-	// DesocuparProcesoDeSwap(proceso)
+	errSwap := DesocuparProcesoDeSwap(pid)
+	if errSwap != nil {
+		return g.MetricasProceso{}, errSwap
+	}
 
 	return metricas, nil
 }
@@ -35,17 +38,15 @@ func DesocuparProcesoDeEstructurasGlobales(pid int) (proceso *g.Proceso, err err
 	err = nil
 	g.MutexProcesosPorPID.Lock()
 	proceso = g.ProcesosPorPID[pid]
+	proceso.InstruccionesEnBytes = nil
+	proceso.Metricas = g.MetricasProceso{}
 	delete(g.ProcesosPorPID, pid)
 	g.MutexProcesosPorPID.Unlock()
 
 	if proceso == nil {
-		logger.Error("El proceso no está en el Slice de procesos mapeado por PID")
-		return proceso, fmt.Errorf("no hay una instancia de pid \"%d\" en el slice de procesos por PID %v", pid, logger.ErrNoInstance)
+		logger.Debug("El proceso de PID <%d> no estaba presente en el vector para desocuparla", pid)
+		return proceso, fmt.Errorf("no hay una instancia de pid <%d> en el slice de procesos por PID %v", pid, logger.ErrNoInstance)
 	}
-
-	g.MutexSwapIndex.Lock()
-	delete(g.SwapIndex, pid)
-	g.MutexSwapIndex.Unlock()
 
 	delete(g.MutexMetrica, pid)
 
