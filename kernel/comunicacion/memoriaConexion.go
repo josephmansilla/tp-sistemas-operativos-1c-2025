@@ -150,27 +150,23 @@ func SolicitarSuspensionEnMemoria(pid int) error {
 }
 
 func DesuspensionMemoria(pid int) error {
-	url := fmt.Sprintf("http://%s:%d/memoria/desuspension",
-		globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
+	url := fmt.Sprintf("http://%s:%d/memoria/desuspension", globals.KConfig.MemoryAddress, globals.KConfig.MemoryPort)
 
-	req := PedidoKernel{PID: pid}
-	body, _ := json.Marshal(req)
-
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		logger.Error("Error enviando suspensión a Memoria: %v", err)
-		return err
+	mensaje := PedidoKernel{
+		PID: pid,
 	}
-	defer resp.Body.Close()
 
 	var r RespuestaMemoriaSWAP
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		logger.Error("Error decodificando respuesta de Memoria: %v", err)
+	err := data.EnviarDatosYRecibirRespuesta(url, mensaje, &r)
+	if err != nil {
+		logger.Error("Error enviando DESUSPENSION a Memoria: %s", err.Error())
 		return err
 	}
+
 	if !r.Exito {
-		logger.Warn("Memoria rechazó suspensión PID=%d: %s", pid, r.Mensaje)
+		logger.Warn("Memoria rechazó desuspensión PID=%d: %s", pid, r.Mensaje)
 		return fmt.Errorf("memoria: %s", r.Mensaje)
 	}
+
 	return nil
 }

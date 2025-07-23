@@ -6,9 +6,9 @@
     "ip_kernel": "127.0.0.1",
     "port_kernel": 8081,
     "tlb_entries": 4,
-    "tlb_replacement": "FIFO",
+    "tlb_replacement": "LRU",
     "cache_entries": 2,
-    "cache_delay": 50,
+    "cache_delay": 250,
     "cache_replacement": "CLOCK",
     "log_level": "INFO"
 }

@@ -3,7 +3,6 @@ package algoritmos
 import (
 	"github.com/sisoputnfrba/tp-golang/kernel/Utils"
 	"github.com/sisoputnfrba/tp-golang/kernel/pcb"
-	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
 // definido por archivo de configuración:
@@ -18,14 +17,22 @@ func SeleccionarSJF() *pcb.PCB {
 		return nil
 	}
 
-	logger.Info("[DEBUG] Cola READY tiene %d procesos\n", len(ColaReady.elements))
+	//logger.Info("[DEBUG] Cola READY tiene %d procesos\n", len(ColaReady.elements))
 	masChico := ColaReady.elements[0] //Tomo el primero y empiezo a comparar rafagas
 	for _, p := range ColaReady.elements {
-		logger.Info("<%d> %.0f |VS| <%d> %.0f", masChico.PID, masChico.EstimadoRafaga, p.PID, p.EstimadoRafaga)
+		//logger.Info("<%d> %.0f |VS| <%d> %.0f", masChico.PID, masChico.EstimadoRafaga, p.PID, p.EstimadoRafaga)
 		if p.EstimadoRafaga < masChico.EstimadoRafaga {
 			masChico = p
 		}
 	}
-	logger.Info("Seleccionado SJF: <%d> | Rafaga: %.0f", masChico.PID, masChico.EstimadoRafaga)
+	//logger.Info("Seleccionado SJF: <%d> | Rafaga: %.0f", masChico.PID, masChico.EstimadoRafaga)
 	return masChico
 }
+
+/*
+SJF con Desalojo
+Funciona igual que el anterior con la variante que,
+al ingresar un proceso en la cola de Ready y no haber CPUs libres,
+se debe evaluar si dicho proceso tiene una rafaga
+más corta que los que se encuentran en ejecución.
+*/

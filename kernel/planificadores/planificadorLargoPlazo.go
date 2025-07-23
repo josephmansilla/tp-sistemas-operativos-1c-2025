@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+//NO TIENE LOS DATOS PORQUE ESTA EN SWAP
+//EL PROCESO SALE DE IO. INTERACTUA CON MEMORIA PERO EL PROCESO SIGUE EN SWAP.
+
+//FIN IO -> SUSP. READY
+
 // CREA PRIMER PROCESO (NEW)
 func CrearPrimerProceso(fileName string, tamanio int) {
 	// Paso 1: Crear el PCB
