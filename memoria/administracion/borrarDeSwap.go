@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+// ========== DESOCUPO ESTRUCTURAS SWAP ==========
+
 func DesocuparProcesoDeSwap(pid int) error {
 
 	archivo, errAbrir := os.OpenFile(g.MemoryConfig.SwapfilePath, os.O_WRONLY, 0666)
@@ -38,6 +40,8 @@ func DesocuparProcesoDeSwap(pid int) error {
 
 	return nil
 }
+
+// ========== LIBERO ESPACIO EN SWAP ==========
 
 func BorrarSeccionSwap(archivo *os.File, posicionInicial int64, tamanio int) error {
 	defer func(archivo *os.File) {

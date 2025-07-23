@@ -1,7 +1,6 @@
 package administracion
 
 import (
-	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
@@ -45,7 +44,7 @@ func DesocuparProcesoDeEstructurasGlobales(pid int) (proceso *g.Proceso, err err
 
 	if proceso == nil {
 		logger.Debug("El proceso de PID <%d> no estaba presente en el vector para desocuparla", pid)
-		return proceso, fmt.Errorf("no hay una instancia de pid <%d> en el slice de procesos por PID %v", pid, logger.ErrNoInstance)
+		return proceso, logger.ErrNoInstance
 	}
 
 	delete(g.MutexMetrica, pid)
@@ -94,7 +93,7 @@ func RemoverEspacioMemoria(inicio int, limite int) (err error) {
 	espacioVacio := make([]byte, limite-inicio)
 	if inicio < 0 || limite > len(g.MemoriaPrincipal) {
 		logger.Error("El inicio es menor a cero o el limite excede el tamaño de la memoria principal")
-		return fmt.Errorf("el formato de las direcciones a borrar son incorrectas %v", logger.ErrBadRequest)
+		return logger.ErrBadRequest
 	}
 
 	g.MutexMemoriaPrincipal.Lock()
@@ -103,5 +102,3 @@ func RemoverEspacioMemoria(inicio int, limite int) (err error) {
 
 	return nil
 }
-
-// // ========== LIBERO ESPACIO EN SWAP ==========

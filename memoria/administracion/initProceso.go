@@ -2,7 +2,6 @@ package administracion
 
 import (
 	"bufio"
-	"fmt"
 	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"os"
@@ -14,7 +13,7 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 
 	if !TieneTamanioNecesario(tamanioProceso) {
 		logger.Error("No hay memoria suficiente para proceso PID <%d>", pid)
-		return fmt.Errorf("no hay memoria disponible para el proceso: %v", logger.ErrNoMemory)
+		return logger.ErrNoMemory
 	}
 
 	g.MutexProcesosPorPID.Lock()
@@ -44,7 +43,8 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 
 	err = LecturaPseudocodigo(nuevoProceso, nombreArchPseudocodigo)
 	if err != nil {
-		return fmt.Errorf("error al leer pseudocódigo: %v", logger.ErrBadRequest)
+		logger.Error("error al leer pseudocódigo <%d> de error %v", nombreArchPseudocodigo, err)
+		return logger.ErrBadRequest
 	}
 
 	err = AsignarPaginasParaPID(nuevoProceso, tamanioProceso)
@@ -75,7 +75,8 @@ func TieneTamanioNecesario(tamanioProceso int) (resultado bool) {
 
 func LecturaPseudocodigo(proceso *g.Proceso, direccionPseudocodigo string) error {
 	if direccionPseudocodigo == "" {
-		return fmt.Errorf("el string es vacio")
+		logger.Error("El nombre de pseudocodigo dado es vacío")
+		return logger.ErrNoInstance
 	}
 	ruta := "./scripts/" + direccionPseudocodigo
 	file, err := os.Open(ruta)
