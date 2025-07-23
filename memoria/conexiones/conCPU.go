@@ -27,8 +27,14 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 	g.MutexProcesosPorPID.Unlock()
 
 	if !ok || proceso == nil {
-		logger.Error("Proceso con PID %d no existe o es nil", mensaje.PID)
+		logger.Error("Proceso con PID <%d> no existe o es nulo", mensaje.PID)
 		http.Error(w, "Proceso no encontrado", http.StatusNotFound)
+		return
+	}
+
+	if proceso.InstruccionesEnBytes == nil {
+		logger.Error("Instrucciones del proceso con PID <%d> es nulo (proceso seguro está en SWAP)", mensaje.PID)
+		http.Error(w, "Instrucciones no encontradas", http.StatusNotFound)
 		return
 	}
 

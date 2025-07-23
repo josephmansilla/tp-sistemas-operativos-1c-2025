@@ -76,9 +76,16 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 	}
 
 	var info = &g.SwapProcesoInfo{
-		Entradas:         make(map[int]*g.EntradaSwapInfo),
-		NumerosDePaginas: make([]int, 0),
+		Entradas:             make(map[int]*g.EntradaSwapInfo),
+		NumerosDePaginas:     make([]int, 0),
+		InstruccionesEnBytes: make(map[int][]byte),
 	}
+
+	g.MutexProcesosPorPID.Lock()
+	info.InstruccionesEnBytes = g.ProcesosPorPID[pid].InstruccionesEnBytes
+	g.ProcesosPorPID[pid].InstruccionesEnBytes = nil
+	g.MutexProcesosPorPID.Unlock()
+
 	posicionPunteroArchivo := g.PunteroSwap
 
 	for i := 0; i < len(entradas); i++ {

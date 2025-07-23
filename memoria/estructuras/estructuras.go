@@ -58,8 +58,9 @@ type OperacionMetrica func(*MetricasProceso, int)
 // ================== SWAP ==================
 
 type SwapProcesoInfo struct {
-	Entradas         map[int]*EntradaSwapInfo `json:"entradas"`
-	NumerosDePaginas []int                    `json:"numeros_de_paginas"`
+	Entradas             map[int]*EntradaSwapInfo `json:"entradas"`
+	InstruccionesEnBytes map[int][]byte           `json:"instrucciones_en_bytes"`
+	NumerosDePaginas     []int                    `json:"numeros_de_paginas"`
 }
 type EntradaSwapInfo struct {
 	NumeroPagina   int `json:"numero_pagina"`

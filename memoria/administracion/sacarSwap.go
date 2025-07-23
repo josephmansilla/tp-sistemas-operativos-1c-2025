@@ -18,6 +18,11 @@ func CargarEntradasDesdeSwap(pid int) (entradas map[int]g.EntradaSwap, err error
 	}
 	g.MutexSwapIndex.Unlock()
 
+	g.MutexProcesosPorPID.Lock()
+	g.ProcesosPorPID[pid].InstruccionesEnBytes = info.InstruccionesEnBytes
+	info.InstruccionesEnBytes = nil
+	g.MutexProcesosPorPID.Unlock()
+
 	file, err := os.Open(g.MemoryConfig.SwapfilePath)
 	if err != nil {
 		return nil, err
@@ -90,6 +95,11 @@ func ResignarPaginasParaPID(pid int, numeroPagina int) (int, error) {
 }
 
 func ActualizarEntradaPaginaEnTabla(pid int, numeroPagina int, frameLibre int) error {
+
+	g.MutexSwapIndex.Lock()
+	delete(g.SwapIndex, pid)
+	g.MutexSwapIndex.Unlock()
+
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()

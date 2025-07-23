@@ -7,9 +7,9 @@ import (
 
 func EscribirEspacioEntrada(pid int, direccionFisica int, datosEscritura []byte) g.RespuestaEscritura {
 
-	if len(datosEscritura) == 0 {
+	/*if len(datosEscritura) == 0 {
 		logger.Debug("Los datos a escribir son vacios: %v", logger.ErrIsEmpty)
-	}
+	}*/
 
 	errEscritura := ModificarMemoria(direccionFisica, datosEscritura)
 	if errEscritura != nil {

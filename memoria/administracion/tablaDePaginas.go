@@ -73,18 +73,18 @@ func BuscarEntradaPagina(proceso *g.Proceso, indicesParaTabla []int) (entradaDes
 	}
 
 	if tablaApuntada.EntradasPaginas == nil {
-		logger.Error("Las EntradasPaginas era nil para el índice <%v>", indicesParaTabla)
+		logger.Error("Las EntradasPaginas era nil para el índice <%v> para el PID <%d>", indicesParaTabla, proceso.PID)
 		return nil, fmt.Errorf("la entrada nunca fue inicializada")
 	}
 
 	entradaDeseada = tablaApuntada.EntradasPaginas[indicesParaTabla[len(indicesParaTabla)-1]]
 	if entradaDeseada == nil {
-		logger.Error("La entrada buscada no existe")
+		logger.Error("La entrada buscada no existe del PID <%d>", proceso.PID)
 		return nil, fmt.Errorf("la entrada buscada no existe")
 	}
 
 	if entradaDeseada.EstaPresente == false {
-		logger.Error("## No se encuentra presente en memoria el frame")
+		// 		logger.Error("## No se encuentra presente en memoria el frame del PID <%d>", proceso.PID)
 		return entradaDeseada, nil
 	}
 
