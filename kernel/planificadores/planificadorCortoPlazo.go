@@ -24,7 +24,7 @@ func DespacharProceso() {
 		<-Utils.NotificarDespachador
 		//logger.Debug("Arranca Despachador")
 
-		algoritmos.MostrarColaReady()
+		//algoritmos.MostrarColaReady()
 
 		var proceso *pcb.PCB
 
@@ -60,7 +60,7 @@ func DespacharProceso() {
 			logger.Info("No hay CPU disponible para ejecutar el proceso <%d>", proceso.PID)
 
 			if globals.KConfig.SchedulerAlgorithm == "SRT" {
-				algoritmos.Desalojo(proceso)
+				Desalojo(proceso)
 			}
 			continue
 		}
@@ -280,4 +280,34 @@ func DesconexionIO() {
 			}
 		}
 	}
+}
+
+func Desalojo(procesoEntrante *pcb.PCB) {
+	/*
+		Se debe informar a la CPU que posea al Proceso con el tiempo restante
+		MAS ALTO que debe desalojar, para que pueda ser planificado el nuevo.
+	*/
+
+	//ALGORITMO SRT
+	cpuAInterrumpir, procesoAInterrumpir := algoritmos.Desalojar(procesoEntrante)
+
+	if cpuAInterrumpir == "" || procesoAInterrumpir == nil {
+		logger.Info("SRT: Proceso <%d> NO tiene menor tiempo restante que los procesos ejecutando", procesoEntrante.PID)
+		return
+	}
+
+	logger.Info("## (<%d>) - Desalojado por algoritmo SJF/SRT", procesoAInterrumpir.PID)
+	logger.Debug("SRT: Proceso <%d> interrumpe a <%d> en CPU <%s>", procesoEntrante.PID, procesoAInterrumpir.PID, cpuAInterrumpir)
+
+	//1. INTERRUMPIR CPU (Pero la mantengo ocupada)
+	comunicacion.AvisarDesalojoCPU(cpuAInterrumpir, procesoAInterrumpir)
+
+	//2.ENVIAR NUEVO PROCESO A CPU
+	comunicacion.EnviarContextoCPU(cpuAInterrumpir, procesoEntrante)
+
+	//3. Desalojar proceso y mover a READY
+	Utils.MutexEjecutando.Lock()
+	algoritmos.ColaEjecutando.Remove(procesoAInterrumpir)
+	Utils.MutexEjecutando.Unlock()
+	agregarProcesoAReady(procesoAInterrumpir) //SEMAFORO AL DESPACHADOR NUEVAMENTE
 }

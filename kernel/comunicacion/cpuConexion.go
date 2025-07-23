@@ -95,7 +95,7 @@ func AvisarDesalojoCPU(id string, pcb *pcb.PCB) {
 
 	err := data.EnviarDatos(url, mensaje)
 	if err != nil {
-		logger.Info("Error enviando INTERRUPCION a CPU: %s", err.Error())
+		logger.Error("Error enviando INTERRUPCION a CPU: %s", err.Error())
 		return
 	}
 }

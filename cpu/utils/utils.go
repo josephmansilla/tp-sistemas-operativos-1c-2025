@@ -118,8 +118,8 @@ func RecibirInterrupcion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Info("## Llega interrupción al puerto Interrupt")
-
+	logger.Info("## Llega interrupción al puerto Interrupt para PID <%d>", interrumpido.PID)
+	
 	globals.MutexInterrupcion.Lock()
 	globals.InterrupcionPendiente = true //aseguro la mutua exclusion
 	globals.PIDInterrumpido = interrumpido.PID
