@@ -13,21 +13,18 @@ import (
 )
 
 func main() {
-	// 1. Inicializar logger con nivel provisorio
+
 	err := logger.ConfigureLogger("memoria.log", "INFO")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "No se pudo inicializar el logger: %v\n", err)
 		os.Exit(1)
 	}
-
 	if len(os.Args) < 2 {
 		logger.Fatal("Falta parámetro: CONFIG")
 		os.Exit(1)
 	}
 	config := os.Args[1]
 	g.MemoryConfig = g.ConfigMemoria(config)
-
-	// 3. Ajustar el nivel de log según la config
 	if err := logger.SetLevel(g.MemoryConfig.LogLevel); err != nil {
 		logger.Error("No se pudo establecer el log-level '%s': %v", g.MemoryConfig.LogLevel, err)
 	}
@@ -46,6 +43,7 @@ func main() {
 		}
 	}()
 
+	logger.Debug("Swapfile: %v", g.MemoryConfig.SwapfilePath)
 	adm.InicializarMemoriaPrincipal()
 
 	mux := http.NewServeMux()
