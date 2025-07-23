@@ -36,7 +36,7 @@ func DesocuparProcesoDeSwap(pid int) error {
 
 	}
 
-	delete(g.SwapIndex, pid)
+	//delete(g.SwapIndex, pid)
 
 	return nil
 }
