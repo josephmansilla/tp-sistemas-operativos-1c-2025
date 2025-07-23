@@ -50,6 +50,7 @@ type MensajeDUMP struct {
 	Timestamp string `json:"timestamp"`
 }
 
+// RECIBIR RESPUESTA DE CPU
 func ContextoInterrumpido(w http.ResponseWriter, r *http.Request) {
 	// 1) Leer y parsear el JSON entrante
 	//se recibe el PID
@@ -64,10 +65,9 @@ func ContextoInterrumpido(w http.ResponseWriter, r *http.Request) {
 	//SIGNAL A Planif. CORTO PLAZO QUE SE INTERRUMPIO
 	go func(p int) {
 		Utils.ContextoInterrupcion <- Utils.InterruptProcess{
-			PID:    msg.PID,
-			PC:     msg.PC,
-			CpuID:  msg.ID,
-			Motivo: msg.Motivo,
+			PID:   msg.PID,
+			PC:    msg.PC,
+			CpuID: msg.ID,
 		}
 	}(msg.PID)
 

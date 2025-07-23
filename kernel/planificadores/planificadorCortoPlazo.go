@@ -12,9 +12,9 @@ import (
 func PlanificarCortoPlazo() {
 	logger.Info("Iniciando el Planificador de Corto Plazo")
 	go DespacharProceso()
-	go BloquearProceso()
-	go DesconexionIO()
-	go DesalojarProceso()
+	go BloquearProceso() //SYSCALL IO
+	go DesconexionIO()   //DESCONEXION IO
+	go InterrupcionCPU() //SYSCALL INTERRUPT
 }
 
 func DespacharProceso() {
@@ -96,15 +96,15 @@ func liberarCPU(cpuID string) {
 	Utils.NotificarDespachador <- 1
 }
 
-func DesalojarProceso() {
+func InterrupcionCPU() {
 	for {
-		//WAIT mensaje contexto interrupcion
+		//WAIT syscall de cpu: contexto de interrupcion
 		msg := <-Utils.ContextoInterrupcion
 		pid := msg.PID
 		pc := msg.PC
 		cpuID := msg.CpuID
 
-		//logger.Info("## (<%d>) Interrumpido de CPU <%s>", pid, cpuID)
+		logger.Info("## (<%d>) Interrumpido de CPU <%s>", pid, cpuID)
 
 		//BUSCAR en EXECUTE y actualizar PC proveniente de CPU
 		var proceso *pcb.PCB
@@ -119,13 +119,15 @@ func DesalojarProceso() {
 		}
 		Utils.MutexEjecutando.Unlock()
 
-		liberarCPU(cpuID)
+		//Mover a READY
+		agregarProcesoAReady(proceso) //SEMAFORO AL DESPACHADOR NUEVAMENTE
 
-		//ENVIAR A READY
-		agregarProcesoAReady(proceso)
-
-		//AVISAR QUE UN PROCESO LLEGA A READY
-		Utils.NotificarDespachador <- proceso.PID
+		//AVISAR PROCESO DESALOJADO
+		Utils.Desalojo <- Utils.InterruptProcess{
+			PID:   proceso.PID,
+			PC:    pc,
+			CpuID: cpuID,
+		}
 	}
 }
 
@@ -302,12 +304,19 @@ func Desalojo(procesoEntrante *pcb.PCB) {
 	//1. INTERRUMPIR CPU (Pero la mantengo ocupada)
 	comunicacion.AvisarDesalojoCPU(cpuAInterrumpir, procesoAInterrumpir)
 
-	//2.ENVIAR NUEVO PROCESO A CPU
-	comunicacion.EnviarContextoCPU(cpuAInterrumpir, procesoEntrante)
+	//WAIT CPU DESALOJA / INTERRUMPE
+	<-Utils.Desalojo
 
-	//3. Desalojar proceso y mover a READY
+	//2. AGREGAR PROCESO ENTRANTE A EXECUTE
 	Utils.MutexEjecutando.Lock()
-	algoritmos.ColaEjecutando.Remove(procesoAInterrumpir)
+	pcb.CambiarEstado(procesoEntrante, pcb.EstadoExecute)
+	algoritmos.ColaEjecutando.Add(procesoEntrante)
 	Utils.MutexEjecutando.Unlock()
-	agregarProcesoAReady(procesoAInterrumpir) //SEMAFORO AL DESPACHADOR NUEVAMENTE
+
+	Utils.MutexReady.Lock()
+	algoritmos.ColaReady.Remove(procesoEntrante)
+	Utils.MutexReady.Unlock()
+
+	//3.ENVIAR NUEVO PROCESO A CPU
+	comunicacion.EnviarContextoCPU(cpuAInterrumpir, procesoEntrante)
 }

@@ -22,14 +22,14 @@ var (
 	ChannelProcessArguments chan NewProcess
 	InitProcess             chan struct{}
 	LiberarMemoria          chan struct{}
-	SemProcessCreateOK      chan struct{}
 	ChannelFinishprocess    chan FinishProcess
 	ChannelProcessBlocked   chan BlockProcess
+	Desalojo                chan InterruptProcess
 
 	//AVISAR AL DESPACHADOR CUANDO UN PROCESO CAMBIA SU ESTADO
 	NotificarDespachador    chan int              //PASA A READY
 	NotificarComienzoIO     chan MensajeIOChannel //PASA A BLOQUEADO
-	NotificarIOLibre        chan IOEvent
+	NotificarIOLibre        chan IOEvent          //FIN DE IO
 	NotificarDesconexion    chan IOEvent          //Desconexion DE IO
 	ContextoInterrupcion    chan InterruptProcess //FIN DE EXECUTE
 	NotificarTimeoutBlocked chan int
@@ -52,9 +52,9 @@ func InicializarMutexes() {
 func InicializarCanales() {
 	ChannelProcessArguments = make(chan NewProcess, 20) // buffer para hasta 10 peticiones
 	ChannelFinishprocess = make(chan FinishProcess, 20)
-	InitProcess = make(chan struct{})           // sin buffer para sincronización exacta
-	SemProcessCreateOK = make(chan struct{}, 1) // semáforo de 1 slot
+	InitProcess = make(chan struct{}) // sin buffer para sincronización exacta
 	LiberarMemoria = make(chan struct{}, 1)
+	Desalojo = make(chan InterruptProcess)
 
 	NotificarDespachador = make(chan int, 20) // buffer 10 procesos listos
 	NotificarComienzoIO = make(chan MensajeIOChannel, 20)
@@ -81,10 +81,9 @@ type FinishProcess struct {
 	CpuID string
 }
 type InterruptProcess struct {
-	PID    int
-	PC     int
-	CpuID  string
-	Motivo string
+	PID   int
+	PC    int
+	CpuID string
 }
 type BlockProcess struct {
 	PID      int
