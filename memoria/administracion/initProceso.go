@@ -48,6 +48,10 @@ func InicializarProceso(pid int, tamanioProceso int, nombreArchPseudocodigo stri
 	}
 
 	err = AsignarPaginasParaPID(nuevoProceso, tamanioProceso)
+	if err != nil {
+		logger.Error("error al asignar espacio al pseudocódigo <%d> de error %v", nombreArchPseudocodigo, err)
+		return logger.ErrBadRequest
+	}
 
 	logger.Info("## Proceso del PID <%d> instanciado exitosamente", pid)
 	logger.Info("## Espacio de usuario del PID <%d> cargado exitosamente", pid)
@@ -178,15 +182,17 @@ func AsignarFrameLibre() (int, error) {
 	cantidadFramesTotales := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
 
 	g.MutexEstructuraFramesLibres.Lock()
-	defer g.MutexEstructuraFramesLibres.Unlock()
+
 	for numeroFrame := 0; numeroFrame < cantidadFramesTotales; numeroFrame++ {
 		booleano := g.FramesLibres[numeroFrame]
 
 		if booleano == true {
 			MarcarOcupadoFrame(numeroFrame)
+			g.MutexEstructuraFramesLibres.Unlock()
 			return numeroFrame, nil
 		}
 	}
+	g.MutexEstructuraFramesLibres.Unlock()
 	return -10, logger.ErrNoMemory
 
 }

@@ -29,7 +29,6 @@ func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 	pid := mensaje.PID
 	tamanioProceso := mensaje.TamanioMemoria
-	logger.Info("## PID: <%d> - Proceso Creado - Tamaño: <%d>", pid, tamanioProceso)
 
 	err := adm.InicializarProceso(pid, tamanioProceso, mensaje.Pseudocodigo)
 	if err != nil {
@@ -40,6 +39,8 @@ func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}
+
+	logger.Info("## PID: <%d> - Proceso Creado - Tamaño: <%d>", pid, tamanioProceso)
 
 	if errEncode := json.NewEncoder(w).Encode(respuesta); errEncode != nil {
 		logger.Error("Error al serializar finalizacion de espacio: %v", errEncode)

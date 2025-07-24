@@ -28,7 +28,12 @@ func EnviarDatos(url string, data any) error {
 		return err
 	}
 	//Cierro la rta, salio bien
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logger.Error("Error closing body")
+		}
+	}(resp.Body)
 
 	return nil
 }
@@ -40,7 +45,12 @@ func RecibirDatos(url string, data any) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logger.Error("error closing body")
+		}
+	}(resp.Body)
 
 	//Leo el contenido
 	body, err := io.ReadAll(resp.Body)

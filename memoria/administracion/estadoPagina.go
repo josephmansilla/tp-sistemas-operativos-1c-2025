@@ -5,9 +5,7 @@ import (
 )
 
 func MarcarOcupadoFrame(numeroFrame int) {
-	g.MutexEstructuraFramesLibres.Lock()
 	g.FramesLibres[numeroFrame] = false
-	g.MutexEstructuraFramesLibres.Unlock()
 
 	g.MutexCantidadFramesLibres.Lock()
 	g.CantidadFramesLibres--
