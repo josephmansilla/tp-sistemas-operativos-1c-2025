@@ -162,7 +162,7 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		proceso.EstaEnSwap = true
 
 		g.CalcularEjecutarSleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond)
-		logger.Info("## Suspensión del PID <%d> éxitosa", mensaje.PID)
+		logger.Info("#### Suspensión del PID <%d> éxitosa ####", mensaje.PID)
 	}
 
 	if errEncode := json.NewEncoder(w).Encode(respuesta); errEncode != nil {
@@ -191,7 +191,7 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	g.MutexProcesosPorPID.Unlock()
 
 	if !proceso.EstaEnSwap {
-		logger.Debug("PID <%d> Ya está en MEMORIA", mensaje.PID)
+		logger.Debug("#### PID <%d> Ya está en MEMORIA", mensaje.PID)
 		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: "Ya esta en Memoria"}
 		ignore = 1
 	}
@@ -218,7 +218,7 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 
 		g.CalcularEjecutarSleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond)
 
-		logger.Info("## Desuspensión del PID <%d> éxitosa", mensaje.PID)
+		logger.Info("#### Desuspensión del PID <%d> éxitosa ####", mensaje.PID)
 
 	}
 	if err := json.NewEncoder(w).Encode(respuesta); err != nil {

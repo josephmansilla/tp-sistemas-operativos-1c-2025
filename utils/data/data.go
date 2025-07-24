@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"io"
-	"log"
 	"net/http"
 )
 
@@ -19,7 +18,7 @@ func EnviarDatos(url string, data any) error {
 		return err
 	}
 
-	log.Printf("JSON a enviar a: %s", string(jsonData))
+	logger.Info("JSON a enviar a: %s", string(jsonData))
 
 	//POST a la url con el JSON
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
@@ -103,7 +102,7 @@ func EnviarDatosYRecibirRespuesta(url string, dataEnviar any, dataRecibir any) e
 		return err
 	}
 
-	log.Printf("Respuesta: %s", string(body)) // útil para debug
+	logger.Info("Respuesta: %s", string(body)) // útil para debug
 
 	err = json.Unmarshal(body, dataRecibir)
 	if err != nil {

@@ -23,3 +23,11 @@ func CalcularCantidadEntradas(tamanio int) (resultado int, err error) {
 	}
 	return
 }
+
+func RecortarNulosFinales(data []byte) []byte {
+	i := len(data) - 1
+	for i >= 0 && data[i] == 0 {
+		i--
+	}
+	return data[:i+1]
+}

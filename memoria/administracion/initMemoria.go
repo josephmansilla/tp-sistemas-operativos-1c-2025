@@ -3,6 +3,7 @@ package administracion
 import (
 	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"os"
 	"sync"
 )
 
@@ -18,7 +19,7 @@ func InstanciarEstructurasGlobales(cantidadFrames int) {
 	g.ProcesosPorPID = make(map[int]*g.Proceso)
 	g.SwapIndex = make(map[int]*g.SwapProcesoInfo)
 	g.MutexMetrica = make(map[int]*sync.Mutex, g.MemoryConfig.MemorySize)
-	
+
 	ConfigurarFrames(cantidadFrames)
 }
 
@@ -30,4 +31,16 @@ func ConfigurarFrames(cantidadFrames int) {
 	}
 	g.MutexEstructuraFramesLibres.Unlock()
 	g.CantidadFramesLibres = cantidadFrames
+}
+
+func LimpiarSwapFile() {
+	file, err := os.Create(g.MemoryConfig.SwapfilePath)
+	if err != nil {
+		logger.Error("Error al crear/sobrescribir el swap file: %v", err)
+		return
+	}
+	err = file.Close()
+	if err != nil {
+		logger.Error("Error al cerrar el swap file recién creado: %v", err)
+	}
 }

@@ -8,68 +8,79 @@ import (
 )
 
 func RecolectarEntradasParaSwap(pid int) (entradas map[int]g.EntradaSwap) {
-	contador := 0
+	var contador *int
+	contador = new(int)
+
 	entradas = make(map[int]g.EntradaSwap)
 
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
 
-	for _, subtabla := range proceso.TablaRaiz {
-		RecorrerTablaPaginasParaSwap(subtabla, entradas, &contador)
+	for i := 0; i < len(proceso.TablaRaiz); i++ {
+		RecorrerTablaPaginasParaSwap(proceso.TablaRaiz[i], entradas, contador)
 	}
 
 	return
 }
 
-func RecorrerTablaPaginasParaSwap(tabla *g.TablaPagina, entradas map[int]g.EntradaSwap, contador *int) {
+func RecorrerTablaPaginasParaSwap(tabla *g.TablaPagina, entradasSwap map[int]g.EntradaSwap, contador *int) {
 	if tabla.Subtabla != nil {
-		for _, subTabla := range tabla.Subtabla {
-			RecorrerTablaPaginasParaSwap(subTabla, entradas, contador)
+		for i := 0; i < len(tabla.Subtabla); i++ {
+			RecorrerTablaPaginasParaSwap(tabla.Subtabla[i], entradasSwap, contador)
 		}
 		return
 	}
+	if tabla.EntradasPaginas != nil {
+		for i := 0; i < g.MemoryConfig.EntriesPerPage; i++ {
+			tamanioPagina := g.MemoryConfig.PagSize
 
-	for _, entrada := range tabla.EntradasPaginas {
-		tamanioPagina := g.MemoryConfig.PagSize
+			entrada := tabla.EntradasPaginas[i]
+			if entrada == nil {
+				continue
+			}
 
-		entrada.EstaPresente = false
-		inicio := entrada.NumeroFrame * tamanioPagina
-		fin := inicio + tamanioPagina
+			inicio := entrada.NumeroFrame * tamanioPagina
+			fin := inicio + tamanioPagina
 
-		vacio := make([]byte, g.MemoryConfig.PagSize)
+			datos := make([]byte, tamanioPagina)
 
-		g.MutexMemoriaPrincipal.Lock()
-		datos := g.MemoriaPrincipal[inicio:fin]
-		copy(g.MemoriaPrincipal[inicio:fin], vacio)
-		g.MutexMemoriaPrincipal.Unlock()
+			g.MutexMemoriaPrincipal.Lock()
+			copy(datos, g.MemoriaPrincipal[inicio:fin])
+			copy(g.MemoriaPrincipal[inicio:fin], make([]byte, tamanioPagina))
+			g.MutexMemoriaPrincipal.Unlock()
 
-		entraditaNueva := g.EntradaSwap{
-			NumeroPagina: *contador,
-			Datos:        datos,
+			datos = g.RecortarNulosFinales(datos)
+
+			entraditaNueva := g.EntradaSwap{
+				NumeroPagina: *contador,
+				Datos:        datos,
+			}
+
+			MarcarLibreFrame(entrada.NumeroFrame)
+			entrada.EstaPresente = false
+
+			entradasSwap[entraditaNueva.NumeroPagina] = entraditaNueva
+			*contador++
 		}
-
-		MarcarLibreFrame(entrada.NumeroFrame)
-
-		entradas[entraditaNueva.NumeroPagina] = entraditaNueva
-		*contador++
 	}
+
 }
 
 func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 
-	file, err := os.OpenFile(g.MemoryConfig.SwapfilePath, os.O_RDWR|os.O_CREATE, 0666)
+	archivo, err := os.OpenFile(g.MemoryConfig.SwapfilePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
-	defer func(file *os.File) {
-		err := file.Close()
+	defer func(archivo *os.File) {
+		err := archivo.Close()
 		if err != nil {
 			logger.Error("Error al cerrar: %v", err)
 		}
-	}(file)
+	}(archivo)
 
-	_, errSeek := file.Seek(0, io.SeekEnd) // siempre se apunta al final del archivo! (pense que no, alto bobo)
+	_, errSeek := archivo.Seek(0, io.SeekEnd) // siempre se apunta al final del archivo! (pense que no, alto bobo)
 	if errSeek != nil {
 		logger.Error("Error al setear el puntero para SWAP: %v", errSeek)
 		return errSeek
@@ -86,23 +97,21 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 	g.ProcesosPorPID[pid].InstruccionesEnBytes = nil
 	g.MutexProcesosPorPID.Unlock()
 
-	posicionPunteroArchivo := g.PunteroSwap
+	punteroLocal := g.PunteroSwap
 
 	for i := 0; i < len(entradas); i++ {
 		entrada := entradas[i]
 
-		_, errWrite := file.Write(entrada.Datos)
+		posicionPunteroArchivo := punteroLocal
+		longitudEscrito := len(entrada.Datos)
+
+		_, errWrite := archivo.Write(entrada.Datos)
 		if errWrite != nil {
 			logger.Error("Error al escribir el archivo: %v", errWrite)
 			return errWrite
 		}
 
-		longitudEscrito := len(entrada.Datos)
-		posicionPunteroArchivo += longitudEscrito
-
-		if entrada.NumeroPagina == 0 {
-			posicionPunteroArchivo = g.PunteroSwap
-		}
+		punteroLocal += longitudEscrito
 
 		info.Entradas[entrada.NumeroPagina] = &g.EntradaSwapInfo{
 			NumeroPagina:   entrada.NumeroPagina,
@@ -111,18 +120,19 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 		}
 		info.NumerosDePaginas = append(info.NumerosDePaginas, entrada.NumeroPagina)
 
+		// VerificarLecturaDesdeSwap(archivo, posicionPunteroArchivo, longitudEscrito)
+
 		logger.Info("## PID: <%d> - <MEMORIA A SWAP> - Entrada: <%d> - Posición en SWAP: <%d> - Tamaño: <%d>",
 			pid,
 			entrada.NumeroPagina,
 			posicionPunteroArchivo,
 			longitudEscrito,
 		)
+		g.PunteroSwap += longitudEscrito
 	}
 	g.MutexSwapIndex.Lock()
 	g.SwapIndex[pid] = info
 	g.MutexSwapIndex.Unlock()
-
-	g.PunteroSwap = posicionPunteroArchivo
 
 	return nil
 }
