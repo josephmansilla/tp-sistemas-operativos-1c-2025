@@ -8,55 +8,63 @@ import (
 )
 
 func RecolectarEntradasParaSwap(pid int) (entradas map[int]g.EntradaSwap) {
-	contador := 0
+	var contador *int
+	contador = new(int)
+
 	entradas = make(map[int]g.EntradaSwap)
 
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[pid]
 	g.MutexProcesosPorPID.Unlock()
 
-	for _, subtabla := range proceso.TablaRaiz {
-		RecorrerTablaPaginasParaSwap(subtabla, entradas, &contador)
+	for i := 0; i < len(proceso.TablaRaiz); i++ {
+		RecorrerTablaPaginasParaSwap(proceso.TablaRaiz[i], entradas, contador)
 	}
 
 	return
 }
 
-func RecorrerTablaPaginasParaSwap(tabla *g.TablaPagina, entradas map[int]g.EntradaSwap, contador *int) {
+func RecorrerTablaPaginasParaSwap(tabla *g.TablaPagina, entradasSwap map[int]g.EntradaSwap, contador *int) {
 	if tabla.Subtabla != nil {
-		for _, subTabla := range tabla.Subtabla {
-			RecorrerTablaPaginasParaSwap(subTabla, entradas, contador)
+		for i := 0; i < len(tabla.Subtabla); i++ {
+			RecorrerTablaPaginasParaSwap(tabla.Subtabla[i], entradasSwap, contador)
 		}
 		return
 	}
+	if tabla.EntradasPaginas != nil {
+		for i := 0; i < g.MemoryConfig.EntriesPerPage; i++ {
+			tamanioPagina := g.MemoryConfig.PagSize
 
-	for _, entrada := range tabla.EntradasPaginas {
-		tamanioPagina := g.MemoryConfig.PagSize
+			entrada := tabla.EntradasPaginas[i]
+			if entrada == nil {
+				continue
+			}
 
-		entrada.EstaPresente = false
-		inicio := entrada.NumeroFrame * tamanioPagina
-		fin := inicio + tamanioPagina
+			inicio := entrada.NumeroFrame * tamanioPagina
+			fin := inicio + tamanioPagina
 
-		vacio := make([]byte, g.MemoryConfig.PagSize)
-		datos := make([]byte, g.MemoryConfig.PagSize)
+			datos := make([]byte, tamanioPagina)
 
-		g.MutexMemoriaPrincipal.Lock()
-		copy(datos, g.MemoriaPrincipal[inicio:fin])
-		copy(g.MemoriaPrincipal[inicio:fin], vacio)
-		g.MutexMemoriaPrincipal.Unlock()
+			g.MutexMemoriaPrincipal.Lock()
+			copy(datos, g.MemoriaPrincipal[inicio:fin])
+			copy(g.MemoriaPrincipal[inicio:fin], make([]byte, tamanioPagina))
+			g.MutexMemoriaPrincipal.Unlock()
 
-		logger.Debug("Lo copiado es: %q", datos)
+			datos = g.RecortarNulosFinales(datos)
 
-		entraditaNueva := g.EntradaSwap{
-			NumeroPagina: *contador,
-			Datos:        datos,
+			entraditaNueva := g.EntradaSwap{
+				NumeroPagina: *contador,
+				Datos:        datos,
+			}
+
+			MarcarLibreFrame(entrada.NumeroFrame)
+			entrada.EstaPresente = false
+
+			entradasSwap[entraditaNueva.NumeroPagina] = entraditaNueva
+			*contador++
 		}
-
-		MarcarLibreFrame(entrada.NumeroFrame)
-
-		entradas[entraditaNueva.NumeroPagina] = entraditaNueva
-		*contador++
 	}
+
 }
 
 func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
@@ -89,10 +97,13 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 	g.ProcesosPorPID[pid].InstruccionesEnBytes = nil
 	g.MutexProcesosPorPID.Unlock()
 
-	posicionPunteroArchivo := g.PunteroSwap
+	punteroLocal := g.PunteroSwap
 
 	for i := 0; i < len(entradas); i++ {
 		entrada := entradas[i]
+
+		posicionPunteroArchivo := punteroLocal
+		longitudEscrito := len(entrada.Datos)
 
 		_, errWrite := archivo.Write(entrada.Datos)
 		if errWrite != nil {
@@ -100,12 +111,7 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 			return errWrite
 		}
 
-		longitudEscrito := len(entrada.Datos)
-		posicionPunteroArchivo += longitudEscrito
-
-		if entrada.NumeroPagina == 0 {
-			posicionPunteroArchivo = g.PunteroSwap
-		}
+		punteroLocal += longitudEscrito
 
 		info.Entradas[entrada.NumeroPagina] = &g.EntradaSwapInfo{
 			NumeroPagina:   entrada.NumeroPagina,
@@ -114,10 +120,7 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 		}
 		info.NumerosDePaginas = append(info.NumerosDePaginas, entrada.NumeroPagina)
 
-		VerificarLecturaDesdeSwap(archivo, posicionPunteroArchivo, longitudEscrito)
-
-		logger.Warn("PunteroSWAP actual: %d", g.PunteroSwap)
-		logger.Warn("Posición guardada en SwapIndex: %d", posicionPunteroArchivo)
+		// VerificarLecturaDesdeSwap(archivo, posicionPunteroArchivo, longitudEscrito)
 
 		logger.Info("## PID: <%d> - <MEMORIA A SWAP> - Entrada: <%d> - Posición en SWAP: <%d> - Tamaño: <%d>",
 			pid,
@@ -125,12 +128,11 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 			posicionPunteroArchivo,
 			longitudEscrito,
 		)
+		g.PunteroSwap += longitudEscrito
 	}
 	g.MutexSwapIndex.Lock()
 	g.SwapIndex[pid] = info
 	g.MutexSwapIndex.Unlock()
-
-	g.PunteroSwap = posicionPunteroArchivo
 
 	return nil
 }

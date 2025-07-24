@@ -46,7 +46,6 @@ func CargarEntradasDesdeSwap(pid int) (entradas map[int]g.EntradaSwap, err error
 		}
 
 		datos := make([]byte, entrada.Tamanio)
-
 		_, errRead := file.Read(datos)
 		if errRead != nil {
 			return nil, errRead
@@ -56,12 +55,7 @@ func CargarEntradasDesdeSwap(pid int) (entradas map[int]g.EntradaSwap, err error
 			NumeroPagina: info.NumerosDePaginas[i],
 			Datos:        datos,
 		}
-		entradas[i] = enviarEntrada // i era : info.NumerosDePaginas[i]
-
-		errBorrar := BorrarSeccionSwap(file, int64(entrada.PosicionInicio), entrada.Tamanio)
-		if errBorrar != nil {
-			logger.Error("No se pudo limpiar la sección de swap: %v", err)
-		}
+		entradas[i] = enviarEntrada
 
 	}
 	return entradas, nil
@@ -81,9 +75,10 @@ func CargarEntradasAMemoria(pid int, entradas map[int]g.EntradaSwap) error {
 			return rta.Exito
 		}
 
-		logger.Info("## PID: <%d> - <SWAP A MEMORIA> - Página: <%d> - Dir. Física: <%d> - Tamaño: <%d>",
+		logger.Info("## PID: <%d> - <SWAP A MEMORIA> - Página: <%d> - Frame: <%d> - Dir. Física: <%d> - Tamaño: <%d>",
 			pid,
 			entrada.NumeroPagina,
+			frameLibre,
 			frameLibre*g.MemoryConfig.PagSize,
 			len(entrada.Datos),
 		)
@@ -103,7 +98,7 @@ func ResignarPaginasParaPID(pid int, numeroPagina int) (int, error) {
 	if errr != nil {
 		return -100, errr
 	}
-	logger.Info("## PID <%d> ; Pagina: <%d> ; Frame: <%d>", pid, numeroPagina, frameLibre)
+	// logger.Info("## PID <%d> ; Pagina: <%d> ; Frame: <%d>", pid, numeroPagina, frameLibre)
 	return frameLibre, nil
 }
 

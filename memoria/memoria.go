@@ -31,7 +31,6 @@ func main() {
 
 	logger.Info("======== Comenzó la ejecución de Memoria ========")
 	logger.Info("Servidor escuchando en http://localhost:%d/memoria", g.MemoryConfig.PortMemory)
-	logger.Error("Escribí exit para finalizar el módulo de Memoria")
 	go func() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
@@ -43,8 +42,8 @@ func main() {
 		}
 	}()
 
-	logger.Debug("Swapfile: %v", g.MemoryConfig.SwapfilePath)
 	adm.InicializarMemoriaPrincipal()
+	adm.LimpiarSwapFile()
 
 	mux := http.NewServeMux()
 	// ======================== CONFIGS Y CONSULTAS ========================
