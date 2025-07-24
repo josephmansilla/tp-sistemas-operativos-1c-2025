@@ -91,7 +91,7 @@ func ManejadorInicializacionProcesos() {
 		}
 
 		if p == nil {
-			logger.Warn("No hay procesos para inicializar")
+			logger.Debug("No hay procesos para inicializar")
 			continue
 		}
 

@@ -298,11 +298,11 @@ func Desalojo(procesoEntrante *pcb.PCB) {
 		return
 	}
 
-	logger.Info("## (<%d>) - Desalojado por <%d> | Algoritmo SRT", procesoAInterrumpir.PID, procesoEntrante.PID)
-	//logger.Debug("SRT: Proceso <%d> interrumpe a <%d> en CPU <%s>", procesoEntrante.PID, procesoAInterrumpir.PID, cpuAInterrumpir)
-
 	//1. INTERRUMPIR CPU (Pero la mantengo ocupada)
 	comunicacion.AvisarDesalojoCPU(cpuAInterrumpir, procesoAInterrumpir)
+
+	logger.Info("## (<%d>) - Desalojado por <%d> | Algoritmo SRT", procesoAInterrumpir.PID, procesoEntrante.PID)
+	//logger.Debug("SRT: Proceso <%d> interrumpe a <%d> en CPU <%s>", procesoEntrante.PID, procesoAInterrumpir.PID, cpuAInterrumpir)
 
 	//WAIT CPU DESALOJA / INTERRUMPE
 	<-Utils.Desalojo
