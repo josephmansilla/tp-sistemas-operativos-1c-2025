@@ -49,6 +49,8 @@ func InicializacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
+	logger.Info(">> Llegó solicitud de finalización de proceso")
+
 	g.MutexOperacionMemoria.Lock()
 	defer g.MutexOperacionMemoria.Unlock()
 	var mensaje g.ConsultaProceso
