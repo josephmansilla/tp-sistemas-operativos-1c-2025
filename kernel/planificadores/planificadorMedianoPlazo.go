@@ -276,7 +276,7 @@ func DespacharIO() {
 
 		if ioAsignada == nil {
 			// No se encontró una IO libre
-			logger.Warn("No se encontró IO libre: %s. PID <%d> Debe esperar", pedido.Nombre, pedido.PID)
+			logger.Debug("No se encontró IO libre: %s. PID <%d> Debe esperar", pedido.Nombre, pedido.PID)
 			continue
 		}
 

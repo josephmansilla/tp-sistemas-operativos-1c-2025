@@ -198,8 +198,12 @@ func ManejadorFinalizacionProcesos() {
 		pc := msg.PC
 		cpuID := msg.CpuID
 
+		logger.Info("LLEGA ACA")
+
 		// Avisar a Memoria para liberar recursos
 		comunicacion.LiberarMemoria(pid)
+
+		logger.Info("LLEGA ACA")
 
 		//Enviar a EXIT con metricas
 		finalizarProceso(pid, pc, cpuID)

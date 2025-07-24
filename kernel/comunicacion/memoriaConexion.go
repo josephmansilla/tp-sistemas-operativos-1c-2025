@@ -86,6 +86,8 @@ func LiberarMemoria(pid int) {
 		PID: pid,
 	}
 
+	logger.Info("URL finalización: %s", url)
+
 	err := data.EnviarDatos(url, mensaje)
 	if err != nil {
 		logger.Error("Error enviando EXIT a Memoria: %s", err.Error())

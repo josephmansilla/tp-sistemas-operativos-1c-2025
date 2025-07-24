@@ -57,7 +57,7 @@ func DespacharProceso() {
 		}
 
 		if cpuID == "" {
-			logger.Info("No hay CPU disponible para ejecutar el proceso <%d>", proceso.PID)
+			logger.Debug("No hay CPU disponible para ejecutar el proceso <%d>", proceso.PID)
 
 			if globals.KConfig.SchedulerAlgorithm == "SRT" {
 				Desalojo(proceso)
