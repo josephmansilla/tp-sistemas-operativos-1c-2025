@@ -99,7 +99,7 @@ func main() {
 	//para recibir mensajes de confirmacion de SWAP
 	mux.HandleFunc("/kernel/suspension_completed", syscalls.ConfirmarSuspensionHandler)
 
-	fmt.Printf("Servidor escuchando en http://localhost:%d/kernel\n", globals.KConfig.KernelPort)
+	logger.Info("Servidor escuchando en http://localhost:%d/kernel\n", globals.KConfig.KernelPort)
 
 	// ------------------------------------------------------
 	// ---------- INICIAR PLANIFICADOR DE LARGO PLAZO  ------
@@ -117,7 +117,7 @@ func main() {
 }
 
 func iniciarLargoPlazo() {
-	fmt.Println("Presione ENTER para iniciar el Planificador de Largo Plazo...")
+	logger.Debug("Presione ENTER para iniciar el Planificador de Largo Plazo...")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	planificadores.PlanificadorLargoPlazo()
 }

@@ -177,10 +177,10 @@ func InsertarEntradaPaginaEnTabla(tablaRaiz g.TablaPaginas, numeroPagina int, en
 func AsignarFrameLibre() (int, error) {
 	cantidadFramesTotales := g.MemoryConfig.MemorySize / g.MemoryConfig.PagSize
 
+	g.MutexEstructuraFramesLibres.Lock()
+	defer g.MutexEstructuraFramesLibres.Unlock()
 	for numeroFrame := 0; numeroFrame < cantidadFramesTotales; numeroFrame++ {
-		g.MutexEstructuraFramesLibres.Lock()
 		booleano := g.FramesLibres[numeroFrame]
-		g.MutexEstructuraFramesLibres.Unlock()
 
 		if booleano == true {
 			MarcarOcupadoFrame(numeroFrame)
