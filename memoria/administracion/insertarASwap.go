@@ -38,11 +38,14 @@ func RecorrerTablaPaginasParaSwap(tabla *g.TablaPagina, entradas map[int]g.Entra
 		fin := inicio + tamanioPagina
 
 		vacio := make([]byte, g.MemoryConfig.PagSize)
+		datos := make([]byte, g.MemoryConfig.PagSize)
 
 		g.MutexMemoriaPrincipal.Lock()
-		datos := g.MemoriaPrincipal[inicio:fin]
+		copy(datos, g.MemoriaPrincipal[inicio:fin])
 		copy(g.MemoriaPrincipal[inicio:fin], vacio)
 		g.MutexMemoriaPrincipal.Unlock()
+
+		logger.Debug("Lo copiado es: %q", datos)
 
 		entraditaNueva := g.EntradaSwap{
 			NumeroPagina: *contador,
@@ -58,18 +61,18 @@ func RecorrerTablaPaginasParaSwap(tabla *g.TablaPagina, entradas map[int]g.Entra
 
 func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 
-	file, err := os.OpenFile(g.MemoryConfig.SwapfilePath, os.O_RDWR|os.O_CREATE, 0666)
+	archivo, err := os.OpenFile(g.MemoryConfig.SwapfilePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
-	defer func(file *os.File) {
-		err := file.Close()
+	defer func(archivo *os.File) {
+		err := archivo.Close()
 		if err != nil {
 			logger.Error("Error al cerrar: %v", err)
 		}
-	}(file)
+	}(archivo)
 
-	_, errSeek := file.Seek(0, io.SeekEnd) // siempre se apunta al final del archivo! (pense que no, alto bobo)
+	_, errSeek := archivo.Seek(0, io.SeekEnd) // siempre se apunta al final del archivo! (pense que no, alto bobo)
 	if errSeek != nil {
 		logger.Error("Error al setear el puntero para SWAP: %v", errSeek)
 		return errSeek
@@ -91,7 +94,7 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 	for i := 0; i < len(entradas); i++ {
 		entrada := entradas[i]
 
-		_, errWrite := file.Write(entrada.Datos)
+		_, errWrite := archivo.Write(entrada.Datos)
 		if errWrite != nil {
 			logger.Error("Error al escribir el archivo: %v", errWrite)
 			return errWrite
@@ -110,6 +113,11 @@ func CargarEntradasASwap(pid int, entradas map[int]g.EntradaSwap) error {
 			PosicionInicio: posicionPunteroArchivo,
 		}
 		info.NumerosDePaginas = append(info.NumerosDePaginas, entrada.NumeroPagina)
+
+		VerificarLecturaDesdeSwap(archivo, posicionPunteroArchivo, longitudEscrito)
+
+		logger.Warn("PunteroSWAP actual: %d", g.PunteroSwap)
+		logger.Warn("Posición guardada en SwapIndex: %d", posicionPunteroArchivo)
 
 		logger.Info("## PID: <%d> - <MEMORIA A SWAP> - Entrada: <%d> - Posición en SWAP: <%d> - Tamaño: <%d>",
 			pid,

@@ -2,6 +2,7 @@ package administracion
 
 import (
 	g "github.com/sisoputnfrba/tp-golang/memoria/estructuras"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"io"
 	"os"
 )
@@ -53,8 +54,28 @@ func BorrarSeccionSwap(archivo *os.File, posicionInicial int64, tamanio int) err
 
 	_, errWrite := archivo.Write(relleno)
 	if errWrite != nil {
+		logger.Error("Error al borrar espacio en SWAP: %v", errWrite)
 		return errWrite
 	}
 
 	return nil
+}
+
+func VerificarLecturaDesdeSwap(file *os.File, posicionInicio int, tamanio int) {
+
+	_, errSeek := file.Seek(int64(posicionInicio), io.SeekStart)
+	if errSeek != nil {
+		logger.Error("Error al hacer seek para verificar: %v", errSeek)
+		return
+	}
+
+	buffer := make([]byte, tamanio)
+	_, errRead := file.Read(buffer)
+	if errRead != nil {
+		logger.Error("Error al leer para verificar: %v", errRead)
+		return
+	}
+
+	logger.Debug("## Verificación de lectura SWAP:")
+	logger.Debug("## Posición: %d | Tamaño: %d | Contenido: %q", posicionInicio, tamanio, buffer)
 }
