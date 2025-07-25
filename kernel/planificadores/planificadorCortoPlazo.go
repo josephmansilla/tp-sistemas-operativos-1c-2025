@@ -228,7 +228,7 @@ func DesconexionIO() {
 			Utils.MutexPedidosIO.Lock()
 			for _, pedido := range algoritmos.PedidosIO.Values() {
 				if pedido.Nombre == io.Nombre {
-					logger.Warn("Finalizando PID <%d> que esperaba IO <%s> (sin instancias activas)", pedido.PID, pedido.Nombre)
+					logger.Debug("Finalizando PID <%d> que esperaba IO <%s> (sin instancias activas)", pedido.PID, pedido.Nombre)
 
 					// Liberar memoria y finalizar
 					comunicacion.LiberarMemoria(pedido.PID)

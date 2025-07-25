@@ -52,7 +52,7 @@ var IOs map[string][]DatosIO = make(map[string][]DatosIO)
 var IOMu sync.Mutex
 
 var EspacioLibreProceso EspacioLibreRTA
-var UltimoPID int = 0
+var UltimoPID int = -1
 var PidMutex sync.Mutex
 
 func GenerarNuevoPID() int {

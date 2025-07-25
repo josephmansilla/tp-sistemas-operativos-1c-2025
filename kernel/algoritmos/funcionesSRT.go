@@ -9,7 +9,7 @@ import (
 
 func Desalojar(procesoEntrante *pcb.PCB) (cpuID string, desalojado *pcb.PCB) {
 	tiempoEntrante := procesoEntrante.EstimadoRafaga
-	logger.Info("SRT: Evaluando posible desalojo por llegada de <%d> con ráfaga estimada %.0f ms", procesoEntrante.PID, tiempoEntrante)
+	logger.Debug("SRT: Evaluando posible desalojo por llegada de <%d> con ráfaga estimada %.0f ms", procesoEntrante.PID, tiempoEntrante)
 
 	Utils.MutexEjecutando.Lock()
 	defer Utils.MutexEjecutando.Unlock()

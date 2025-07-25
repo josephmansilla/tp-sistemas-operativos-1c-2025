@@ -66,7 +66,7 @@ func PlanificadorLargoPlazo() {
 	go ManejadorCreacionProcesos()
 	go ManejadorInicializacionProcesos()
 	go ManejadorFinalizacionProcesos()
-	go Reintentador()
+	//go Reintentador()
 }
 
 func ManejadorInicializacionProcesos() {
@@ -134,6 +134,7 @@ func ManejadorInicializacionProcesos() {
 	}
 }
 
+/*
 func Reintentador() {
 	for {
 		//CUANDO MEMORIA LIBERA VUELVE A
@@ -141,6 +142,7 @@ func Reintentador() {
 		Utils.InitProcess <- struct{}{}
 	}
 }
+*/
 
 // RECIBIR SYSCALLS DE CREAR PROCESO
 func ManejadorCreacionProcesos() {
@@ -198,12 +200,8 @@ func ManejadorFinalizacionProcesos() {
 		pc := msg.PC
 		cpuID := msg.CpuID
 
-		logger.Info("LLEGA ACA")
-
 		// Avisar a Memoria para liberar recursos
 		comunicacion.LiberarMemoria(pid)
-
-		logger.Info("LLEGA ACA")
 
 		//Enviar a EXIT con metricas
 		finalizarProceso(pid, pc, cpuID)
@@ -276,7 +274,7 @@ func finalizarProceso(pid int, pc int, cpuID string) {
 	logger.Info("## (<%d>) - Finaliza el proceso", proceso.PID)
 	logger.Info(proceso.ImprimirMetricas())
 
-	// 8. Señal para liberar memoria
-	//reintentos de creación pendientes
-	Utils.LiberarMemoria <- struct{}{}
+	// 8. Señal al liberar memoria
+	//Reintentos de creación pendientes
+	Utils.InitProcess <- struct{}{}
 }
