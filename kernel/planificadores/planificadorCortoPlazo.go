@@ -10,7 +10,7 @@ import (
 )
 
 func PlanificarCortoPlazo() {
-	logger.Info("Iniciando el Planificador de Corto Plazo")
+	logger.Info("## Iniciando el Planificador de Corto Plazo")
 	go DespacharProceso()
 	go BloquearProceso() //SYSCALL IO
 	go DesconexionIO()   //DESCONEXION IO
@@ -66,7 +66,7 @@ func DespacharProceso() {
 		}
 
 		proceso.CpuID = cpuID
-		logger.Info("Proceso <%d> -> EXECUTE en CPU <%s>", proceso.PID, cpuID)
+		logger.Debug("Proceso <%d> -> EXECUTE en CPU <%s>", proceso.PID, cpuID)
 
 		Utils.MutexEjecutando.Lock()
 		pcb.CambiarEstado(proceso, pcb.EstadoExecute)
@@ -81,6 +81,8 @@ func DespacharProceso() {
 		cpu.Ocupada = true
 		globals.CPUs[cpuID] = cpu
 
+		logger.Info("## (<%d>) Pasa del estado READY al estado EXECUTE", proceso.PID)
+
 		go comunicacion.EnviarContextoCPU(cpuID, proceso)
 	}
 }
@@ -91,7 +93,7 @@ func liberarCPU(cpuID string) {
 	cpu.Ocupada = false
 	globals.CPUs[cpuID] = cpu
 
-	//logger.Info("CPU <%s> libre", cpuID)
+	//logger.Debug("CPU <%s> libre", cpuID)
 
 	Utils.NotificarDespachador <- 1
 }
@@ -216,14 +218,14 @@ func DesconexionIO() {
 			if instancia.Puerto != io.Puerto {
 				nuevaLista = append(nuevaLista, instancia)
 			} else {
-				logger.Info("Removida instancia IO <%s> con Puerto <%d>", io.Nombre, io.Puerto)
+				logger.Info("## Removida instancia IO <%s> - Puerto <%d>", io.Nombre, io.Puerto)
 			}
 		}
 
 		// Si no quedan más instancias, eliminar el tipo y finalizar todos los pedidos pendientes
 		if len(nuevaLista) == 0 {
 			delete(globals.IOs, io.Nombre)
-			logger.Info("No quedan IOs activas del tipo <%s>, eliminando del mapa y finalizando pedidos", io.Nombre)
+			logger.Info("## NO quedan IOs activas del tipo <%s> - Eliminando del mapa y finalizando pedidos", io.Nombre)
 
 			Utils.MutexPedidosIO.Lock()
 			for _, pedido := range algoritmos.PedidosIO.Values() {
@@ -275,7 +277,7 @@ func DesconexionIO() {
 
 		// 3. Si estaba esperando una IO, mandarlo a EXIT
 		if proceso != nil {
-			logger.Info("Finalizando PID <%d> por desconexión de IO <%s>", proceso.PID, io.Nombre)
+			logger.Info("## Finalizando (<%d>) por desconexión de IO <%s>", proceso.PID, io.Nombre)
 			Utils.ChannelFinishprocess <- Utils.FinishProcess{
 				PID: proceso.PID,
 				PC:  proceso.PC,
@@ -298,10 +300,26 @@ func Desalojo(procesoEntrante *pcb.PCB) {
 		return
 	}
 
+	//ASEGURARSE QUE NO FUE A EXIT
+	Utils.MutexEjecutando.Lock()
+	sigueEjecutando := false
+	for _, p := range algoritmos.ColaEjecutando.Values() {
+		if p.PID == procesoAInterrumpir.PID {
+			sigueEjecutando = true
+			break
+		}
+	}
+	Utils.MutexEjecutando.Unlock()
+
+	if !sigueEjecutando {
+		logger.Debug("SRT: Proceso <%d> ya no está ejecutando, se evita desalojo", procesoAInterrumpir.PID)
+		return
+	}
+
 	//1. INTERRUMPIR CPU (Pero la mantengo ocupada)
 	comunicacion.AvisarDesalojoCPU(cpuAInterrumpir, procesoAInterrumpir)
 
-	logger.Info("## (<%d>) - Desalojado por <%d> | Algoritmo SRT", procesoAInterrumpir.PID, procesoEntrante.PID)
+	logger.Info("## (<%d>) Desalojado por <%d> - SRT", procesoAInterrumpir.PID, procesoEntrante.PID)
 	//logger.Debug("SRT: Proceso <%d> interrumpe a <%d> en CPU <%s>", procesoEntrante.PID, procesoAInterrumpir.PID, cpuAInterrumpir)
 
 	//WAIT CPU DESALOJA / INTERRUMPE

@@ -52,7 +52,7 @@ func RecibirMensajeDeIO(w http.ResponseWriter, r *http.Request) {
 	globals.IOs[tipo] = append(globals.IOs[tipo], instancia)
 	globals.IOMu.Unlock()
 
-	logger.Info("Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
+	logger.Info("## Se ha recibido IO: Nombre: %s Ip: %s Puerto: %d",
 		instancia.Tipo, instancia.Ip, instancia.Puerto)
 
 	Utils.NotificarIOLibre <- Utils.IOEvent{
@@ -72,7 +72,7 @@ func EnviarContextoIO(instanciaIO globals.DatosIO, pid int, duracion int) {
 		Duracion: duracion,
 	}
 
-	logger.Info("## (%d) - Bloqueado por IO: %s", pid, instanciaIO.Tipo)
+	logger.Info("## (<%d>) - Bloqueado por IO: %s", pid, instanciaIO.Tipo)
 
 	const maxIntentos = 3
 	const backoff = 200 * time.Millisecond
@@ -84,6 +84,7 @@ func EnviarContextoIO(instanciaIO globals.DatosIO, pid int, duracion int) {
 			// Éxito: salimos
 			return
 		}
+
 		// Si no es connection refused, no tiene sentido reintentar
 		if !strings.Contains(err.Error(), "connection refused") {
 			logger.Warn("Error enviando a IO (no recoverable): %v", err)
@@ -120,11 +121,11 @@ func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 
 	//  Si es desconexión
 	if mensajeRecibido.Desconexion {
-		logger.Info("Desconexión de IO: %s - Puerto %d - PID %d", evt.Nombre, evt.Puerto, evt.PID)
+		logger.Info("## Desconexión de IO: %s - Puerto %d - PID %d", evt.Nombre, evt.Puerto, evt.PID)
 		Utils.NotificarDesconexion <- evt
 	} else {
 		//Fin de IO normal
-		logger.Info("FIN de IO: %s - PID %d", evt.Nombre, evt.PID)
+		logger.Debug("FIN de IO: %s - PID %d", evt.Nombre, evt.PID)
 		globals.IOMu.Lock()
 		for i := range globals.IOs[evt.Nombre] {
 			if evt.Puerto == globals.IOs[evt.Nombre][i].Puerto {

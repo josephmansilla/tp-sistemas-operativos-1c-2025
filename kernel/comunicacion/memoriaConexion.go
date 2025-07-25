@@ -59,7 +59,7 @@ func SolicitarEspacioEnMemoria(fileName string, tamanio int) int {
 		logger.Error("Error al decodificar respuesta de Memoria: %s", err.Error())
 	}
 
-	logger.Info("Memoria dice => Espacio libre: %d", rta.EspacioLibre)
+	logger.Info("## Memoria dice => Espacio libre: %d", rta.EspacioLibre)
 	return rta.EspacioLibre
 }
 

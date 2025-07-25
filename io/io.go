@@ -128,7 +128,7 @@ func RecibirMensajeDeKernel(w http.ResponseWriter, r *http.Request) {
 		Nombre:      globals.IoConfig.Type,
 		Puerto:      globals.IoConfig.PortIo,
 	}
-	logger.Info("Enviando PID <%d> a Kernel", mensaje.PID)
+	logger.Debug("Enviando PID <%d> a Kernel", mensaje.PID)
 
 	err := data.EnviarDatos(url, mensaje)
 	if err != nil {

@@ -41,7 +41,7 @@ func RecibirMensajeDeCPU(w http.ResponseWriter, r *http.Request) {
 	globals.CPUCond.Broadcast() // Despierta a quien espera CPUs
 	globals.CPUMu.Unlock()
 
-	logger.Info("Se ha recibido CPU: Ip: %s Puerto: %d ID: %s",
+	logger.Info("## Se ha recibido CPU: Ip: %s Puerto: %d ID: %s",
 		globals.CPUs[id].Ip, globals.CPUs[id].Puerto, globals.CPUs[id].ID)
 
 	//Notificar para que el despachador lo intente

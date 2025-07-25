@@ -49,7 +49,7 @@ func CrearPrimerProceso(fileName string, tamanio int) {
 
 // ARRANCAR LARGO PLAZO Y PRIMER PROCESO AL PRESIONAR ENTER
 func PlanificadorLargoPlazo() {
-	logger.Info("Iniciando el planificador de largo plazo")
+	logger.Info("## Iniciando el planificador de largo plazo")
 
 	//1. Obtener primer proceso de Cola NEW
 	var primerProceso *pcb.PCB
@@ -81,24 +81,28 @@ func ManejadorInicializacionProcesos() {
 
 		//SE TOMA EL SIGUIENTE PROCESO A ENVIAR A READY
 		//(ORDENADOS PREVIAMENTE POR ALGORITMO)
-		var p *pcb.PCB
+		var p *pcb.PCB = nil
+
+		Utils.MutexSuspendidoReady.Lock()
 		if !algoritmos.ColaSuspendidoReady.IsEmpty() {
 			//SI NO ESTA VACIA -> TIENE PRIORIDAD SUSP.READY
 			p = algoritmos.ColaSuspendidoReady.First()
+		}
+		Utils.MutexSuspendidoReady.Unlock()
 
-		} else {
-			p = algoritmos.ColaNuevo.First() //YA ORDENADOS POR FIFO O PMCP EN SYSCALL INIT
+		if p == nil {
+			Utils.MutexNuevo.Lock()
+			if !algoritmos.ColaNuevo.IsEmpty() {
+				p = algoritmos.ColaNuevo.First()
+				//YA ORDENADOS POR FIFO O PMCP EN SYSCALL INIT
+			}
+			Utils.MutexNuevo.Unlock()
 		}
 
 		if p == nil {
 			logger.Debug("No hay procesos para inicializar")
 			continue
 		}
-
-		//MUESTRO LA COLA READY
-		//MostrarColaReady()
-		//MUESTRO LA COLA NEW
-		//MostrarColaNew()
 
 		filename := p.FileName
 		size := p.ProcessSize
@@ -107,7 +111,7 @@ func ManejadorInicializacionProcesos() {
 		//Intentar crear en Memoria
 		espacio := comunicacion.SolicitarEspacioEnMemoria(filename, size)
 		if espacio < size {
-			logger.Info("Memoria sin espacio, PID <%d> queda pendiente", p.PID)
+			logger.Info("## Memoria sin espacio. PID <%d> queda pendiente", p.PID)
 
 			// 1) Señal al planificador de corto plazo que continue
 			Utils.NotificarDespachador <- p.PID
@@ -184,11 +188,6 @@ func agregarProcesoAReady(proceso *pcb.PCB) {
 
 	// 4) Señal al planificador de corto plazo
 	Utils.NotificarDespachador <- proceso.PID //MANDO PID
-
-	//MUESTRO LA COLA DE READY PARA VER SI SE AGREGAN CORRECTAMENTE
-	//MostrarColaReady()
-	//MUESTRO LA COLA NEW PARA VER SI ESTAN VACIAS
-	//MostrarColaNew()
 }
 
 // RECIBIR SYSCALLS DE EXIT

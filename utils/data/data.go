@@ -19,7 +19,7 @@ func EnviarDatos(url string, data any) error {
 		return err
 	}
 
-	log.Printf("JSON a enviar a: %s", string(jsonData))
+	//log.Printf("JSON a enviar a: %s", string(jsonData))
 
 	//POST a la url con el JSON
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))

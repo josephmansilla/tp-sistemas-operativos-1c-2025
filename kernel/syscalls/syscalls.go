@@ -61,7 +61,7 @@ func ContextoInterrumpido(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Info("<%d> Se ha recibido contexto de Interrupcion: %s. CPU <%s>", msg.PID, msg.Motivo, msg.ID)
+	logger.Debug("<%d> Se ha recibido contexto de Interrupcion: %s. CPU <%s>", msg.PID, msg.Motivo, msg.ID)
 	//SIGNAL A Planif. CORTO PLAZO QUE SE INTERRUMPIO
 	go func(p int) {
 		Utils.ContextoInterrupcion <- Utils.InterruptProcess{
@@ -205,7 +205,7 @@ func Io(w http.ResponseWriter, r *http.Request) {
 	tipoIO := mensajeRecibido.Nombre
 
 	logger.Info("## (<%d>) - Solicitó syscall: <IO>”", pid)
-	logger.Info("Nombre IO: %s Duracion: %d", tipoIO, mensajeRecibido.Duracion)
+	logger.Debug("Nombre IO: %s Duracion: %d", tipoIO, mensajeRecibido.Duracion)
 
 	//SIGNAL A Planif. CORTO PLAZO QUE LLEGO I/O
 	go func(p int) {

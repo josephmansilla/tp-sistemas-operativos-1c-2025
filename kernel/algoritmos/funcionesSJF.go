@@ -17,15 +17,15 @@ func SeleccionarSJF() *pcb.PCB {
 		return nil
 	}
 
-	//logger.Info("[DEBUG] Cola READY tiene %d procesos\n", len(ColaReady.elements))
+	//logger.Debug("Cola READY tiene %d procesos\n", len(ColaReady.elements))
 	masChico := ColaReady.elements[0] //Tomo el primero y empiezo a comparar rafagas
 	for _, p := range ColaReady.elements {
-		//logger.Info("<%d> %.0f |VS| <%d> %.0f", masChico.PID, masChico.EstimadoRafaga, p.PID, p.EstimadoRafaga)
+		//logger.Debug("<%d> %.0f |VS| <%d> %.0f", masChico.PID, masChico.EstimadoRafaga, p.PID, p.EstimadoRafaga)
 		if p.EstimadoRafaga < masChico.EstimadoRafaga {
 			masChico = p
 		}
 	}
-	//logger.Info("Seleccionado SJF: <%d> | Rafaga: %.0f", masChico.PID, masChico.EstimadoRafaga)
+	//logger.Debug("Seleccionado SJF: <%d> | Rafaga: %.0f", masChico.PID, masChico.EstimadoRafaga)
 	return masChico
 }
 

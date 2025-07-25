@@ -75,7 +75,7 @@ func moverDeBlockedAReady(ioLibre Utils.IOEvent) bool {
 	globals.IOMu.Unlock()
 
 	// Agregar a READY
-	logger.Info("## <%d> finalizó IO y pasa a READY", ioLibre.PID)
+	logger.Info("## (<%d>) finalizó IO y pasa a READY", ioLibre.PID)
 	agregarProcesoAReady(proceso)
 
 	/*
@@ -105,7 +105,7 @@ func moverDeBlockedASuspBlocked(pid int) bool {
 
 	if proceso == nil {
 		// No se encontró el proceso en BLOCKED
-		//logger.Info("## MedianoPlazo: No se encontró en Blocked")
+		//logger.Warn("MedianoPlazo: No se encontró en Blocked")
 		//Utils.MutexBloqueado.Unlock()
 		return false
 	}
@@ -117,7 +117,7 @@ func moverDeBlockedASuspBlocked(pid int) bool {
 	pcb.CambiarEstado(proceso, pcb.EstadoSuspBlocked)
 	algoritmos.ColaBloqueadoSuspendido.Add(proceso)
 	Utils.MutexBloqueadoSuspendido.Unlock()
-	logger.Info("## (<%d>) Pasa del estado BLOCKED al estado SUSP.BLOCKED", proceso.PID)
+	//logger.Info("## (<%d>) Pasa del estado BLOCKED al estado SUSP.BLOCKED", proceso.PID)
 
 	return true
 }
@@ -145,7 +145,7 @@ func monitorBloqueado(bp Utils.BlockProcess) {
 	// 1) Esperamos señal de que realmente se bloqueó (del corto plazo)
 	/*<-blockedCh*/
 
-	//logger.Info("Arrancó TIMER para PID <%d>", pid)
+	logger.Debug("Arrancó TIMER para PID <%d>", pid)
 	suspensión := time.Duration(globals.KConfig.SuspensionTime) * time.Millisecond
 	timer := time.NewTimer(suspensión)
 	defer timer.Stop()
@@ -168,7 +168,7 @@ func monitorBloqueado(bp Utils.BlockProcess) {
 	case <-timer.C:
 		// timeout → SUSP.BLOCKED
 		if moverDeBlockedASuspBlocked(pid) {
-			logger.Info("PID <%d> → SUSP.BLOCKED (timeout)", pid)
+			logger.Info("## (<%d>) Pasa del estado BLOCKED al estado SUSP.BLOCKED (timeout)", pid)
 			if err := comunicacion.SolicitarSuspensionEnMemoria(pid); err == nil {
 				Utils.InitProcess <- struct{}{}
 			}
@@ -195,7 +195,7 @@ func AtenderSuspBlockedAFinIO() {
 		go func(pid int, ch chan Utils.IOEvent) {
 			//logger.Info("Esperando fin de I/O para PID <%d> en SUSP.BLOCKED...", pid)
 			ioEvt := <-ch
-			logger.Info("FIN DE IO PARA PROCESO PID: <%d>", ioEvt.PID)
+			logger.Debug("FIN DE IO PARA PROCESO PID: <%d>", ioEvt.PID)
 
 			// Pasar de SUSP.BLOCKED a SUSP.READY
 			Utils.MutexBloqueadoSuspendido.Lock()
@@ -215,17 +215,17 @@ func AtenderSuspBlockedAFinIO() {
 					pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
 					algoritmos.ColaSuspendidoReady.Add(proc)
 					Utils.MutexSuspendidoReady.Unlock()
-					//logger.Info("PID <%d> pasa del estado SUSP.BLOCKED al estado SUSP.READY (FIFO)", pid)
+
 				case "PMCP":
 					pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
 					algoritmos.AddPMCPSusp(proc)
-					//logger.Info("PID <%d> pasa de SUSP.BLOCKED a SUSP.READY (PMCP)", pid)
+
 				default:
 					logger.Error("Algoritmo de ingreso desconocido")
 					return
 				}
 
-				logger.Info("PID <%d> pasa del estado SUSP.BLOCKED al estado SUSP.READY", pid)
+				logger.Info("## (<%d>) Pasa del estado SUSP.BLOCKED al estado SUSP.READY", pid)
 				// Notificar al planificador de largo plazo
 				Utils.InitProcess <- struct{}{}
 			} else {
@@ -280,7 +280,7 @@ func DespacharIO() {
 			continue
 		}
 
-		logger.Info("Asignada IO <%s> (puerto %d) a proceso <%d>", ioAsignada.Tipo, ioAsignada.Puerto, pedido.PID)
+		logger.Debug("Asignada IO <%s> (puerto %d) a proceso <%d>", ioAsignada.Tipo, ioAsignada.Puerto, pedido.PID)
 		algoritmos.PedidosIO.Remove(pedido)
 		go comunicacion.EnviarContextoIO(*ioAsignada, pedido.PID, pedido.Duracion)
 	}
