@@ -66,37 +66,43 @@ func PlanificadorLargoPlazo() {
 	go ManejadorCreacionProcesos()
 	go ManejadorInicializacionProcesos()
 	go ManejadorFinalizacionProcesos()
-	//go Reintentador()
 }
 
 func ManejadorInicializacionProcesos() {
 	for {
-		//SIGNAL llega PROCESO a COLA NEW / SUSP.READY
-		<-Utils.InitProcess
+		<-Utils.InitProcess //SIGNAL llega PROCESO a COLA NEW / SUSP.READY
 
-		//Al llegar un nuevo proceso a esta cola
+		//Al llegar un nuevo proceso a NEW
 		//y la misma esté vacía
 		//y no se tengan procesos en la cola de SUSP READY,
 		//se enviará un pedido a Memoria para inicializar el mismo.
 
-		//SE TOMA EL SIGUIENTE PROCESO A ENVIAR A READY
-		//(ORDENADOS PREVIAMENTE POR ALGORITMO)
 		var p *pcb.PCB = nil
 
-		Utils.MutexSuspendidoReady.Lock()
-		if !algoritmos.ColaSuspendidoReady.IsEmpty() {
-			//SI NO ESTA VACIA -> TIENE PRIORIDAD SUSP.READY
-			p = algoritmos.ColaSuspendidoReady.First()
-		}
-		Utils.MutexSuspendidoReady.Unlock()
+		logger.Debug("COLA NEW: %d, COLA SUSP.READY: %d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
 
-		if p == nil {
-			Utils.MutexNuevo.Lock()
-			if !algoritmos.ColaNuevo.IsEmpty() {
-				p = algoritmos.ColaNuevo.First()
-				//YA ORDENADOS POR FIFO O PMCP EN SYSCALL INIT
+		// 1. Prioridad: intentar obtener de SUSP.READY
+		//(TOMADO POR ALGORITMO)
+		if !algoritmos.ColaSuspendidoReady.IsEmpty() { //NO VACIA -> TIENE PRIORIDAD SUSP.READY
+			switch globals.KConfig.ReadyIngressAlgorithm {
+			case "FIFO":
+				p = algoritmos.ColaSuspendidoReady.First()
+			case "PMCP":
+				p = algoritmos.SeleccionarPMCPSusp() //MAS CHICO
+			default:
+				logger.Error("Algoritmo de ingreso desconocido")
+				return
 			}
-			Utils.MutexNuevo.Unlock()
+		} else {
+			switch globals.KConfig.ReadyIngressAlgorithm { //BUSCAR EN NEW
+			case "FIFO":
+				p = algoritmos.ColaNuevo.First()
+			case "PMCP":
+				p = algoritmos.SeleccionarPMCPNew() //MAS CHICO
+			default:
+				logger.Error("Algoritmo de ingreso desconocido")
+				return
+			}
 		}
 
 		if p == nil {
@@ -104,11 +110,13 @@ func ManejadorInicializacionProcesos() {
 			continue
 		}
 
+		//logger.Debug("PID: %d, ESTADO: ", p.PID, p.Estado)
 		filename := p.FileName
 		size := p.ProcessSize
 		estadoAnterior := p.Estado
 
 		//Intentar crear en Memoria
+		logger.Info("## (<%d>) pide espacio en memoria", p.PID)
 		espacio := comunicacion.SolicitarEspacioEnMemoria(filename, size)
 		if espacio < size {
 			logger.Info("## Memoria sin espacio. PID <%d> queda pendiente", p.PID)
@@ -138,16 +146,6 @@ func ManejadorInicializacionProcesos() {
 	}
 }
 
-/*
-func Reintentador() {
-	for {
-		//CUANDO MEMORIA LIBERA VUELVE A
-		<-Utils.LiberarMemoria
-		Utils.InitProcess <- struct{}{}
-	}
-}
-*/
-
 // RECIBIR SYSCALLS DE CREAR PROCESO
 func ManejadorCreacionProcesos() {
 	logger.Debug("Esperando solicitudes de INIT_PROC para creación de procesos")
@@ -169,20 +167,11 @@ func agregarProcesoAReady(proceso *pcb.PCB) {
 	// 1) estado anterior
 	estadoAnterior := proceso.Estado
 
-	// 2) Agregar a READY segun algoritmo de ingreso
-	switch globals.KConfig.ReadyIngressAlgorithm {
-	case "FIFO":
-		Utils.MutexReady.Lock()
-		pcb.CambiarEstado(proceso, pcb.EstadoReady)
-		algoritmos.ColaReady.Add(proceso)
-		Utils.MutexReady.Unlock()
-	case "PMCP":
-		pcb.CambiarEstado(proceso, pcb.EstadoReady)
-		algoritmos.AddPMCPReady(proceso)
-	default:
-		logger.Error("Algoritmo de ingreso desconocido")
-		return
-	}
+	// 2) Agregar a READY
+	Utils.MutexReady.Lock()
+	pcb.CambiarEstado(proceso, pcb.EstadoReady)
+	algoritmos.ColaReady.Add(proceso)
+	Utils.MutexReady.Unlock()
 
 	logger.Info("## (<%d>) Pasa del estado %s al estado READY", proceso.PID, estadoAnterior)
 
@@ -193,7 +182,6 @@ func agregarProcesoAReady(proceso *pcb.PCB) {
 // RECIBIR SYSCALLS DE EXIT
 func ManejadorFinalizacionProcesos() {
 	for {
-		//logger.Info("ManejadorFinalizacionProcesos: recibida finalización pid=%d", pid)
 		msg := <-Utils.ChannelFinishprocess
 		pid := msg.PID
 		pc := msg.PC

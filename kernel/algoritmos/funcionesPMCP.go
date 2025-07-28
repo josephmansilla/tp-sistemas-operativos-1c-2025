@@ -73,3 +73,37 @@ func AddPMCPReady(p *pcb.PCB) {
 
 	ColaReady.elements = nuevaCola
 }
+
+func SeleccionarPMCPSusp() *pcb.PCB {
+	Utils.MutexSuspendidoReady.Lock()
+	defer Utils.MutexSuspendidoReady.Unlock()
+
+	if len(ColaSuspendidoReady.elements) == 0 {
+		return nil
+	}
+
+	masChico := ColaSuspendidoReady.elements[0]
+	for _, p := range ColaSuspendidoReady.elements[1:] {
+		if p.ProcessSize < masChico.ProcessSize {
+			masChico = p
+		}
+	}
+	return masChico
+}
+
+func SeleccionarPMCPNew() *pcb.PCB {
+	Utils.MutexNuevo.Lock()
+	defer Utils.MutexNuevo.Unlock()
+
+	if len(ColaNuevo.elements) == 0 {
+		return nil
+	}
+
+	masChico := ColaNuevo.elements[0]
+	for _, p := range ColaNuevo.elements[1:] {
+		if p.ProcessSize < masChico.ProcessSize {
+			masChico = p
+		}
+	}
+	return masChico
+}

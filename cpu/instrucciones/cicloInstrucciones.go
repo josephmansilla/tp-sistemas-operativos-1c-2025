@@ -23,8 +23,9 @@ type RespuestaInstruccion struct {
 }
 
 type Interrupcion struct {
-	PID int `json:"pid"`
-	PC  int `json:"pc"`
+	PID int    `json:"pid"`
+	PC  int    `json:"pc"`
+	ID  string `json:"id"`
 }
 
 func FaseFetch(ipDestino string, puertoDestino int) {
@@ -147,6 +148,7 @@ func FaseCheckInterrupt() bool {
 	body := Interrupcion{
 		PID: pid,
 		PC:  pc,
+		ID:  globals.ID,
 	}
 
 	jsonBody, err := json.Marshal(body)
