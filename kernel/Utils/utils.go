@@ -38,6 +38,9 @@ var (
 	MutexIOWaiters          sync.Mutex
 	FinIOWaiters            map[int]chan IOEvent
 	MutexIOFinishedWaiters  sync.Mutex
+
+	InitSuspReady chan struct{}
+	InitNew       chan struct{}
 )
 
 // InicializarMutexes deja listas las variables de mutex.
@@ -55,6 +58,9 @@ func InicializarCanales() {
 	InitProcess = make(chan struct{}) // sin buffer para sincronización exacta
 	LiberarMemoria = make(chan struct{}, 1)
 	Desalojo = make(chan InterruptProcess)
+
+	InitSuspReady = make(chan struct{}) // sin buffer para sincronización exacta
+	InitNew = make(chan struct{})       // sin buffer para sincronización exacta
 
 	NotificarDespachador = make(chan int, 20) // buffer 10 procesos listos
 	NotificarComienzoIO = make(chan MensajeIOChannel, 20)

@@ -66,14 +66,10 @@ func PlanificadorLargoPlazo() {
 	go ManejadorCreacionProcesos()
 	go ManejadorInicializacionProcesos()
 	go ManejadorFinalizacionProcesos()
-	//go Reintentador()
 }
 
 func ManejadorInicializacionProcesos() {
 	for {
-		//SIGNAL llega PROCESO a COLA NEW / SUSP.READY
-		<-Utils.InitProcess
-
 		//Al llegar un nuevo proceso a esta cola
 		//y la misma esté vacía
 		//y no se tengan procesos en la cola de SUSP READY,
@@ -83,20 +79,40 @@ func ManejadorInicializacionProcesos() {
 		//(ORDENADOS PREVIAMENTE POR ALGORITMO)
 		var p *pcb.PCB = nil
 
-		Utils.MutexSuspendidoReady.Lock()
-		if !algoritmos.ColaSuspendidoReady.IsEmpty() {
-			//SI NO ESTA VACIA -> TIENE PRIORIDAD SUSP.READY
-			p = algoritmos.ColaSuspendidoReady.First()
-		}
-		Utils.MutexSuspendidoReady.Unlock()
-
-		if p == nil {
-			Utils.MutexNuevo.Lock()
-			if !algoritmos.ColaNuevo.IsEmpty() {
-				p = algoritmos.ColaNuevo.First()
-				//YA ORDENADOS POR FIFO O PMCP EN SYSCALL INIT
+		//SIGNAL llega PROCESO a COLA NEW / SUSP.READY
+		// Primer select NO bloqueante, para atender prioridad
+		// 1. Prioridad: intentar obtener de SUSP.READY en modo no bloqueante
+		select {
+		case <-Utils.InitSuspReady:
+			logger.Debug("Colas: NEW=%d, SUSP.READY=%d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
+			if !algoritmos.ColaSuspendidoReady.IsEmpty() {
+				p = algoritmos.ColaSuspendidoReady.First()
 			}
-			Utils.MutexNuevo.Unlock()
+		default:
+		}
+
+		// 2. Si no conseguimos proceso de SUSP.READY, bloqueamos esperando una señal real
+		if p == nil {
+			select {
+			case <-Utils.InitSuspReady:
+				logger.Debug("Colas: NEW=%d, SUSP.READY=%d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
+				if !algoritmos.ColaSuspendidoReady.IsEmpty() {
+					p = algoritmos.ColaSuspendidoReady.First()
+				} else {
+					continue
+				}
+			case <-Utils.InitNew:
+				logger.Debug("Colas: NEW=%d, SUSP.READY=%d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
+				if !algoritmos.ColaSuspendidoReady.IsEmpty() {
+					// Aunque llegó NEW, hay SUSP.READY con prioridad
+					continue
+				}
+				if !algoritmos.ColaNuevo.IsEmpty() {
+					p = algoritmos.ColaNuevo.First()
+				} else {
+					continue
+				}
+			}
 		}
 
 		if p == nil {
@@ -138,16 +154,6 @@ func ManejadorInicializacionProcesos() {
 	}
 }
 
-/*
-func Reintentador() {
-	for {
-		//CUANDO MEMORIA LIBERA VUELVE A
-		<-Utils.LiberarMemoria
-		Utils.InitProcess <- struct{}{}
-	}
-}
-*/
-
 // RECIBIR SYSCALLS DE CREAR PROCESO
 func ManejadorCreacionProcesos() {
 	logger.Debug("Esperando solicitudes de INIT_PROC para creación de procesos")
@@ -161,7 +167,11 @@ func ManejadorCreacionProcesos() {
 		logger.Debug("Solicitud INIT_PROC recibida: filename=%s, size=%d, pid=%d", fileName, size, pid)
 
 		// AVISAR QUE SE CREO UN PROCESO AL LARGO PLAZO
-		Utils.InitProcess <- struct{}{}
+		if algoritmos.ColaSuspendidoReady.IsEmpty() {
+			Utils.InitNew <- struct{}{}
+		} else {
+			Utils.InitSuspReady <- struct{}{}
+		}
 	}
 }
 
@@ -275,5 +285,9 @@ func finalizarProceso(pid int, pc int, cpuID string) {
 
 	// 8. Señal al liberar memoria
 	//Reintentos de creación pendientes
-	Utils.InitProcess <- struct{}{}
+	if algoritmos.ColaSuspendidoReady.IsEmpty() {
+		Utils.InitNew <- struct{}{}
+	} else {
+		Utils.InitSuspReady <- struct{}{}
+	}
 }

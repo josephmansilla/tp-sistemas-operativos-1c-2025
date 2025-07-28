@@ -39,10 +39,9 @@ type MensajeSyscall struct {
 }
 
 type MensajeInterrupt struct {
-	PID    int    `json:"pid"`
-	PC     int    `json:"pc"`
-	ID     string `json:"id"`
-	Motivo string `json:"motivo"`
+	PID int    `json:"pid"`
+	PC  int    `json:"pc"`
+	ID  string `json:"id"`
 }
 
 type MensajeDUMP struct {
@@ -61,7 +60,7 @@ func ContextoInterrumpido(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Debug("<%d> Se ha recibido contexto de Interrupcion: %s. CPU <%s>", msg.PID, msg.Motivo, msg.ID)
+	logger.Debug("<%d> Se ha recibido contexto de Interrupcion. CPU <%s>", msg.PID, msg.ID)
 	//SIGNAL A Planif. CORTO PLAZO QUE SE INTERRUMPIO
 	go func(p int) {
 		Utils.ContextoInterrupcion <- Utils.InterruptProcess{

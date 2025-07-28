@@ -76,17 +76,8 @@ func moverDeBlockedAReady(ioLibre Utils.IOEvent) bool {
 
 	// Agregar a READY
 	logger.Info("## (<%d>) finalizó IO y pasa a READY", ioLibre.PID)
-	agregarProcesoAReady(proceso)
+	agregarProcesoAReady(proceso) //Señal al corto plazo para despachar
 
-	/*
-		Utils.MutexReady.Lock()
-		pcb.CambiarEstado(proceso, pcb.EstadoReady)
-		algoritmos.ColaReady.Add(proceso)
-		Utils.MutexReady.Unlock()
-	*/
-
-	//Señal al corto plazo para despachar
-	Utils.NotificarDespachador <- ioLibre.PID
 	return true
 }
 
@@ -170,7 +161,11 @@ func monitorBloqueado(bp Utils.BlockProcess) {
 		if moverDeBlockedASuspBlocked(pid) {
 			logger.Info("## (<%d>) Pasa del estado BLOCKED al estado SUSP.BLOCKED (timeout)", pid)
 			if err := comunicacion.SolicitarSuspensionEnMemoria(pid); err == nil {
-				Utils.InitProcess <- struct{}{}
+				if algoritmos.ColaSuspendidoReady.IsEmpty() {
+					Utils.InitNew <- struct{}{}
+				} else {
+					Utils.InitSuspReady <- struct{}{}
+				}
 			}
 			// avisamos al subplanificador para pasarlo luego a SUSP.READY
 			Utils.FinIODesdeSuspBlocked <- Utils.IOEvent{PID: pid, Nombre: bp.Nombre}
@@ -227,7 +222,7 @@ func AtenderSuspBlockedAFinIO() {
 
 				logger.Info("## (<%d>) Pasa del estado SUSP.BLOCKED al estado SUSP.READY", pid)
 				// Notificar al planificador de largo plazo
-				Utils.InitProcess <- struct{}{}
+				Utils.InitSuspReady <- struct{}{}
 			} else {
 				logger.Warn("AtenderSuspBlockedAFinIO: PID %d no estaba en SUSP.BLOCKED", pid)
 			}
