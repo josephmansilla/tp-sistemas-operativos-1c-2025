@@ -79,22 +79,30 @@ func ManejadorInicializacionProcesos() {
 
 		var p *pcb.PCB = nil
 
-		// 1. Prioridad: intentar obtener de SUSP.READY
-		//SE TOMA EL SIGUIENTE PROCESO A ENVIAR A READY
-		//(ORDENADOS PREVIAMENTE POR ALGORITMO)
 		logger.Debug("COLA NEW: %d, COLA SUSP.READY: %d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
 
-		if !algoritmos.ColaSuspendidoReady.IsEmpty() {
-			logger.Debug("SUSP > COLA NEW: %d, COLA SUSP.READY: %d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
-			p = algoritmos.ColaSuspendidoReady.First()
-			//logger.Debug("SUSP = PID: %d", p.PID)
-
+		// 1. Prioridad: intentar obtener de SUSP.READY
+		//(TOMADO POR ALGORITMO)
+		if !algoritmos.ColaSuspendidoReady.IsEmpty() { //NO VACIA -> TIENE PRIORIDAD SUSP.READY
+			switch globals.KConfig.ReadyIngressAlgorithm {
+			case "FIFO":
+				p = algoritmos.ColaSuspendidoReady.First()
+			case "PMCP":
+				p = algoritmos.SeleccionarPMCPSusp() //MAS CHICO
+			default:
+				logger.Error("Algoritmo de ingreso desconocido")
+				return
+			}
 		} else {
-			p = algoritmos.ColaNuevo.First()
-			logger.Debug("NUEVO > COLA NEW: %d, COLA SUSP.READY: %d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
-			//logger.Debug("NEW = PID: %d", p.PID)
-			//algoritmos.MostrarColasSUSPREADY() //ACA VA DECIR VACIO
-			//algoritmos.MostrarColaNew()
+			switch globals.KConfig.ReadyIngressAlgorithm { //BUSCAR EN NEW
+			case "FIFO":
+				p = algoritmos.ColaNuevo.First()
+			case "PMCP":
+				p = algoritmos.SeleccionarPMCPNew() //MAS CHICO
+			default:
+				logger.Error("Algoritmo de ingreso desconocido")
+				return
+			}
 		}
 
 		if p == nil {
@@ -102,11 +110,13 @@ func ManejadorInicializacionProcesos() {
 			continue
 		}
 
+		//logger.Debug("PID: %d, ESTADO: ", p.PID, p.Estado)
 		filename := p.FileName
 		size := p.ProcessSize
 		estadoAnterior := p.Estado
 
 		//Intentar crear en Memoria
+		logger.Info("## (<%d>) pide espacio en memoria", p.PID)
 		espacio := comunicacion.SolicitarEspacioEnMemoria(filename, size)
 		if espacio < size {
 			logger.Info("## Memoria sin espacio. PID <%d> queda pendiente", p.PID)
@@ -157,20 +167,11 @@ func agregarProcesoAReady(proceso *pcb.PCB) {
 	// 1) estado anterior
 	estadoAnterior := proceso.Estado
 
-	// 2) Agregar a READY segun algoritmo de ingreso
-	switch globals.KConfig.ReadyIngressAlgorithm {
-	case "FIFO":
-		Utils.MutexReady.Lock()
-		pcb.CambiarEstado(proceso, pcb.EstadoReady)
-		algoritmos.ColaReady.Add(proceso)
-		Utils.MutexReady.Unlock()
-	case "PMCP":
-		pcb.CambiarEstado(proceso, pcb.EstadoReady)
-		algoritmos.AddPMCPReady(proceso)
-	default:
-		logger.Error("Algoritmo de ingreso desconocido")
-		return
-	}
+	// 2) Agregar a READY
+	Utils.MutexReady.Lock()
+	pcb.CambiarEstado(proceso, pcb.EstadoReady)
+	algoritmos.ColaReady.Add(proceso)
+	Utils.MutexReady.Unlock()
 
 	logger.Info("## (<%d>) Pasa del estado %s al estado READY", proceso.PID, estadoAnterior)
 
@@ -181,7 +182,6 @@ func agregarProcesoAReady(proceso *pcb.PCB) {
 // RECIBIR SYSCALLS DE EXIT
 func ManejadorFinalizacionProcesos() {
 	for {
-		//logger.Info("ManejadorFinalizacionProcesos: recibida finalización pid=%d", pid)
 		msg := <-Utils.ChannelFinishprocess
 		pid := msg.PID
 		pc := msg.PC

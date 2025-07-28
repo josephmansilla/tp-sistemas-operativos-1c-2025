@@ -156,7 +156,7 @@ func RecibirFinDeIO(w http.ResponseWriter, r *http.Request) {
 			logger.Debug("RecibirFinDeIO: canal FinIOWaiters[%d] lleno, descartando evento", evt.PID)
 		}
 	}
-	Utils.FinIODesdeSuspBlocked <- Utils.IOEvent{PID: evt.PID, Nombre: evt.Nombre, Puerto: evt.Puerto}
+	//Utils.FinIODesdeSuspBlocked <- Utils.IOEvent{PID: evt.PID, Nombre: evt.Nombre, Puerto: evt.Puerto}
 
 	w.WriteHeader(http.StatusOK)
 }

@@ -264,6 +264,7 @@ func exitInstruccion(arguments []string) error {
 	traducciones.Cache.LimpiarCache()
 
 	logger.Info("## PID: %d - EJECUTADA: EXIT - %s", globals.PIDActual, strings.Join(arguments, " "))
+	globals.PIDActual = -1
 	return nil
 }
 

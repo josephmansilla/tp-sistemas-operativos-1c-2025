@@ -108,7 +108,6 @@ func moverDeBlockedASuspBlocked(pid int) bool {
 	pcb.CambiarEstado(proceso, pcb.EstadoSuspBlocked)
 	algoritmos.ColaBloqueadoSuspendido.Add(proceso)
 	Utils.MutexBloqueadoSuspendido.Unlock()
-	//logger.Info("## (<%d>) Pasa del estado BLOCKED al estado SUSP.BLOCKED", proceso.PID)
 
 	return true
 }
@@ -161,9 +160,11 @@ func monitorBloqueado(bp Utils.BlockProcess) {
 		if moverDeBlockedASuspBlocked(pid) {
 			logger.Info("## (<%d>) Pasa del estado BLOCKED al estado SUSP.BLOCKED (timeout)", pid)
 			if err := comunicacion.SolicitarSuspensionEnMemoria(pid); err == nil {
+				//Señal al liberar memoria
+				//Reintentos de creación pendientes
 				Utils.InitProcess <- struct{}{}
 			}
-			// avisamos al subplanificador para pasarlo luego a SUSP.READY
+			//Avisamos al subplanificador para pasarlo LUEGO a SUSP.READY
 			Utils.FinIODesdeSuspBlocked <- Utils.IOEvent{PID: pid, Nombre: bp.Nombre}
 		}
 	}
@@ -194,27 +195,17 @@ func AtenderSuspBlockedAFinIO() {
 			for _, p := range algoritmos.ColaBloqueadoSuspendido.Values() {
 				if p.PID == pid {
 					proc = p
+					algoritmos.ColaBloqueadoSuspendido.Remove(p)
 					break
 				}
 			}
 			Utils.MutexBloqueadoSuspendido.Unlock()
 
 			if proc != nil {
-				switch globals.KConfig.ReadyIngressAlgorithm {
-				case "FIFO":
-					Utils.MutexSuspendidoReady.Lock()
-					pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
-					algoritmos.ColaSuspendidoReady.Add(proc)
-					Utils.MutexSuspendidoReady.Unlock()
-
-				case "PMCP":
-					pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
-					algoritmos.AddPMCPSusp(proc)
-
-				default:
-					logger.Error("Algoritmo de ingreso desconocido")
-					return
-				}
+				Utils.MutexSuspendidoReady.Lock()
+				pcb.CambiarEstado(proc, pcb.EstadoSuspReady)
+				algoritmos.ColaSuspendidoReady.Add(proc)
+				Utils.MutexSuspendidoReady.Unlock()
 
 				logger.Info("## (<%d>) Pasa del estado SUSP.BLOCKED al estado SUSP.READY", pid)
 				// Notificar al planificador de largo plazo
