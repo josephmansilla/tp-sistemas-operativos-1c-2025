@@ -70,49 +70,31 @@ func PlanificadorLargoPlazo() {
 
 func ManejadorInicializacionProcesos() {
 	for {
-		//Al llegar un nuevo proceso a esta cola
+		<-Utils.InitProcess //SIGNAL llega PROCESO a COLA NEW / SUSP.READY
+
+		//Al llegar un nuevo proceso a NEW
 		//y la misma esté vacía
 		//y no se tengan procesos en la cola de SUSP READY,
 		//se enviará un pedido a Memoria para inicializar el mismo.
 
-		//SE TOMA EL SIGUIENTE PROCESO A ENVIAR A READY
-		//(ORDENADOS PREVIAMENTE POR ALGORITMO)
 		var p *pcb.PCB = nil
 
-		//SIGNAL llega PROCESO a COLA NEW / SUSP.READY
-		// Primer select NO bloqueante, para atender prioridad
-		// 1. Prioridad: intentar obtener de SUSP.READY en modo no bloqueante
-		select {
-		case <-Utils.InitSuspReady:
-			logger.Debug("Colas: NEW=%d, SUSP.READY=%d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
-			if !algoritmos.ColaSuspendidoReady.IsEmpty() {
-				p = algoritmos.ColaSuspendidoReady.First()
-			}
-		default:
-		}
+		// 1. Prioridad: intentar obtener de SUSP.READY
+		//SE TOMA EL SIGUIENTE PROCESO A ENVIAR A READY
+		//(ORDENADOS PREVIAMENTE POR ALGORITMO)
+		logger.Debug("COLA NEW: %d, COLA SUSP.READY: %d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
 
-		// 2. Si no conseguimos proceso de SUSP.READY, bloqueamos esperando una señal real
-		if p == nil {
-			select {
-			case <-Utils.InitSuspReady:
-				logger.Debug("Colas: NEW=%d, SUSP.READY=%d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
-				if !algoritmos.ColaSuspendidoReady.IsEmpty() {
-					p = algoritmos.ColaSuspendidoReady.First()
-				} else {
-					continue
-				}
-			case <-Utils.InitNew:
-				logger.Debug("Colas: NEW=%d, SUSP.READY=%d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
-				if !algoritmos.ColaSuspendidoReady.IsEmpty() {
-					// Aunque llegó NEW, hay SUSP.READY con prioridad
-					continue
-				}
-				if !algoritmos.ColaNuevo.IsEmpty() {
-					p = algoritmos.ColaNuevo.First()
-				} else {
-					continue
-				}
-			}
+		if !algoritmos.ColaSuspendidoReady.IsEmpty() {
+			logger.Debug("SUSP > COLA NEW: %d, COLA SUSP.READY: %d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
+			p = algoritmos.ColaSuspendidoReady.First()
+			//logger.Debug("SUSP = PID: %d", p.PID)
+
+		} else {
+			p = algoritmos.ColaNuevo.First()
+			logger.Debug("NUEVO > COLA NEW: %d, COLA SUSP.READY: %d", len(algoritmos.ColaNuevo.Values()), len(algoritmos.ColaSuspendidoReady.Values()))
+			//logger.Debug("NEW = PID: %d", p.PID)
+			//algoritmos.MostrarColasSUSPREADY() //ACA VA DECIR VACIO
+			//algoritmos.MostrarColaNew()
 		}
 
 		if p == nil {
@@ -167,11 +149,7 @@ func ManejadorCreacionProcesos() {
 		logger.Debug("Solicitud INIT_PROC recibida: filename=%s, size=%d, pid=%d", fileName, size, pid)
 
 		// AVISAR QUE SE CREO UN PROCESO AL LARGO PLAZO
-		if algoritmos.ColaSuspendidoReady.IsEmpty() {
-			Utils.InitNew <- struct{}{}
-		} else {
-			Utils.InitSuspReady <- struct{}{}
-		}
+		Utils.InitProcess <- struct{}{}
 	}
 }
 
@@ -285,9 +263,5 @@ func finalizarProceso(pid int, pc int, cpuID string) {
 
 	// 8. Señal al liberar memoria
 	//Reintentos de creación pendientes
-	if algoritmos.ColaSuspendidoReady.IsEmpty() {
-		Utils.InitNew <- struct{}{}
-	} else {
-		Utils.InitSuspReady <- struct{}{}
-	}
+	Utils.InitProcess <- struct{}{}
 }

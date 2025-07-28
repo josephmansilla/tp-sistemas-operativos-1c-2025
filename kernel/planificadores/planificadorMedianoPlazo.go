@@ -161,11 +161,7 @@ func monitorBloqueado(bp Utils.BlockProcess) {
 		if moverDeBlockedASuspBlocked(pid) {
 			logger.Info("## (<%d>) Pasa del estado BLOCKED al estado SUSP.BLOCKED (timeout)", pid)
 			if err := comunicacion.SolicitarSuspensionEnMemoria(pid); err == nil {
-				if algoritmos.ColaSuspendidoReady.IsEmpty() {
-					Utils.InitNew <- struct{}{}
-				} else {
-					Utils.InitSuspReady <- struct{}{}
-				}
+				Utils.InitProcess <- struct{}{}
 			}
 			// avisamos al subplanificador para pasarlo luego a SUSP.READY
 			Utils.FinIODesdeSuspBlocked <- Utils.IOEvent{PID: pid, Nombre: bp.Nombre}
@@ -222,7 +218,7 @@ func AtenderSuspBlockedAFinIO() {
 
 				logger.Info("## (<%d>) Pasa del estado SUSP.BLOCKED al estado SUSP.READY", pid)
 				// Notificar al planificador de largo plazo
-				Utils.InitSuspReady <- struct{}{}
+				Utils.InitProcess <- struct{}{}
 			} else {
 				logger.Warn("AtenderSuspBlockedAFinIO: PID %d no estaba en SUSP.BLOCKED", pid)
 			}

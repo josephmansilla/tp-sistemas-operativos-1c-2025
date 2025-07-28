@@ -21,7 +21,6 @@ var (
 	//Canales de señalización
 	ChannelProcessArguments chan NewProcess
 	InitProcess             chan struct{}
-	LiberarMemoria          chan struct{}
 	ChannelFinishprocess    chan FinishProcess
 	ChannelProcessBlocked   chan BlockProcess
 	Desalojo                chan InterruptProcess
@@ -39,8 +38,9 @@ var (
 	FinIOWaiters            map[int]chan IOEvent
 	MutexIOFinishedWaiters  sync.Mutex
 
-	InitSuspReady chan struct{}
-	InitNew       chan struct{}
+	InitSuspReady  chan struct{}
+	InitNew        chan struct{}
+	LiberarMemoria chan struct{}
 )
 
 // InicializarMutexes deja listas las variables de mutex.
