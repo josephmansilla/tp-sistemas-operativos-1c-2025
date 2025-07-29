@@ -127,30 +127,22 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
-	g.MutexOperacionMemoria.Lock()
-	defer g.MutexOperacionMemoria.Unlock()
-
-	ignore := 0
 	var mensaje g.ConsultaProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
 		return
 	}
-	respuesta := g.RespuestaMemoria{
-		Exito:   true,
-		Mensaje: "Proceso cargado a SWAP",
-	}
 
+	var respuesta g.RespuestaMemoria
 	g.MutexProcesosPorPID.Lock()
 	proceso := g.ProcesosPorPID[mensaje.PID]
+	enSwap := proceso.EstaEnSwap
 	g.MutexProcesosPorPID.Unlock()
 
-	if proceso.EstaEnSwap {
+	if enSwap {
 		logger.Debug("PID <%d> Ya está en SWAP", mensaje.PID)
-		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: "Ya esta en SWAP"}
-		ignore = 1
-	}
+		respuesta = g.RespuestaMemoria{Exito: false, Mensaje: "Ya está en SWAP"}
 
-	if ignore != 1 {
+	} else {
 		entradas := adm.RecolectarEntradasParaSwap(mensaje.PID)
 
 		errSwap := adm.CargarEntradasASwap(mensaje.PID, entradas) // REQUIERE ACTUALIZAR ESTRUCTURAS
@@ -161,17 +153,21 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		adm.IncrementarMetrica(proceso, 1, adm.IncrementarBajadasSwap)
-		proceso.EstaEnSwap = true
-
+		//Delay simulado ANTES de éxito y responder
 		g.CalcularEjecutarSleep(time.Duration(g.MemoryConfig.SwapDelay) * time.Millisecond)
+
+		g.MutexProcesosPorPID.Lock()
+		proceso.EstaEnSwap = true
+		adm.IncrementarMetrica(proceso, 1, adm.IncrementarBajadasSwap)
+		g.MutexProcesosPorPID.Unlock()
+
 		logger.Info("#### Suspensión del PID <%d> éxitosa ####", mensaje.PID)
+		respuesta = g.RespuestaMemoria{Exito: true, Mensaje: "Proceso cargado a SWAP"}
 	}
 
 	if errEncode := json.NewEncoder(w).Encode(respuesta); errEncode != nil {
 		logger.Error("Error al serializar la suspensión del proceso: %v", errEncode)
 		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
-		return
 	}
 }
 
