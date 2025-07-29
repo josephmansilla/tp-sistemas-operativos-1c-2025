@@ -122,6 +122,7 @@ func InterrupcionCPU() {
 		Utils.MutexEjecutando.Unlock()
 
 		//Mover a READY
+		logger.Info("## (<%d>) Pasa del estado %s al estado READY", proceso.PID, proceso.Estado)
 		agregarProcesoAReady(proceso) //SEMAFORO AL DESPACHADOR NUEVAMENTE
 
 		//AVISAR PROCESO DESALOJADO

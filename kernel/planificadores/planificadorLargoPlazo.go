@@ -116,7 +116,7 @@ func ManejadorInicializacionProcesos() {
 		estadoAnterior := p.Estado
 
 		//Intentar crear en Memoria
-		logger.Info("## (<%d>) pide espacio en memoria", p.PID)
+		logger.Info("## (<%d>) Inicializa y pide espacio en memoria", p.PID)
 		espacio := comunicacion.SolicitarEspacioEnMemoria(filename, size)
 		if espacio < size {
 			logger.Info("## Memoria sin espacio. PID <%d> queda pendiente", p.PID)
@@ -125,6 +125,10 @@ func ManejadorInicializacionProcesos() {
 			Utils.NotificarDespachador <- p.PID
 			continue
 		}
+
+		//DICE QUE SI, HAY ESPACIO
+		//MANDAR PROCESO A READY
+		logger.Info("## (<%d>) Pasa del estado %s al estado READY", p.PID, p.Estado)
 
 		//Remover de su cola anterior
 		if estadoAnterior == pcb.EstadoSuspReady {
@@ -140,8 +144,6 @@ func ManejadorInicializacionProcesos() {
 			Utils.MutexNuevo.Unlock()
 		}
 
-		//DICE QUE SI, HAY ESPACIO
-		//MANDAR PROCESO A READY
 		agregarProcesoAReady(p)
 	}
 }
@@ -173,7 +175,7 @@ func agregarProcesoAReady(proceso *pcb.PCB) {
 	algoritmos.ColaReady.Add(proceso)
 	Utils.MutexReady.Unlock()
 
-	logger.Info("## (<%d>) Pasa del estado %s al estado READY", proceso.PID, estadoAnterior)
+	logger.Debug("## (<%d>) Pasa del estado %s al estado READY", proceso.PID, estadoAnterior)
 
 	// 4) Señal al planificador de corto plazo
 	Utils.NotificarDespachador <- proceso.PID //MANDO PID

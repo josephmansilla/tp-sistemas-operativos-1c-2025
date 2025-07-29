@@ -76,6 +76,7 @@ func moverDeBlockedAReady(ioLibre Utils.IOEvent) bool {
 
 	// Agregar a READY
 	logger.Info("## (<%d>) finalizó IO y pasa a READY", ioLibre.PID)
+	logger.Info("## (<%d>) Pasa del estado %s al estado READY", proceso.PID, proceso.Estado)
 	agregarProcesoAReady(proceso) //Señal al corto plazo para despachar
 
 	return true
