@@ -81,22 +81,26 @@ func EnviarContextoIO(instanciaIO globals.DatosIO, pid int, duracion int) {
 	for intento := 1; intento <= maxIntentos; intento++ {
 		err = data.EnviarDatos(url, mensaje)
 		if err == nil {
-			// Éxito: salimos
+			// Envío exitoso
 			return
 		}
 
-		// Si no es connection refused, no tiene sentido reintentar
-		if !strings.Contains(err.Error(), "connection refused") {
-			logger.Warn("Error enviando a IO (no recoverable): %v", err)
-			return
+		// Si el error es "connection refused" o "connection reset" (IO desconectada)
+		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "forcibly closed") {
+			// Log leve para debug, NO error fatal
+			logger.Warn("No se pudo conectar a IO %s (puerto %d), está desconectada o no responde (intento %d/%d)", instanciaIO.Tipo, instanciaIO.Puerto, intento, maxIntentos)
+			time.Sleep(backoff)
+			continue
 		}
-		// es Connection refused: esperamos y reintentamos
-		logger.Warn("Intento %d: connection refused al enviar a IO, reintentando en %s...", intento, backoff)
-		time.Sleep(backoff)
+
+		// Otros errores menos comunes los logueamos también pero no fatales
+		logger.Warn("Error enviando a IO: %v", err)
+		return
 	}
 
-	// Tras varios intentos fallidos
-	logger.Error("No se pudo conectar a IO %s tras %d intentos: %v", instanciaIO.Tipo, maxIntentos, err)
+	// Luego de reintentos no exitosos, solo log leve
+	logger.Warn("No se pudo conectar a IO %s tras %d intentos, se ignorará temporalmente", instanciaIO.Tipo, maxIntentos)
+	return
 }
 
 // Al momento de recibir un mensaje de una IO se deberá verificar

@@ -74,12 +74,18 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/io/kernel", RecibirMensajeDeKernel)
 
-	// Esperar brevemente a que el servidor esté activo
-	EnviarIpPuertoNombreAKernel(globals.IoConfig.IpKernel, globals.IoConfig.PortKernel, mensaje)
-
 	// ----------------------------------------------------
 	// ------------------ SERVIDOR HTTP -------------------
 	// ----------------------------------------------------
+
+	//Lanzar goroutine para enviar al Kernel
+	go func() {
+		// Podés esperar brevemente o directamente intentar
+		time.Sleep(300 * time.Millisecond)
+		logger.Info("Enviando mensaje handshake a Kernel...")
+		EnviarIpPuertoNombreAKernel(globals.IoConfig.IpKernel, globals.IoConfig.PortKernel, mensaje)
+	}()
+
 	direccion := fmt.Sprintf("%s:%d", globals.IoConfig.IpIo, globals.IoConfig.PortIo)
 	logger.Info("Escuchando en %s", direccion)
 	err = http.ListenAndServe(direccion, mux)
