@@ -83,5 +83,5 @@ func (tlb *TLB) AgregarEntrada(nroPagina int, marco int) {
 func (tlb *TLB) Limpiar() {
 	tlb.entradas = make(map[int]*list.Element)
 	tlb.orden.Init()
-	logger.Info("PID: %d - TLB limpiada", globals.PIDActual)
+	//logger.Info("PID: %d - TLB limpiada", globals.PIDActual)
 }
