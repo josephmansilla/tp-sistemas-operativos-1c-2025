@@ -127,7 +127,7 @@ func LeerEnMemoria(dirFisica int, tamanio int) (string, error) {
 		DireccionFisica:  dirFisica,
 		TamanioARecorrer: tamanio,
 	}
-	// TODO: VERIFICAR QUE LA LECTURA NO EXCEDA EL LIMITE DE LA PAGINA Y ESCRIBIR VARIAS VECES SI ES NECESARIO
+
 	url := fmt.Sprintf("http://%s:%d/memoria/lectura",
 		globals.ClientConfig.IpMemory,
 		globals.ClientConfig.PortMemory,
@@ -152,7 +152,7 @@ func LeerEnMemoria(dirFisica int, tamanio int) (string, error) {
 	}
 
 	//logger.Info("Direccion Fisica: %d y Tamanio: %d enviados correctamente a memoria", dirFisica, tamanio)
-	//logger.Info("Valor leído: %s", respuesta.ValorLeido)
+	//logger.Info("############################Valor leído: %s", respuesta.ValorLeido)
 
 	return respuesta.ValorLeido, nil
 }
@@ -163,7 +163,7 @@ func EscribirEnMemoria(dirFisica int, datos string) error {
 		DireccionFisica: dirFisica,
 		DatosAEscribir:  datos,
 	}
-	// TODO: VERIFICAR QUE LA ESCRITURA NO EXCEDA EL LIMITE DE LA PAGINA Y ESCRIBIR VARIAS VECES SI ES NECESARIO
+
 	url := fmt.Sprintf("http://%s:%d/memoria/escritura",
 		globals.ClientConfig.IpMemory, globals.ClientConfig.PortMemory)
 

@@ -140,7 +140,7 @@ func (c *CachePaginas) reemplazoClockM(nueva EntradaCache) {
 			indice := (c.Puntero + i) % c.MaxEntradas
 			entrada := &c.Entradas[indice]
 			if !entrada.Usado && !entrada.Modificado {
-				//logger.Info("Reemplazo CLOCK-M (0,0) - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
+				logger.Info("Reemplazo CLOCK-M (0,0) - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
 				c.Entradas[indice] = nueva
 				c.Puntero = (indice + 1) % c.MaxEntradas
 				return
@@ -164,7 +164,7 @@ func (c *CachePaginas) reemplazoClockM(nueva EntradaCache) {
 						logger.Info("PID: %d - Memory Update - Pagina: %d - Frame: %d", globals.PIDActual, entrada.NroPagina, dirFisica)
 					}
 				}
-				//logger.Info("Reemplazo CLOCK-M (0,1) - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
+				logger.Info("Reemplazo CLOCK-M - Página %d reemplazada por Página %d", entrada.NroPagina, nueva.NroPagina)
 				c.Entradas[indice] = nueva
 				c.Puntero = (indice + 1) % c.MaxEntradas
 				return

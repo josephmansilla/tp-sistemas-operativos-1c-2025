@@ -79,5 +79,5 @@ type RespuestaEscritura struct {
 
 type RespuestaLectura struct {
 	Exito error  `json:"exito"`
-	Valor string `json:"valor"`
+	Valor string `json:"valor_leido"`
 }

@@ -148,8 +148,6 @@ func readMemInstruccion(arguments []string) error {
 
 	dirFisica := traducciones.Traducir(dirLogica)
 
-	var valorLeido string
-
 	if traducciones.Cache.EstaActiva() {
 		//logger.Info("Cache Activa")
 
@@ -161,7 +159,7 @@ func readMemInstruccion(arguments []string) error {
 
 		//logger.Info("PID: %d - CACHE MISS - Página: %d", globals.PIDActual, nroPagina)
 
-		valorLeido, err = traducciones.LeerEnMemoria(dirFisica, tamanio)
+		valorLeido, err := traducciones.LeerEnMemoria(dirFisica, tamanio)
 		if err != nil {
 			logger.Error("Error leyendo de memoria: %v", err)
 			return err
@@ -173,7 +171,7 @@ func readMemInstruccion(arguments []string) error {
 	} else {
 		//logger.Info("Cache Inactiva")
 
-		valorLeido, err = traducciones.LeerEnMemoria(dirFisica, tamanio)
+		valorLeido, err := traducciones.LeerEnMemoria(dirFisica, tamanio)
 		if err != nil {
 			logger.Error("Error leyendo de memoria: %v", err)
 			return err
