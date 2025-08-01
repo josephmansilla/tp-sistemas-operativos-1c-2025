@@ -108,17 +108,19 @@ func (c *CachePaginas) reemplazoClock(nueva EntradaCache) {
 		entrada := &c.Entradas[c.Puntero]
 
 		if !entrada.Usado {
-			// Si la página actual fue modificada, escribir en memoria
-			tamPagina := globals.TamanioPagina
-			dirLogica := entrada.NroPagina * tamPagina
-			dirFisica := Traducir(dirLogica)
+			if entrada.Modificado {
+				// Si la página fue modificada, escribir en memoria
+				tamPagina := globals.TamanioPagina
+				dirLogica := entrada.NroPagina * tamPagina
+				dirFisica := Traducir(dirLogica)
 
-			if dirFisica != -1 {
-				err := EscribirEnMemoria(dirFisica, entrada.Contenido)
-				if err != nil {
-					logger.Error("Error al escribir página modificada %d en dirección física %d: %v", entrada.NroPagina, dirFisica, err)
-				} else {
-					logger.Info("PID: %d - Memory Update - Pagina: %d - Frame: %d", globals.PIDActual, entrada.NroPagina, dirFisica)
+				if dirFisica != -1 {
+					err := EscribirEnMemoria(dirFisica, entrada.Contenido)
+					if err != nil {
+						logger.Error("Error al escribir página modificada %d en dirección física %d: %v", entrada.NroPagina, dirFisica, err)
+					} else {
+						logger.Info("PID: %d - Memory Update - Pagina: %d - Frame: %d", globals.PIDActual, entrada.NroPagina, dirFisica)
+					}
 				}
 			}
 
@@ -127,7 +129,7 @@ func (c *CachePaginas) reemplazoClock(nueva EntradaCache) {
 			return
 		}
 
-		// Marcar la entrada como no usada
+		// Marcar la entrada como no usada y avanzar el puntero
 		entrada.Usado = false
 		c.Puntero = (c.Puntero + 1) % c.MaxEntradas
 	}
