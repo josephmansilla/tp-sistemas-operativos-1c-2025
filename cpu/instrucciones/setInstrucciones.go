@@ -237,6 +237,7 @@ func ioInstruccion(arguments []string) error {
 	}
 
 	traducciones.Cache.LimpiarCache()
+	traducciones.Tlb.Limpiar()
 
 	logger.Info("## PID: %d - EJECUTADA: IO - %s", globals.PIDActual, strings.Join(arguments, " "))
 	return globals.ErrSyscallBloqueante
@@ -262,6 +263,7 @@ func exitInstruccion(arguments []string) error {
 	}
 
 	traducciones.Cache.LimpiarCache()
+	traducciones.Tlb.Limpiar()
 
 	logger.Info("## PID: %d - EJECUTADA: EXIT - %s", globals.PIDActual, strings.Join(arguments, " "))
 	globals.PIDActual = -1

@@ -2,16 +2,13 @@ package traducciones
 
 import (
 	"container/list"
-	"time"
-
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
 type EntradaTLB struct {
-	NroPagina    int
-	Marco        int
-	UltimoAcceso time.Time
+	NroPagina int
+	Marco     int
 }
 
 type TLB struct {
@@ -81,4 +78,10 @@ func (tlb *TLB) AgregarEntrada(nroPagina int, marco int) {
 	nuevaEntrada := EntradaTLB{NroPagina: nroPagina, Marco: marco}
 	elem := tlb.orden.PushFront(nuevaEntrada)
 	tlb.entradas[nroPagina] = elem
+}
+
+func (tlb *TLB) Limpiar() {
+	tlb.entradas = make(map[int]*list.Element)
+	tlb.orden.Init()
+	logger.Info("PID: %d - TLB limpiada", globals.PIDActual)
 }

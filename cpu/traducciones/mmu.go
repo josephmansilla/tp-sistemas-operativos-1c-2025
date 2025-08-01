@@ -37,10 +37,10 @@ type RespuestaLectura struct {
 	ValorLeido string `json:"valor_leido"`
 }
 
-var tlb *TLB
+var Tlb *TLB
 
 func InitTLB() {
-	tlb = NuevaTLB()
+	Tlb = NuevaTLB()
 }
 
 // Función principal de traducción
@@ -53,7 +53,7 @@ func Traducir(dirLogica int) int {
 	desplazamiento := dirLogica % tamPagina
 
 	// Consulto la TLB
-	if marco, ok := tlb.Buscar(nroPagina); ok {
+	if marco, ok := Tlb.Buscar(nroPagina); ok {
 		return marco*tamPagina + desplazamiento
 	}
 
@@ -70,7 +70,7 @@ func Traducir(dirLogica int) int {
 	}
 
 	// Agrego entrada a la TLB
-	tlb.AgregarEntrada(nroPagina, marco)
+	Tlb.AgregarEntrada(nroPagina, marco)
 	logger.Info("PID: %d - OBTENER MARCO - Pagina: %d - Marco: %d", globals.PIDActual, nroPagina, marco)
 
 	return marco*tamPagina + desplazamiento

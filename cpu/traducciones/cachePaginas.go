@@ -41,6 +41,7 @@ func NuevaCachePaginas() *CachePaginas {
 }
 
 func (c *CachePaginas) Agregar(nroPagina int, contenido string, modificado bool) {
+	time.Sleep(time.Millisecond * time.Duration(globals.ClientConfig.CacheDelay))
 	nueva := EntradaCache{
 		NroPagina:  nroPagina,
 		Contenido:  contenido,
@@ -73,16 +74,6 @@ func (c *CachePaginas) EstaActiva() bool {
 	return c != nil && c.MaxEntradas > 0
 }
 
-func (c *CachePaginas) MarcarUso(nroPagina int) {
-	for i := range c.Entradas {
-		if c.Entradas[i].NroPagina == nroPagina {
-			c.Entradas[i].Usado = true
-			//logger.Info("PID: %d - Cache USO - Página %d marcada con bit de uso en true", globals.PIDActual, nroPagina)
-			return
-		}
-	}
-}
-
 func EscribirEnCache(nroPagina int, datos string) error {
 	time.Sleep(time.Millisecond * time.Duration(globals.ClientConfig.CacheDelay))
 
@@ -101,6 +92,7 @@ func EscribirEnCache(nroPagina int, datos string) error {
 }
 
 func (c *CachePaginas) reemplazarEntrada(nueva EntradaCache) {
+	time.Sleep(time.Millisecond * time.Duration(globals.ClientConfig.CacheDelay))
 	switch c.Algoritmo {
 	case "CLOCK":
 		c.reemplazoClock(nueva)
@@ -188,6 +180,7 @@ func (c *CachePaginas) reemplazoClockM(nueva EntradaCache) {
 }
 
 func (c *CachePaginas) LimpiarCache() {
+	time.Sleep(time.Millisecond * time.Duration(globals.ClientConfig.CacheDelay))
 	if c == nil {
 		return
 	}
