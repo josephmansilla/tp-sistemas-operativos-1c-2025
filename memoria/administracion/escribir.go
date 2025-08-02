@@ -40,8 +40,8 @@ func ModificarMemoria(direccionFisica int, datosEnBytes []byte) (err error) {
 	finFrame := inicioFrame + tamanioPagina
 
 	if direccionFisica+len(datosEnBytes) > finFrame {
-		logger.Error("Out of range - Escritura fuera del marco asignado")
-		return logger.ErrSegmentFault
+		//logger.Error("Out of range - Escritura fuera del marco asignado")
+		//return logger.ErrSegmentFault
 	}
 
 	g.MutexMemoriaPrincipal.Lock()
