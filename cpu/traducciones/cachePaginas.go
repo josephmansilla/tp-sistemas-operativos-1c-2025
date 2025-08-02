@@ -1,7 +1,6 @@
 package traducciones
 
 import (
-	"fmt"
 	"github.com/sisoputnfrba/tp-golang/cpu/globals"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"time"
@@ -12,6 +11,7 @@ type EntradaCache struct {
 	Contenido  string
 	Modificado bool
 	Usado      bool
+	DirLogica  int
 }
 
 type CachePaginas struct {
@@ -40,13 +40,17 @@ func NuevaCachePaginas() *CachePaginas {
 	}
 }
 
-func (c *CachePaginas) Agregar(nroPagina int, contenido string, modificado bool) {
+func (c *CachePaginas) Agregar(dirLogica int, contenido string, modificado bool) {
 	time.Sleep(time.Millisecond * time.Duration(globals.ClientConfig.CacheDelay))
+
+	nroPagina := dirLogica / globals.TamanioPagina
+
 	nueva := EntradaCache{
 		NroPagina:  nroPagina,
 		Contenido:  contenido,
 		Modificado: modificado,
 		Usado:      true,
+		DirLogica:  dirLogica,
 	}
 
 	if len(c.Entradas) < c.MaxEntradas {
@@ -59,7 +63,7 @@ func (c *CachePaginas) Agregar(nroPagina int, contenido string, modificado bool)
 func (c *CachePaginas) Buscar(nroPagina int) (string, bool) {
 	time.Sleep(time.Millisecond * time.Duration(globals.ClientConfig.CacheDelay))
 
-	for i := range c.Entradas {
+	for i := 0; i < len(c.Entradas); i++ {
 		if c.Entradas[i].NroPagina == nroPagina {
 			c.Entradas[i].Usado = true
 			logger.Info("PID: %d - Cache HIT - Página: %d", globals.PIDActual, nroPagina)
@@ -74,21 +78,44 @@ func (c *CachePaginas) EstaActiva() bool {
 	return c != nil && c.MaxEntradas > 0
 }
 
-func EscribirEnCache(nroPagina int, datos string) error {
+func EscribirEnCache(datos string, dirLogica int) error {
 	time.Sleep(time.Millisecond * time.Duration(globals.ClientConfig.CacheDelay))
 
-	for i := range Cache.Entradas {
+	nroPagina := dirLogica / globals.TamanioPagina
+	offset := dirLogica % globals.TamanioPagina
+
+	for i := 0; i < len(Cache.Entradas); i++ {
 		if Cache.Entradas[i].NroPagina == nroPagina {
-			Cache.Entradas[i].Contenido = datos
+			logger.Info("PID: %d - CACHE HIT - Página: %d", globals.PIDActual, nroPagina)
+
+			Cache.Entradas[i].DirLogica = dirLogica
+
+			tamPagina := globals.TamanioPagina
+			contenidoActual := make([]byte, tamPagina)
+			existente := []byte(Cache.Entradas[i].Contenido)
+			copy(contenidoActual, existente)
+
+			copy(contenidoActual[offset:], []byte(datos))
+			Cache.Entradas[i].Contenido = string(contenidoActual)
 			Cache.Entradas[i].Modificado = true
 			Cache.Entradas[i].Usado = true
-			//logger.Info("Se escribió %s en página %d", datos, nroPagina)
+
 			return nil
 		}
 	}
-	err := fmt.Errorf("no se encontró la página %d en la caché", nroPagina)
-	//logger.Error("Error: %v", err)
-	return err
+
+	logger.Info("PID: %d - CACHE MISS - Página: %d", globals.PIDActual, nroPagina)
+
+	Cache.Agregar(dirLogica, datos, true)
+	logger.Info("PID: %d - CACHE ADD - Página: %d", globals.PIDActual, nroPagina)
+
+	/*
+		dirFisica := Traducir(dirLogica)
+		if err := EscribirEnMemoria(dirFisica, datos); err != nil {
+			logger.Error("Error escribiendo en Memoria: %s", err)
+			return err
+		}*/
+	return nil
 }
 
 func (c *CachePaginas) reemplazarEntrada(nueva EntradaCache) {
@@ -110,8 +137,7 @@ func (c *CachePaginas) reemplazoClock(nueva EntradaCache) {
 		if !entrada.Usado {
 			if entrada.Modificado {
 				// Si la página fue modificada, escribir en memoria
-				tamPagina := globals.TamanioPagina
-				dirLogica := entrada.NroPagina * tamPagina
+				dirLogica := entrada.DirLogica
 				dirFisica := Traducir(dirLogica)
 
 				if dirFisica != -1 {
@@ -119,7 +145,7 @@ func (c *CachePaginas) reemplazoClock(nueva EntradaCache) {
 					if err != nil {
 						logger.Error("Error al escribir página modificada %d en dirección física %d: %v", entrada.NroPagina, dirFisica, err)
 					} else {
-						logger.Info("PID: %d - Memory Update - Pagina: %d - Frame: %d", globals.PIDActual, entrada.NroPagina, dirFisica)
+						logger.Info("PID: %d - Memory Update - Pagina: %d - Dir.Fisica: %d - Valor: %s", globals.PIDActual, entrada.NroPagina, dirFisica, entrada.Contenido)
 					}
 				}
 			}
@@ -154,9 +180,7 @@ func (c *CachePaginas) reemplazoClockM(nueva EntradaCache) {
 			indice := (c.Puntero + i) % c.MaxEntradas
 			entrada := &c.Entradas[indice]
 			if !entrada.Usado && entrada.Modificado {
-				tamPagina := globals.TamanioPagina
-				dirLogica := entrada.NroPagina * tamPagina
-
+				dirLogica := entrada.DirLogica
 				dirFisica := Traducir(dirLogica)
 				if dirFisica != -1 {
 					err := EscribirEnMemoria(dirFisica, entrada.Contenido)
@@ -187,25 +211,23 @@ func (c *CachePaginas) LimpiarCache() {
 		return
 	}
 
-	tamPagina := globals.TamanioPagina
-
-	for _, entrada := range c.Entradas {
-		if entrada.Modificado {
-			dirLogica := entrada.NroPagina * tamPagina
+	for i := 0; i < len(c.Entradas); i++ {
+		if c.Entradas[i].Modificado {
+			dirLogica := c.Entradas[i].DirLogica
 
 			dirFisica := Traducir(dirLogica)
 			if dirFisica == -1 {
-				logger.Error("Error al traducir la dirección lógica de página %d", entrada.NroPagina)
+				logger.Error("Error al traducir la dirección lógica de página %d", c.Entradas[i].NroPagina)
 				continue
 			}
 
-			err := EscribirEnMemoria(dirFisica, entrada.Contenido)
+			err := EscribirEnMemoria(dirFisica, c.Entradas[i].Contenido)
 			if err != nil {
-				logger.Error("Error al escribir página %d en dirección física %d: %v", entrada.NroPagina, dirFisica, err)
+				logger.Error("Error al escribir página %d en dirección física %d: %v", c.Entradas[i].NroPagina, dirFisica, err)
 				continue
 			}
 
-			logger.Info("PID: %d - Memory Update - Pagina: %d - Frame: %d", globals.PIDActual, entrada.NroPagina, dirFisica)
+			logger.Info("PID: %d - Memory Update - Pagina: %d - Frame: %d", globals.PIDActual, c.Entradas[i].NroPagina, dirFisica)
 		}
 	}
 

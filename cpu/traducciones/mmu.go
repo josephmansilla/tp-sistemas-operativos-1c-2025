@@ -54,7 +54,7 @@ func Traducir(dirLogica int) int {
 
 	// Consulto la TLB
 	if marco, ok := Tlb.Buscar(nroPagina); ok {
-		return marco*tamPagina + desplazamiento
+		return (marco * tamPagina) + desplazamiento
 	}
 
 	// La página no está en la TLB, voy a Memoria
@@ -73,7 +73,7 @@ func Traducir(dirLogica int) int {
 	Tlb.AgregarEntrada(nroPagina, marco)
 	logger.Info("PID: %d - OBTENER MARCO - Pagina: %d - Marco: %d", globals.PIDActual, nroPagina, marco)
 
-	return marco*tamPagina + desplazamiento
+	return (marco * tamPagina) + desplazamiento
 }
 
 // Descompone el número de página en los índices para cada nivel (cortesía de PP)

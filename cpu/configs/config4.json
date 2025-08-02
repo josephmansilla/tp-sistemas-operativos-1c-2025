@@ -7,8 +7,8 @@
   "port_kernel": 8081,
   "tlb_entries": 0,
   "tlb_replacement": "FIFO",
-  "cache_entries": 0,
-  "cache_delay": 0,
+  "cache_entries": 2,
+  "cache_delay": 250,
   "cache_replacement" : "CLOCK",
   "log_level": "INFO"
 }

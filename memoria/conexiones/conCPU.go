@@ -11,6 +11,7 @@ import (
 )
 
 func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
+
 	var mensaje g.ConsultaContextCPU
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
 	if err != nil {

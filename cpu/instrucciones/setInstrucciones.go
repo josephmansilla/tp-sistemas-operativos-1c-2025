@@ -97,34 +97,24 @@ func writeMemInstruccion(arguments []string) error {
 		return err
 	}
 	datos := arguments[1]
-	nroPagina := dirLogica / globals.TamanioPagina
-
-	dirFisica := traducciones.Traducir(dirLogica)
 
 	if traducciones.Cache.EstaActiva() {
-		//logger.Info("Cache Activa")
-
-		err := traducciones.EscribirEnCache(nroPagina, datos)
-		if err != nil {
-			logger.Info("PID: %d - CACHE MISS - Página: %d ", globals.PIDActual, nroPagina)
-
-			traducciones.Cache.Agregar(nroPagina, datos, true)
-			logger.Info("PID: %d - CACHE ADD - Página: %d", globals.PIDActual, nroPagina)
-
-			//logger.Info("PID: %d - ESCRIBIR (CACHE MISS) - Página: %d - Datos: %s", globals.PIDActual, nroPagina, datos)
-		} else {
-			logger.Info("PID: %d - CACHE HIT - Página: %d", globals.PIDActual, nroPagina)
+		if err := traducciones.EscribirEnCache(datos, dirLogica); err != nil {
+			logger.Error("Error escribiendo en Cache: %s", err)
+			return err
 		}
+		logger.Info("## PID: %d - EJECUTADA: WRITE - %s", globals.PIDActual, strings.Join(arguments, " "))
 	} else {
-		//logger.Info("Cache Inactiva")
+		logger.Info("## Cache Inactiva")
+
+		dirFisica := traducciones.Traducir(dirLogica)
 
 		if err := traducciones.EscribirEnMemoria(dirFisica, datos); err != nil {
 			logger.Error("Error escribiendo en Memoria: %s", err)
 			return err
 		}
+		logger.Info("## PID: %d - EJECUTADA: WRITE - %s", globals.PIDActual, strings.Join(arguments, " "))
 	}
-	logger.Info("PID: %d - Accion: ESCRIBIR - Direccion Fisica: %d - Valor:%s", globals.PIDActual, dirFisica, datos)
-	logger.Info("## PID: %d - EJECUTADA: WRITE - %s", globals.PIDActual, strings.Join(arguments, " "))
 	return nil
 }
 
@@ -145,7 +135,6 @@ func readMemInstruccion(arguments []string) error {
 		return err
 	}
 	nroPagina := dirLogica / globals.TamanioPagina
-
 	dirFisica := traducciones.Traducir(dirLogica)
 
 	if traducciones.Cache.EstaActiva() {
@@ -165,7 +154,7 @@ func readMemInstruccion(arguments []string) error {
 			return err
 		}
 
-		traducciones.Cache.Agregar(nroPagina, valorLeido, false)
+		traducciones.Cache.Agregar(dirLogica, valorLeido, false)
 		logger.Info("PID: %d - CACHE ADD - Página: %d", globals.PIDActual, nroPagina)
 		logger.Info("PID: %d - Accion: LEER - Dirección Física: %d - Valor: %s", globals.PIDActual, dirFisica, valorLeido)
 	} else {
