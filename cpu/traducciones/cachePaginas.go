@@ -33,7 +33,7 @@ func NuevaCachePaginas() *CachePaginas {
 		return nil
 	}
 	return &CachePaginas{
-		Entradas:    make([]EntradaCache, 0, Max),
+		Entradas:    make([]EntradaCache, Max),
 		MaxEntradas: Max,
 		Algoritmo:   globals.ClientConfig.CacheReplacement,
 		Puntero:     0,
