@@ -89,8 +89,6 @@ func FinalizacionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
-	g.MutexOperacionMemoria.Lock()
-	defer g.MutexOperacionMemoria.Unlock()
 
 	var dump g.ConsultaDump
 	if err := data.LeerJson(w, r, &dump); err != nil {
@@ -106,7 +104,6 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.SetOutput(dumpFile)
 	defer dumpFile.Close()
-
 	logger.Info("## PID: <%d> - Memory Dump solicitado", dump.PID)
 
 	contenido, err := adm.RealizarDumpMemoria(dump.PID)
@@ -127,8 +124,6 @@ func MemoriaDumpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
-	g.MutexOperacionMemoria.Lock()
-	defer g.MutexOperacionMemoria.Unlock()
 
 	ignore := 0
 	var mensaje g.ConsultaProceso
@@ -151,9 +146,11 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ignore != 1 {
+		g.MutexOperacionMemoria.Lock()
 		entradas := adm.RecolectarEntradasParaSwap(mensaje.PID)
 
-		errSwap := adm.CargarEntradasASwap(mensaje.PID, entradas) // REQUIERE ACTUALIZAR ESTRUCTURAS
+		errSwap := adm.CargarEntradasASwap(mensaje.PID, entradas)
+		g.MutexOperacionMemoria.Unlock()
 		if errSwap != nil {
 			logger.Error("Error: %v", errSwap)
 			http.Error(w, "error: %v", http.StatusConflict)
@@ -176,9 +173,6 @@ func SuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
-	g.MutexOperacionMemoria.Lock()
-	defer g.MutexOperacionMemoria.Unlock()
-
 	ignore := 0
 	var mensaje g.ConsultaProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
@@ -200,6 +194,7 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ignore != 1 {
+		g.MutexOperacionMemoria.Lock()
 		entradas, errEntradasSwap := adm.CargarEntradasDesdeSwap(mensaje.PID)
 		if errEntradasSwap != nil {
 			logger.Error("Error al cargar entradas: %v", errEntradasSwap)
@@ -209,6 +204,7 @@ func DesuspensionProcesoHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		errEntradasMem := adm.CargarEntradasAMemoria(mensaje.PID, entradas)
+		g.MutexOperacionMemoria.Unlock()
 		if errEntradasMem != nil {
 			logger.Error("Error al cargar entradas: %v", errEntradasMem)
 			http.Error(w, "error: %v", http.StatusConflict)

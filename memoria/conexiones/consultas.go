@@ -9,8 +9,6 @@ import (
 )
 
 func ObtenerEspacioLibreHandler(w http.ResponseWriter, r *http.Request) {
-	g.MutexOperacionMemoria.Lock()
-	defer g.MutexOperacionMemoria.Unlock()
 
 	g.MutexCantidadFramesLibres.Lock()
 	espacioLibre := g.CantidadFramesLibres * g.MemoryConfig.PagSize

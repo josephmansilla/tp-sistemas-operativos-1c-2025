@@ -58,8 +58,6 @@ func ObtenerInstruccionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
-	g.MutexOperacionMemoria.Lock()
-	defer g.MutexOperacionMemoria.Unlock()
 
 	var mensaje g.ConsultaMarco
 	err := json.NewDecoder(r.Body).Decode(&mensaje)
@@ -94,8 +92,6 @@ func EnviarEntradaPaginaHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
-	g.MutexOperacionMemoria.Lock()
-	defer g.MutexOperacionMemoria.Unlock()
 
 	var mensaje g.LecturaProceso
 	err := data.LeerJson(w, r, &mensaje)
@@ -108,12 +104,14 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	pid := mensaje.PID
 	direccionFisica := mensaje.DireccionFisica
 	tamanioALeer := mensaje.TamanioARecorrer
+
+	g.MutexOperacionMemoria.Lock()
 	respuesta := adm.LeerEspacioEntrada(pid, direccionFisica)
 	respuesta = g.RespuestaLectura{
 		Exito: respuesta.Exito,
 		Valor: respuesta.Valor[:tamanioALeer],
 	}
-
+	g.MutexOperacionMemoria.Unlock()
 	logger.Info("## PID: <%d> - <Lectura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
 
 	g.CalcularEjecutarSleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond)
@@ -128,8 +126,6 @@ func LeerEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
-	g.MutexOperacionMemoria.Lock()
-	defer g.MutexOperacionMemoria.Unlock()
 
 	var mensaje g.EscrituraProceso
 	if err := data.LeerJson(w, r, &mensaje); err != nil {
@@ -142,13 +138,13 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 	direccionFisica := mensaje.DireccionFisica
 	datos := []byte(mensaje.DatosAEscribir)
 	tamanioALeer := len(mensaje.DatosAEscribir)
-
+	g.MutexOperacionMemoria.Lock()
 	respuesta := adm.EscribirEspacioEntrada(pid, direccionFisica, datos)
 	if respuesta.Exito != nil {
 		logger.Error("Escritura con error: %v", respuesta.Exito)
 		return
 	}
-
+	g.MutexOperacionMemoria.Unlock()
 	logger.Info("## PID: <%d> - <Escritura> - Dir. Física: <%d> - Tamaño: <%d>", pid, direccionFisica, tamanioALeer)
 
 	g.CalcularEjecutarSleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond)
@@ -161,72 +157,3 @@ func EscribirEspacioUsuarioHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
-/*
-func LeerPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
-	inicio := time.Now()
-	retrasoSwap := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
-
-	var mensaje g.LecturaPagina
-	if err := data.LeerJson(w, r, &mensaje); err != nil {
-		return
-	}
-
-	pid := mensaje.PID
-	direccionFisica := mensaje.DireccionFisica
-	respuesta := adm.LeerEspacioEntrada(pid, direccionFisica)
-
-	logger.Info("## Leer Página Completa - Dir. Física: <%d>", direccionFisica)
-
-	time.Sleep(time.Duration(g.MemoryConfig.MemoryDelay) * time.Second)
-
-	tiempoTranscurrido := time.Now().Sub(inicio)
-	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoSwap)
-
-
-	logger.Info("## Lectura Éxitosa")
-
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar la lectura de pagina completa: %v", err)
-		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
-		return
-	}
-
-}
-
-func ActualizarPaginaCompletaHandler(w http.ResponseWriter, r *http.Request) {
-	inicio := time.Now()
-	retrasoMemoria := time.Duration(g.MemoryConfig.MemoryDelay) * time.Millisecond
-
-	var mensaje g.EscrituraPagina
-	if err := data.LeerJson(w, r, &mensaje); err != nil {
-		return
-	}
-
-	if mensaje.TamanioNecesario > g.MemoryConfig.PagSize {
-		logger.Error("No se puede cargar en una pagina este tamaño")
-		http.Error(w, "No se puede cargar en una pagina este tamaño", http.StatusBadRequest)
-		return
-	}
-
-	pid := mensaje.PID
-	datosASobreEscribir := []byte(mensaje.DatosASobreEscribir)
-	direccionFisica := mensaje.DireccionFisica
-
-	respuesta := adm.EscribirEspacioEntrada(pid, direccionFisica, datosASobreEscribir)
-
-	logger.Info("## PID: <%d> - Actualizar Página Completa - Dir. Física: <%d>", pid, direccionFisica)
-
-	tiempoTranscurrido := time.Now().Sub(inicio)
-	g.CalcularEjecutarSleep(tiempoTranscurrido, retrasoMemoria)
-
-
-	logger.Info("## Escritura Éxitosa")
-
-	if err := json.NewEncoder(w).Encode(respuesta); err != nil {
-		logger.Error("Error al serializar la escritura de pagina completa: %v", err)
-		http.Error(w, "Error al procesar la respuesta", http.StatusInternalServerError)
-		return
-	}
-}
-*/
