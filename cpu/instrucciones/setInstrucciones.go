@@ -231,6 +231,9 @@ func ioInstruccion(arguments []string) error {
 }
 
 func exitInstruccion(arguments []string) error {
+	globals.MutexPID.Lock()
+	defer globals.MutexPID.Unlock()
+
 	if err := checkArguments(arguments, 0); err != nil {
 		logger.Info("Error en los argumentos de la Instruccion: %s", err)
 		return err

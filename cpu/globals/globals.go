@@ -21,6 +21,10 @@ type Config struct {
 	LogLevel         string `json:"log_level"`
 }
 
+// En el paquete globals
+var MutexPID sync.Mutex
+var MutexPC sync.Mutex
+
 var PIDActual int
 var PCActual int
 var ClientConfig *Config

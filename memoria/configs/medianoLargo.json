@@ -7,7 +7,7 @@
   "number_of_levels": 2,
   "memory_delay": 500,
   "swapfile_path": "./swap/swapfile.bin",
-  "swap_delay": 1000,
+  "swap_delay": 3000,
   "log_level": "INFO",
   "dump_path": "./dump/",
   "scripts_path": "./scripts/"

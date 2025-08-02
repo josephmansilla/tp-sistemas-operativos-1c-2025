@@ -88,8 +88,10 @@ func RecibirContextoDeKernel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Actualizar solo PID y PC del PCB global
+	globals.MutexPID.Lock()
 	globals.PIDActual = msg.PID
 	globals.PCActual = msg.PC
+	globals.MutexPID.Unlock()
 
 	logger.Info("Me llegó el contexto con PID: %d, PC: %d", globals.PIDActual, globals.PCActual)
 
@@ -119,7 +121,7 @@ func RecibirInterrupcion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Info("## Llega interrupción al puerto Interrupt para PID <%d>", interrumpido.PID)
-	
+
 	globals.MutexInterrupcion.Lock()
 	globals.InterrupcionPendiente = true //aseguro la mutua exclusion
 	globals.PIDInterrumpido = interrumpido.PID
