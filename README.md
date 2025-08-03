@@ -33,7 +33,7 @@ Podés consultar los tests usados para el trabajo en el siguiente enlace:
 
 ---
 
-## ** Arquitectura del Sistema y los módulos  **
+## **Arquitectura del Sistema y los módulos**
 
 El sistema está dividido en los siguientes módulos:
 
