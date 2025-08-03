@@ -19,6 +19,7 @@ Podés consultar los tests usados para el trabajo en el siguiente enlace:
 | [Joseph Mansilla](https://github.com/josephmansilla) | [Ignacio Castro](https://github.com/nacho-castro) | [Santiago Torres](https://github.com/SantiagoTorres24) | [Marcelo Cabezas](https://github.com/Marcelocabezasflores)
 |:--:|:--:|:--:|:--:|
 | <img src="https://avatars.githubusercontent.com/u/162230766?s=400&u=6ac208c05e9fedd414fefc12db5c38efe1c6fcd8&v=4" alt="Joseph Mansilla" width="76" height="76"> | <img src="https://avatars.githubusercontent.com/u/116680164?v=4" alt="Ignacio Castro" width="76" height="76"> | <img src="https://avatars.githubusercontent.com/u/135065796?v=4" alt="Santiago Torres" width="76" height="76"> | <img src="https://avatars.githubusercontent.com/u/143379325?v=4" alt="chelo" width="76" height="76"> |
+| 🧠 Trabajó sobre el módulo **Memoria** | 🪄 Trabajó sobre el módulo **Kernel** | ⚙️ Trabajó sobre el módulo **CPU** | 🪄 Trabajó sobre el módulo **Kernel** |
 
 ## Objetivos del TP
 
