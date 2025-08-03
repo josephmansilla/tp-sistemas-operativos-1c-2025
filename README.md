@@ -1,21 +1,79 @@
-## Checkpoint
+# TP Sistemas Operativos — Episodio IX: The Rise of Gopher
 
-Para cada checkpoint de control obligatorio, se debe crear un tag en el
-repositorio con el siguiente formato:
+Este proyecto es el trabajo práctico de la materia cuatrimestral **Sistemas Operativos**, centrado en la simulación de un sistema operativo distribuido, desarrollado en **Golang**.
 
-```
-checkpoint-{número}
-```
+## 📄 Enunciado
 
-Donde `{número}` es el número del checkpoint.
+Podés consultar el enunciado completo del trabajo en el siguiente enlace:  
+🔗 [Consigna del TP — Google Docs](https://docs.google.com/document/d/1zoFRoBn9QAfYSr0tITsL3PD6DtPzO2sq9AtvE8NGrkc/edit?usp=sharing)
 
-Para crear un tag y subirlo al repositorio, podemos utilizar los siguientes
-comandos:
+---
 
-```bash
-git tag -a checkpoint-{número} -m "Checkpoint {número}"
-git push origin checkpoint-{número}
-```
+## 👨‍💻 Integrantes
 
-Asegúrense de que el código compila y cumple con los requisitos del checkpoint
-antes de subir el tag.
+### <a href="https://github.com/josephmansilla">Joseph Mansilla</a>
+<img src="https://avatars.githubusercontent.com/u/162230766?s=400&u=6ac208c05e9fedd414fefc12db5c38efe1c6fcd8&v=4" alt="Joseph Mansilla" width="76" height="76">
+
+
+### <a href="https://github.com/nacho-castro">Ignacio Castro</a>
+<img src="https://avatars.githubusercontent.com/u/116680164?v=4" alt="Ignacio Castro" width="76" height="76">
+
+### <a href="https://github.com/SantiagoTorres24">Santiago Torres</a>
+<img src="https://avatars.githubusercontent.com/u/135065796?v=4" alt="Santiago Torres" width="76" height="76">
+
+#### Marcelo Cabezas
+
+## Objetivos del TP
+
+- Aplicar conceptos clave de planificación de procesos, administración de memoria y entrada/salida.
+- Implementar una arquitectura distribuida con múltiples módulos comunicándose vía HTTP.
+- Adquirir experiencia práctica en programación de sistemas con **Golang**.
+
+---
+
+## Arquitectura del sistema
+
+El sistema está dividido en los siguientes módulos:
+
+- **Kernel:** planifica procesos (corto, mediano y largo plazo), administra conexiones con CPU, IO y Memoria.
+
+![Kernel](kernel/resources/SO%202025%20KERNEL.png)
+
+- **CPU:** interpreta y ejecuta instrucciones, maneja TLB y caché de páginas.
+
+<img width="972" height="594" alt="cpu" src="https://github.com/user-attachments/assets/12549952-9880-4002-b52f-1d5a6f09aae4" />
+
+- **Memoria + SWAP:** gestiona espacio de usuario, tablas de páginas y almacenamiento en swap.
+
+<img width="1999" height="1317" alt="memoria" src="https://github.com/user-attachments/assets/510d91e1-75e2-4f57-b65b-0c271f96964d" />
+
+[Memoria SWAP (PDF)](memoria/resources/Memoria+SWAP.pdf)
+[Memoria Indexado (PDF)](memoria/resources/indexado.pdf)
+
+- **IO:** simula dispositivos de entrada/salida.
+
+Todos los módulos se comunican mediante APIs HTTP, simulando un sistema operativo real distribuido.
+
+---
+
+## ⚙️ Tecnologías utilizadas
+
+- 🟡 [Golang](https://go.dev/)
+- 🧪 Testing con scripts y logs
+- 🔌 HTTP REST APIs para la comunicación entre módulos
+- 🧵 Concurrencia y sincronización
+
+---
+
+## 🗂 Estructura del proyecto
+
+tp-2025/
+├── cpu/
+├── io/
+├── kernel/
+├── memoria/
+├── utils/
+└── scripts/ # pseudocódigos y tests
+
+
+
