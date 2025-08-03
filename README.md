@@ -5,7 +5,12 @@ Este proyecto es el trabajo práctico de la materia cuatrimestral **Sistemas Ope
 ## 📄 Enunciado
 
 Podés consultar el enunciado completo del trabajo en el siguiente enlace:  
+
 🔗 [Consigna del TP — Google Docs](https://docs.google.com/document/d/1zoFRoBn9QAfYSr0tITsL3PD6DtPzO2sq9AtvE8NGrkc/edit?usp=sharing)
+
+Podés consultar los tests usados para el trabajo en el siguiente enlace:
+
+🔗 [Documentos de pruebas finales — Google Docs](https://docs.google.com/document/d/13XPliZvUBtYjaRfuVUGHWbYX8LBs8s3TDdaDa9MFr_I/edit?usp=sharing)
 
 ---
 
