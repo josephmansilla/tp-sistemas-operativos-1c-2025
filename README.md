@@ -23,6 +23,8 @@ Podés consultar los tests usados para el trabajo en el siguiente enlace:
 | <img src="https://avatars.githubusercontent.com/u/162230766?s=400&u=6ac208c05e9fedd414fefc12db5c38efe1c6fcd8&v=4" alt="Joseph Mansilla" width="76" height="76"> | <img src="https://avatars.githubusercontent.com/u/116680164?v=4" alt="Ignacio Castro" width="76" height="76"> | <img src="https://avatars.githubusercontent.com/u/135065796?v=4" alt="Santiago Torres" width="76" height="76"> | <img src="https://avatars.githubusercontent.com/u/143379325?v=4" alt="chelo" width="76" height="76"> |
 | 🧠 Trabajó sobre el módulo **Memoria** | 🪄 Trabajó sobre el módulo **Kernel** | ⚙️ Trabajó sobre el módulo **CPU** | 🪄 Trabajó sobre el módulo **Kernel** |
 
+
+![Commits en detalle](https://github.com/josephmansilla/tp-sistemas-operativos-1c-2025/graphs/contributors)
 ---
 
 ## Objetivos del TP
