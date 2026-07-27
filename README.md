@@ -1,8 +1,8 @@
-![Go](https://img.shields.io/badge/go-%2300ADD8.svg?style=for-the-badge&logo=go&logoColor=white)
 # TP Sistemas Operativos — The Rise of Gopher
 
 Este proyecto es el trabajo práctico de la materia cuatrimestral **Sistemas Operativos**, centrado en la simulación de un sistema operativo distribuido, desarrollado en **Golang**.
 
+![Go](https://img.shields.io/badge/go-%2300ADD8.svg?style=for-the-badge&logo=go&logoColor=white)
 ---
 
 ## 📄 Enunciado
@@ -19,7 +19,7 @@ Podés consultar los tests usados para el trabajo en el siguiente enlace:
 
 ## 👨‍💻 Integrantes
 
-| [Joseph Mansilla](https://github.com/josephmansilla) | [Ignacio Castro](https://github.com/nacho-castro) | [Santiago Torres](https://github.com/SantiagoTorres24) | [Marcelo Cabezas](https://github.com/Marcelocabezasflores)
+| [Joseph Mansilla](https://github.com/josephmansilla) | [Ignacio Castro](https://github.com/nacho-castro) | [Santiago Torres](https://github.com/SantiagoTorres24) | [Marcelo Cabezas](https://github.com)
 |:--:|:--:|:--:|:--:|
 | <img src="https://avatars.githubusercontent.com/u/162230766?s=400&u=6ac208c05e9fedd414fefc12db5c38efe1c6fcd8&v=4" alt="Joseph Mansilla" width="76" height="76"> | <img src="https://avatars.githubusercontent.com/u/116680164?v=4" alt="Ignacio Castro" width="76" height="76"> | <img src="https://avatars.githubusercontent.com/u/135065796?v=4" alt="Santiago Torres" width="76" height="76"> | <img src="https://avatars.githubusercontent.com/u/143379325?v=4" alt="chelo" width="76" height="76"> |
 | 🧠 Trabajó sobre el módulo **Memoria** | 🪄 Trabajó sobre el módulo **Kernel** | ⚙️ Trabajó sobre el módulo **CPU** | 🪄 Trabajó sobre el módulo **Kernel** |
