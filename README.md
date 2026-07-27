@@ -1,4 +1,5 @@
-# TP Sistemas Operativos — Episodio IX: The Rise of Gopher
+![Go](https://img.shields.io/badge/go-%2300ADD8.svg?style=for-the-badge&logo=go&logoColor=white)
+# TP Sistemas Operativos — The Rise of Gopher
 
 Este proyecto es el trabajo práctico de la materia cuatrimestral **Sistemas Operativos**, centrado en la simulación de un sistema operativo distribuido, desarrollado en **Golang**.
 
