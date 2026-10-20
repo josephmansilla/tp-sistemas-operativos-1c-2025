@@ -3,6 +3,8 @@
 Este proyecto es el trabajo práctico de la materia cuatrimestral **Sistemas Operativos**, centrado en la simulación de un sistema operativo distribuido, desarrollado en **Golang**.
 
 ![Go](https://img.shields.io/badge/go-%2300ADD8.svg?style=for-the-badge&logo=go&logoColor=white)
+[![UTN FRBA](https://img.shields.io/badge/UTN-FRBA-005BBB.svg)](https://www.frba.utn.edu.ar/)
+[![Course Period](https://img.shields.io/badge/cursada-1C%202025-blue.svg)](#sobre-la-cursada)
 ---
 
 ## 📄 Enunciado
